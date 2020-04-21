@@ -1,0 +1,65 @@
+\documentclass[10pt, letterpaper]{article}
+\usepackage{amsmath}
+\usepackage[margin=0.5in]{geometry}
+\linespread{1}
+\begin{document}
+\title{Cleveland Clinic - Medical Resource Optimization Mathematical Formulation}
+\maketitle
+
+
+\section*{Dimensions}
+\begin{itemize}
+\item[ ] $ r \in Resources$ : set of resources
+\item[ ] $ f \in Facilities$ : set of facilities
+\item[ ] $ sl \in Service lines$ : set of service lines
+\item[ ] $ ss \in Sub-services$ : set of sub-services
+\item[ ] $ d \in Days$ : set of days
+\end{itemize}
+
+\section*{Data Parameters: Model Coefficients}
+\begin{itemize}
+\item[ ] $capacity_{f,sl,ss,r}$  is the capacity of resource $r$ at facility $f$, service line $sl$, sub-service $ss$
+\item[ ] $revenue_{f,sl,ss}$  is the revenue per patient at facility $f$, service line $sl$, sub-service $ss$
+\item[ ] $margin_{f,sl,ss}$  is the margin per patient at facility $f$, service line $sl$, sub-service $ss$
+\item[ ] $demand_{f,sl,ss,d}$  is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$
+\item[ ] $losMean_{f,sl,ss}$  is the mean hospitalization time of facility $f$, service line $sl$, sub-service $ss$
+\end{itemize}
+
+\section*{Decision Variables}
+\begin{itemize}
+\item [ ] $NumPatientsAccept_{f,sl,ss,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$
+\end{itemize}
+
+\section*{Variables}
+\begin{align*}
+&TotalPatientsDay_{f,sl,ss,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
+&\text{cumulative for day $d$ where,} \\
+&TotalPatientsDay_{f,sl,ss,d} =
+\sum_{\substack{d1 \in d and \\
+\max \{\min\limits_{d' \in D} d', [d - \\ losMean_{f,sl,ss} + 1]\} \leq d1 \leq d}} NumPatientsAccept_{f,sl,ss,d1} \\ & \forall f,sl,ss,d\ 
+\end{align*}
+
+\section*{Objective Functions}
+\begin{itemize}
+\item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,d} NumPatientsAccept_{f,sl,ss,d} \ revenue_{f,sl,ss}$
+\item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,d} NumPatientsAccept_{f,sl,ss,d} \ margin_{f,sl,ss}$
+\end{itemize}
+\pagebreak
+\section*{Constraints}
+\begin{align*}
+&\text{Maximum demand constraint: Number of patients accepted for $f,sl,ss$ should be less than the maximum demand} \\
+&\text{for day $d$.} 
+\end{align*}
+\begin{equation} 
+NumPatientsAccept_{f,sl,ss,d} \leq demand_{f,sl,ss,d} \quad \forall f,sl,ss,d\
+\end{equation}
+\begin{align*}
+&\text{Capacity constraint: Total number of patients for $f,sl,ss$ on day $d$ should be less than equal to available capacity } \\
+&\text{of resource $r$ for $f,sl,ss$. Capacity of resource $r$ is normalized per patient.} 
+\end{align*}
+\begin{equation} 
+TotalPatientsDay_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
+\end{equation}
+
+
+\end{document}
