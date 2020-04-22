@@ -29,6 +29,7 @@
 \section*{Decision Variables}
 \begin{itemize}
 \item [ ] $NumPatientsAccept_{f,sl,ss,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$
+\item [ ] $OpenFlg_{f,sl,ss}$ $\in$ \{0,1\} is the binary variable indicating if facility $f$, service line $sl$, sub-service $ss$ is open
 \end{itemize}
 
 \section*{Variables}
@@ -52,7 +53,7 @@
 &\text{for day $d$.} 
 \end{align*}
 \begin{equation} 
-NumPatientsAccept_{f,sl,ss,d} \leq demand_{f,sl,ss,d} \quad \forall f,sl,ss,d\
+NumPatientsAccept_{f,sl,ss,d} \leq demand_{f,sl,ss,d} \ OpenFlg_{f,sl,ss} \quad \forall f,sl,ss,d\
 \end{equation}
 \begin{align*}
 &\text{Capacity constraint: Total number of patients for $f,sl,ss$ on day $d$ should be less than equal to available capacity } \\
