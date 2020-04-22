@@ -23,6 +23,7 @@
 \item[ ] $margin_{f,sl,ss}$  is the margin per patient at facility $f$, service line $sl$, sub-service $ss$
 \item[ ] $demand_{f,sl,ss,d}$  is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$
 \item[ ] $losMean_{f,sl,ss}$  is the mean hospitalization time of facility $f$, service line $sl$, sub-service $ss$
+\item[ ] $minday$ is the minimum day among the set $ d \in Days$, ${\min\limits_{d \in Days} d}$
 \end{itemize}
 
 \section*{Decision Variables}
@@ -35,8 +36,8 @@
 &TotalPatientsDay_{f,sl,ss,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
 &\text{cumulative for day $d$ where,} \\
 &TotalPatientsDay_{f,sl,ss,d} =
-\sum_{\substack{d1 \in d and \\
-\max \{\min\limits_{d' \in D} d', [d - \\ losMean_{f,sl,ss} + 1]\} \leq d1 \leq d}} NumPatientsAccept_{f,sl,ss,d1} \\ & \forall f,sl,ss,d\ 
+\sum_{\substack{d1 \in d \ \text{and} \\
+\max \{[d - losMean_{f,sl,ss} + 1], \\ minday \} \leq d1 \leq d}} NumPatientsAccept_{f,sl,ss,d1} \quad \forall f,sl,ss,d\ 
 \end{align*}
 
 \section*{Objective Functions}
