@@ -14,6 +14,7 @@ proc optmodel;
 	num margin{FAC_SLINE_SSERV};
 	num losMean{FAC_SLINE_SSERV};
 	num demand{FAC_SLINE_SSERV, DAYS};
+	num minDay=min {d in DAYS} d;
 
 /* 	num losVar{FAC_SLINE_SSERV}; */
 /* 	num visitorsMean{FAC_SLINE_SSERV}; */
@@ -21,21 +22,26 @@ proc optmodel;
 /* 	num minPctReschedule{FAC_SLINE_SSERV}; */
 /* 	num maxPctReschedule{FAC_SLINE_SSERV}; */
 
-	var NumPatientsAccept{FAC_SLINE_SSERV, DAYS};
+	/* Decide to open or not a sub service */
+	var OpenFlg{FAC_SLINE_SSERV} BINARY;
 
-	num minDay=min {d in DAYS} d;
-	impvar TotalPatientsDay{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}:
-		sum{d1 in DAYS: (max((d - losMean[f,sl,ss] + 1), minDay)) <= d1 <= d} NumPatientsAccept[f,sl,ss,d1];
+	/* Related to how many new patients are actually accepted */
+	var NewPatients{FAC_SLINE_SSERV, DAYS};
 
+	/* Calculate total number of patients for day d */
+	impvar TotalPatients{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS} =
+		sum{d1 in DAYS: (max((d - losMean[f,sl,ss] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,d1];
 
+	/* New patients cannot exceed demand if the sub service is open */
 	con Maximum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}:
-		NumPatientsAccept[f,sl,ss,d] <= demand[f,sl,ss,d];
+		NewPatients[f,sl,ss,d] <= demand[f,sl,ss,d]*OpenFlg[f,sl,ss];
 
+	/* Total patients cannot exceed capacity */
 	con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RESOURCES, d in DAYS}:
-		TotalPatientsDay[f,sl,ss,d] <= capacity[f,sl,ss,r];
+		TotalPatients[f,sl,ss,d] <= capacity[f,sl,ss,r];
 
-	max Total_Revenue = sum{<f,sl,ss,r> in FAC_SLINE_SSERV, d in DAYS} NumPatientsAccept[f,sl,ss,d]*revenue[f,sl,ss];
+	max Total_Revenue = sum{<f,sl,ss,r> in FAC_SLINE_SSERV, d in DAYS} NewPatients[f,sl,ss,d]*revenue[f,sl,ss];
 
-	max Total_Margin = sum{<f,sl,ss,r> in FAC_SLINE_SSERV, d in DAYS} NumPatientsAccept[f,sl,ss,d]*margin[f,sl,ss];
+	max Total_Margin = sum{<f,sl,ss,r> in FAC_SLINE_SSERV, d in DAYS} NewPatients[f,sl,ss,d]*margin[f,sl,ss];
 
 quit;
