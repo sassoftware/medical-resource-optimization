@@ -1,5 +1,61 @@
-/* Prep Data */
+*------------------------------------------------------------------------------*
+| Program: cc_forecast_demand
+|
+| Description: 
+|
+*--------------------------------------------------------------------------------* ;
+%macro cc_forecast_demand(
+	inlib=cc
+	,outlib=cc
+	,input_demand =input_demand
+	,_worklib=casuser
+	,_debug=1
+	);
 
+	/*************************/
+	/******HOUSEKEEPING*******/
+	/*************************/
+
+   /* Do not proceed if previously there have been errors */
+   %if &syscc > 4  %then %do;
+      %put FATAL: There have been errors BEFORE this macro is executed, exiting from &sysmacroname.;
+      %goto EXIT;
+   %end;
+   %put TRACE: Entering &sysmacroname. with SYSCC=&SYSCC.;
+
+	/* Check missing inputs */
+
+   %if %sysfunc(exist(&inlib..&input_demand.))=0 %then %do;
+      %put FATAL: Missing &inlib..&input_demand., from &sysmacroname.;
+      %goto EXIT;
+   %end; 
+
+
+   /* List work tables */
+   %let _work_tables=%str(  
+        &_worklib.._tmp_input_demand
+         );
+
+
+   /* List output tables */
+   %let output_tables=%str(         
+         &_worklib..output_fd_demand_fcst
+         );
+
+ /*Delete output data if already exists */
+	proc delete data= &output_tables.;
+	run;
+
+ /* Delete work data if already exists */
+	proc delete data= &_work_tables.;
+	run;
+ 
+
+/************************************/
+/************ANALYTICS *************/
+/***********************************/
+
+/* Prep Data  */
 data casuser._tmp_input_demand;
 	set cc.input_demand (
 		rename = 
@@ -89,3 +145,16 @@ quit;
 /* 	set cc.input_demand_dow; */
 /* run; */
 
+   /*************************/
+   /******HOUSEKEEPING*******/
+   /*************************/
+
+   %if &_debug.=0  %then %do;
+	proc delete data= &_work_tables.;
+	run;
+   %end;
+
+   %EXIT:
+   %put TRACE: Leaving &sysmacroname. with SYSCC=&SYSCC.;
+
+%mend cc_forecast_demand;
