@@ -9,7 +9,7 @@
 	,outlib=cc
 	,input_capacity =input_capacity
 	,input_financials=input_financials
-	,input_service_attr=input_service_attr
+	,input_service_attributes=input_service_attributes
 	,_worklib=casuser
 	,_debug=1
 	);
@@ -41,8 +41,8 @@
       %goto EXIT;
    %end; 
 
-   %if %sysfunc(exist(&inlib..&input_service_attr.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_service_attr., from &sysmacroname.;
+   %if %sysfunc(exist(&inlib..&input_service_attributes.))=0 %then %do;
+      %put FATAL: Missing &inlib..&input_service_attributes., from &sysmacroname.;
       %goto EXIT;
    %end; 
 
@@ -83,7 +83,7 @@
 	%let outlib=cc;
 	%let _worklib=casuser;
 	%let input_capacity=input_capacity;
-	%let input_service_attr=input_service_attributes;
+	%let input_service_attributes=input_service_attributes;
 	%let input_financials=input_financials;
 
 
@@ -154,7 +154,7 @@
 	
 		/* Calculate total number of patients for day d */
 		impvar TotalPatients{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} =
-			sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d];
+			sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
 	
 		/* New patients cannot exceed demand if the sub service is open */
 		con Maximum_Demand{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}:
