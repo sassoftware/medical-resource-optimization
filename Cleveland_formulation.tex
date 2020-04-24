@@ -13,54 +13,55 @@
 \item[ ] $ f \in Facilities$ : set of facilities
 \item[ ] $ sl \in Service lines$ : set of service lines
 \item[ ] $ ss \in Sub-services$ : set of sub-services
+\item[ ] $ io \in Inpatient/Outpatient$ : set of Inpatient/Outpatient indicator
+\item[ ] $ ms \in Medical/Surgical$ : set of Medical/Surgical indicator
 \item[ ] $ d \in Days$ : set of days
 \end{itemize}
 
 \section*{Data Parameters: Model Coefficients}
 \begin{itemize}
 \item[ ] $capacity_{f,sl,ss,r}$  is the capacity of resource $r$ at facility $f$, service line $sl$, sub-service $ss$
-\item[ ] $revenue_{f,sl,ss}$  is the revenue per patient at facility $f$, service line $sl$, sub-service $ss$
-\item[ ] $margin_{f,sl,ss}$  is the margin per patient at facility $f$, service line $sl$, sub-service $ss$
-\item[ ] $demand_{f,sl,ss,d}$  is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$
-\item[ ] $losMean_{f,sl,ss}$  is the mean hospitalization time of facility $f$, service line $sl$, sub-service $ss$
+\item[ ] $revenue_{f,sl,ss,io,ms}$  is the revenue per patient at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
+\item[ ] $margin_{f,sl,ss,io,ms}$  is the margin per patient at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
+\item[ ] $demand_{f,sl,ss,io,ms,d}$ is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
+\item[ ] $losMean_{f,sl,ss,io,ms}$  is the mean hospitalization time of facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $minday$ is the minimum day among the set $ d \in Days$, ${\min\limits_{d \in Days} d}$
 \end{itemize}
 
 \section*{Decision Variables}
 \begin{itemize}
-\item [ ] $NewPatients_{f,sl,ss,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$
+\item [ ] $NewPatients_{f,sl,ss,io,ms,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$, , for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ $ms$
 \item [ ] $OpenFlg_{f,sl,ss}$ $\in$ \{0,1\} is the binary variable indicating if facility $f$, service line $sl$, sub-service $ss$ is open
 \end{itemize}
 
 \section*{Variables}
 \begin{align*}
-&TotalPatients_{f,sl,ss,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
-&\text{cumulative for day $d$ where,} \\
-&TotalPatients_{f,sl,ss,d} =
+&TotalPatients_{f,sl,ss,io,ms,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
+&\text{cumulative for day $d$ , for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ where,} \\
+&TotalPatients_{f,sl,ss,io,ms,d} =
 \sum_{\substack{d1 \in d \ \text{and} \\
-\max \{[d - losMean_{f,sl,ss} + 1], \\ minday \} \leq d1 \leq d}} NewPatients_{f,sl,ss,d1} \quad \forall f,sl,ss,d\ 
+\max \{[d - losMean_{f,sl,ss,io,ms} + 1], \\ minday \} \leq d1 \leq d}} NewPatients_{f,sl,ss,io,ms,d1} \quad \forall f,sl,ss,io,ms,d\ 
 \end{align*}
-
+\pagebreak
 \section*{Objective Functions}
 \begin{itemize}
-\item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,d} NewPatients_{f,sl,ss,d} \ revenue_{f,sl,ss}$
-\item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,d} NewPatients_{f,sl,ss,d} \ margin_{f,sl,ss}$
+\item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,io,ms,d} NewPatients_{f,sl,ss,io,ms,d} \ revenue_{f,sl,ss,io,ms}$
+\item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,io,ms,d} NewPatients_{f,sl,ss,io,ms,d} \ margin_{f,sl,ss,io,ms}$
 \end{itemize}
-\pagebreak
 \section*{Constraints}
 \begin{align*}
-&\text{Maximum demand constraint: Number of patients accepted for $f,sl,ss$ should be less than the maximum demand} \\
-&\text{for day $d$.} 
+&\text{Maximum demand constraint: Number of patients accepted for $f,sl,ss,io,ms$ should be less than the maximum} \\
+&\text{demand for day $d$.} 
 \end{align*}
 \begin{equation} 
-NewPatients_{f,sl,ss,d} \leq demand_{f,sl,ss,d} \ OpenFlg_{f,sl,ss} \quad \forall f,sl,ss,d\
+NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss} \quad \forall f,sl,ss,io,ms,d\
 \end{equation}
 \begin{align*}
 &\text{Capacity constraint: Total number of patients for $f,sl,ss$ on day $d$ should be less than equal to available capacity } \\
 &\text{of resource $r$ for $f,sl,ss$. Capacity of resource $r$ is normalized per patient.} 
 \end{align*}
 \begin{equation} 
-TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
+\sum_{io,ms} TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
 \end{equation}
 
 
