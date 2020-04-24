@@ -1,3 +1,8 @@
+/* Start cas session */
+cas mysess;
+caslib _all_ assign;
+
+
 proc optmodel;
 
  	set FAC_SLINE_SSERV_RESOURCES; /* FAC_SLINE_SSERV_RESOURCES is a index set f,sl,ss,r */
