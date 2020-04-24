@@ -23,26 +23,28 @@
 \item[ ] $margin_{f,sl,ss}$  is the margin per patient at facility $f$, service line $sl$, sub-service $ss$
 \item[ ] $demand_{f,sl,ss,d}$  is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$
 \item[ ] $losMean_{f,sl,ss}$  is the mean hospitalization time of facility $f$, service line $sl$, sub-service $ss$
+\item[ ] $minday$ is the minimum day among the set $ d \in Days$, ${\min\limits_{d \in Days} d}$
 \end{itemize}
 
 \section*{Decision Variables}
 \begin{itemize}
-\item [ ] $NumPatientsAccept_{f,sl,ss,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$
+\item [ ] $NewPatients_{f,sl,ss,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$
+\item [ ] $OpenFlg_{f,sl,ss}$ $\in$ \{0,1\} is the binary variable indicating if facility $f$, service line $sl$, sub-service $ss$ is open
 \end{itemize}
 
 \section*{Variables}
 \begin{align*}
-&TotalPatientsDay_{f,sl,ss,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
+&TotalPatients_{f,sl,ss,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
 &\text{cumulative for day $d$ where,} \\
-&TotalPatientsDay_{f,sl,ss,d} =
-\sum_{\substack{d1 \in d and \\
-\max \{\min\limits_{d' \in D} d', [d - \\ losMean_{f,sl,ss} + 1]\} \leq d1 \leq d}} NumPatientsAccept_{f,sl,ss,d1} \\ & \forall f,sl,ss,d\ 
+&TotalPatients_{f,sl,ss,d} =
+\sum_{\substack{d1 \in d \ \text{and} \\
+\max \{[d - losMean_{f,sl,ss} + 1], \\ minday \} \leq d1 \leq d}} NewPatients_{f,sl,ss,d1} \quad \forall f,sl,ss,d\ 
 \end{align*}
 
 \section*{Objective Functions}
 \begin{itemize}
-\item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,d} NumPatientsAccept_{f,sl,ss,d} \ revenue_{f,sl,ss}$
-\item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,d} NumPatientsAccept_{f,sl,ss,d} \ margin_{f,sl,ss}$
+\item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,d} NewPatients_{f,sl,ss,d} \ revenue_{f,sl,ss}$
+\item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,d} NewPatients_{f,sl,ss,d} \ margin_{f,sl,ss}$
 \end{itemize}
 \pagebreak
 \section*{Constraints}
@@ -51,14 +53,14 @@
 &\text{for day $d$.} 
 \end{align*}
 \begin{equation} 
-NumPatientsAccept_{f,sl,ss,d} \leq demand_{f,sl,ss,d} \quad \forall f,sl,ss,d\
+NewPatients_{f,sl,ss,d} \leq demand_{f,sl,ss,d} \ OpenFlg_{f,sl,ss} \quad \forall f,sl,ss,d\
 \end{equation}
 \begin{align*}
 &\text{Capacity constraint: Total number of patients for $f,sl,ss$ on day $d$ should be less than equal to available capacity } \\
 &\text{of resource $r$ for $f,sl,ss$. Capacity of resource $r$ is normalized per patient.} 
 \end{align*}
 \begin{equation} 
-TotalPatientsDay_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
+TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
 \end{equation}
 
 
