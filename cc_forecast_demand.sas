@@ -63,14 +63,22 @@
 	data &_worklib.._tmp_input_demand;
 		set &inlib..&input_demand. (rename = (date=datetime);
 		date=datepart(datetime);
+		dow= weekday(date); 
 	run;
 	
-	/* Programatticaly obtain the first sunday and the last saturday in the input data: issue #7*/
-	
-	/* Hardcoded termporarily */
-	%let tStart=21247; /* March 4th, 2018 */
-	%let tEnd=21974; /* Feb 29, 2020 */
-	
+	/* Programatticaly obtaining the first sunday and the last saturday in the input data*/
+	/* First Sunday */
+	proc sql;
+		select min(date) into
+			:tStart from &_worklib.._tmp_input_demand
+		where (dow = 1);
+
+	/* Last Saturday */
+	proc sql;
+		select max(date) into
+			:tEnd from &_worklib.._tmp_input_demand
+		where (dow = 7);
+
 	proc cas;
 	   timeData.timeSeries /
 	      table={
