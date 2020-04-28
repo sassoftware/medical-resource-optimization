@@ -165,7 +165,7 @@
 			sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
 
 		impvar NumResPerPatientDay{<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} =
-			utilization_mean[f,sl,ss,iof,msf,r]/losMean[f,sl,ss,iof,msf];
+			utilization[f,sl,ss,iof,msf,r]/losMean[f,sl,ss,iof,msf];
 	
 		/* New patients cannot exceed demand if the sub service is open */
 		con Maximum_Demand{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}:

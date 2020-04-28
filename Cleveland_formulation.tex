@@ -21,6 +21,7 @@
 \section*{Data Parameters: Model Coefficients}
 \begin{itemize}
 \item[ ] $capacity_{f,sl,ss,r}$  is the capacity of resource $r$ at facility $f$, service line $sl$, sub-service $ss$
+\item[ ] $utilization_{f,sl,ss,io,ms,r}$ is the usage of resource $r$ per patient over their length of stay at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $revenue_{f,sl,ss,io,ms}$  is the revenue per patient at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $margin_{f,sl,ss,io,ms}$  is the margin per patient at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $demand_{f,sl,ss,io,ms,d}$ is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
@@ -34,15 +35,22 @@
 \item [ ] $OpenFlg_{f,sl,ss}$ $\in$ \{0,1\} is the binary variable indicating if facility $f$, service line $sl$, sub-service $ss$ is open
 \end{itemize}
 
+\pagebreak
+
 \section*{Variables}
 \begin{align*}
 &TotalPatients_{f,sl,ss,io,ms,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
 &\text{cumulative for day $d$ , for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ where,} \\
 &TotalPatients_{f,sl,ss,io,ms,d} =
 \sum_{\substack{d1 \in d \ \text{and} \\
-\max \{[d - losMean_{f,sl,ss,io,ms} + 1], \\ minday \} \leq d1 \leq d}} NewPatients_{f,sl,ss,io,ms,d1} \quad \forall f,sl,ss,io,ms,d\ 
+\max \{[d - losMean_{f,sl,ss,io,ms} + 1], \\ minday \} \leq d1 \leq d}}  NewPatients_{f,sl,ss,io,ms,d1} \quad \forall f,sl,ss,io,ms,d\ \\
 \end{align*}
-\pagebreak
+\begin{align*}
+&NumResPerPatientDay_{f,sl,ss,io,ms,r} \ \text{is the usage of resource $r$ per patient per day in facility $f$,service line $sl$, } \\ 
+&\text{subservice $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ where,} \\
+&NumResPerPatientDay_{f,sl,ss,io,ms,r} = utilization_{f,sl,ss,io,ms,r} / losMean_{f,sl,ss,io,ms} \quad \forall f,sl,ss,io,ms,r\ \\
+\end{align*}
+
 \section*{Objective Functions}
 \begin{itemize}
 \item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,io,ms,d} NewPatients_{f,sl,ss,io,ms,d} \ revenue_{f,sl,ss,io,ms}$
@@ -57,11 +65,11 @@
 NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss} \quad \forall f,sl,ss,io,ms,d\
 \end{equation}
 \begin{align*}
-&\text{Capacity constraint: Total number of patients for $f,sl,ss$ on day $d$ should be less than equal to available capacity } \\
-&\text{of resource $r$ for $f,sl,ss$. Capacity of resource $r$ is normalized per patient.} 
+&\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than } \\
+&\text{equal to available capacity of resource $r$ for $f,sl,ss$.} 
 \end{align*}
 \begin{equation} 
-\sum_{io,ms} TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
+\sum_{io,ms} NumResPerPatientDay_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
 \end{equation}
 
 
