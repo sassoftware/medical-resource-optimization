@@ -89,13 +89,14 @@
 
 	proc optmodel;
 	
-		/* Master sets read from data*/
-	 	set <str,str,str,str> FAC_SLINE_SSERV_RES; /* FAC_SLINE_SSERV_RES is a index set f,sl,ss,r */
+		/* Master sets read from data */
+	 	set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES; 
 		set <str,str,str,str,str,num> FAC_SLINE_SSERV_IO_MS_DAYS;
 			
 		/* Derived Sets */
-		set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,r> in FAC_SLINE_SSERV_RES} <f,sl,ss>;
-		set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss,iof,msf>;
+		set <str,str,str,str> FAC_SLINE_SSERV_RES = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss,r>;
+		set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss>;
+		set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss,iof,msf>;
 		set <num> DAYS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <d>;
 /* 		set <str> RESOURCES = setof {<f,sl,ss,r> in FAC_SLINE_SSERV_RES} r; */
 /* 		set <str> FACILITIES = setof {<f,sl,ss,r> in FAC_SLINE_SSERV_RES} f; */
@@ -104,6 +105,8 @@
 
 	
 		num capacity{FAC_SLINE_SSERV_RES};
+
+		num utilization{FAC_SLINE_SSERV_IO_MS_RES};
 
 		num revenue{FAC_SLINE_SSERV_IO_MS};
 		num margin{FAC_SLINE_SSERV_IO_MS};
@@ -136,34 +139,43 @@
 		/* Capacity */
 /* 		read data &inlib..&input_capacity.  */
 /* 			into FAC_SLINE_SSERV_RES = [facility service_line sub_service resource] */
-/* 		   	capacity=capacity; */
+/* 		   	capacity; */
+
+		/* Utilization */
+/* 		read data &inlib..&input_utilization.  */
+/* 			into FAC_SLINE_SSERV_IO_MS_RES = [facility service_line sub_service ip_op_indicator med_surg_indicator resource] */
+/* 		   	utilization=utilization_mean; */
 		
 		/* Financials */
 		read data &inlib..&input_financials.
 			into [facility service_line sub_service ip_op_indicator med_surg_indicator]
-		   	revenue=revenue 
-			margin=margin;
+		   	revenue 
+			margin;
 		
 		/* Service attributes */
 		read data &inlib..&input_service_attr.
 			into [facility service_line sub_service ip_op_indicator med_surg_indicator]
-		   	numcancel=num_cancelled
-			losmean=length_stay_mean;
+		   	numCancel=num_cancelled
+			losMean=length_stay_mean;
 	
 		/******************Model variables, constraints, objective function*******************************/
 	
 		/* Calculate total number of patients for day d */
 		impvar TotalPatients{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} =
 			sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
+
+		impvar NumResPerPatientDay{<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} =
+			utilization_mean[f,sl,ss,iof,msf,r]/losMean[f,sl,ss,iof,msf];
 	
 		/* New patients cannot exceed demand if the sub service is open */
 		con Maximum_Demand{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}:
 			NewPatients[f,sl,ss,iof,msf,d] <= demand[f,sl,ss,iof,msf,d]*OpenFlg[f,sl,ss];
 	
 		/* Total patients cannot exceed capacity */
+		/* Need to incorporate 'ALL' */
 		con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
-			sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} TotalPatients[f,sl,ss,iof,msf,d]
-				 <= capacity[f,sl,ss,r];
+			sum {<(f),(sl),(ss),iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] <= capacity[f,sl,ss,r];
 	
 		max Total_Revenue = 
 			sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
