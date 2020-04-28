@@ -33,10 +33,13 @@
 
    /* List work tables */
    %let _work_tables=%str(  
-        &_worklib.._tmp_input_demand
-		&_worklib.._tmp_input_demand_week
-		&_worklib.._tmp_output_fd_demand_fcst
-         );
+        &_worklib.._tmp_input_demand 
+		&_worklib.._tmp_input_demand_week 
+		&_worklib.._tmp_output_fd_demand_fcst 
+		&_worklib.._tmp1_input_demand_dow 
+		&_worklib.._tmp2_input_demand_dow 
+		&_worklib..input_demand_dow 
+        );	
 
    /* List output tables */
    %let output_tables=%str(         
@@ -61,7 +64,7 @@
 	
 	/* Prep Data  - Temporary, remove when data has been fixed*/
 	data &_worklib.._tmp_input_demand;
-		set &inlib..&input_demand. (rename = (date=datetime);
+		set &inlib..&input_demand. (rename = (date=datetime));
 		date=datepart(datetime);
 		dow= weekday(date); 
 	run;
@@ -143,15 +146,66 @@
         endsubmit;
 	run;
 	
-
 	/* Dissagregate weekly forecasts into daily through a dow profile: issue #8 */
 	proc delete data=&_worklib..output_fd_demand_fcst; 
 	run;
 	data &_worklib..output_fd_demand_fcst (promote=yes);
 		set &_worklib.._tmp_output_fd_demand_fcst;
 		if actual = .;
+		if date >= &tEnd;
 	run;
 
+	/* calculating the average proportion of demand per day of week */
+	proc cas;
+ 	  aggregation.aggregate / table={caslib="casuser", name="_TMP_INPUT_DEMAND",  
+ 	     groupby={"facility","service_line","sub_service","IP_OP_Indicator","Med_Surg_Indicator", "dow"}} 
+	     saveGroupByFormat=false 
+ 	     varSpecs={{name="demand", summarySubset="sum", columnNames="sumDemand"}} 
+ 	     casOut={caslib="casuser",name="_tmp1_input_demand_dow",replace=true}; run; 
+	 
+	  aggregation.aggregate / table={caslib="casuser", name="_TMP_INPUT_DEMAND",  
+ 	     groupby={"facility","service_line","sub_service","IP_OP_Indicator","Med_Surg_Indicator"}} 
+	     saveGroupByFormat=false 
+ 	     varSpecs={{name="demand", summarySubset="sum", columnNames="TotalDemand"}} 
+ 	     casOut={caslib="casuser",name="_tmp2_input_demand_dow",replace=true}; run;  	
+	quit;
+
+	/* combine two tables to compute demand proportion */
+	proc fedsql sessref=mysess _method ;
+	   create table &_worklib..input_demand_dow {options replication=0 replace=true} as
+		   
+		select 
+			A.facility, A.service_line, A.sub_service, A.IP_OP_Indicator, A.Med_Surg_Indicator, A.dow,
+	 		A.Sumdemand, B.Totaldemand , 
+			case
+				when B.Totaldemand = 0 or B.Totaldemand IS NULL then 0
+				else (A.Sumdemand / B.Totaldemand) end as demand_proportion
+		from
+			&_worklib.._tmp1_input_demand_dow A
+		LEFT OUTER JOIN
+			&_worklib.._tmp2_input_demand_dow B
+		ON	
+			A.facility = B.facility AND A.service_line = B.service_line and A.sub_service = B.sub_service AND
+			A.IP_OP_Indicator = B.IP_OP_Indicator AND A.Med_Surg_Indicator = B.Med_Surg_Indicator
+		;
+	quit ;
+
+	/* Dis-aggregate weekly forecasts into daily */
+	proc fedsql sessref=mysess _method ;		
+	   create table &_worklib..output_fd_demand_fcst_daily {options replication=0 replace=true} as
+		   
+		select 
+			A.*, B.dow, put(intnx('day',A.date, (B.dow-1) ), date9.) as predict_date,
+			(A.predict * B.demand_proportion) as daily_predict
+		from
+			&_worklib..output_fd_demand_fcst A
+		LEFT OUTER JOIN
+			&_worklib..input_demand_dow B
+		ON	
+			A.facility = B.facility AND A.service_line = B.service_line and A.sub_service = B.sub_service AND
+			A.IP_OP_Indicator = B.IP_OP_Indicator AND A.Med_Surg_Indicator = B.Med_Surg_Indicator
+		;
+	quit ;	
 
    /*************************/
    /******HOUSEKEEPING*******/
