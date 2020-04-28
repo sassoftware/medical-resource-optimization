@@ -65,7 +65,7 @@
 		date=datepart(datetime);
 	run;
 	
-	/* Programatticaly obtain the first sunday and the last saturday in the input data */
+	/* Programatticaly obtain the first sunday and the last saturday in the input data: issue #7*/
 	
 	/* Hardcoded termporarily */
 	%let tStart=21247; /* March 4th, 2018 */
@@ -140,7 +140,7 @@
 		if actual = .;
 	run;
 
-	/* Dissagregate weekly forecasts into daily through a dow profile */
+	/* Dissagregate weekly forecasts into daily through a dow profile: issue #8 */
 
 
    /*************************/
