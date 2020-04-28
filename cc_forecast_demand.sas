@@ -73,18 +73,38 @@
 	
 	/* Programatticaly obtaining the first sunday and the last saturday in the input data*/
 	/* First Sunday */
-	proc fedsql;
-		select min(date) into
-			:tStart from &_worklib.._tmp_input_demand
-		where (dow = 1);
-	quit;
+	proc means data=&_worklib.._tmp_input_demand Min noprint;
+		where dow =1;		
+	var Date;	
+	output out=&_worklib.._tmpstats(where=(_STAT_='MIN'));
+	run;
+	
+	/* Save relevant statistics in macro variables */
+	data _null_;
+	   set &_worklib.._tmpstats;
+	   call symputx('tStart', Date);
+	run;
+
+	/* drop tmp table*/
+	proc delete data = &_worklib.._tmpstats;
+	run;
 
 	/* Last Saturday */
-	proc fedsql;
-		select max(date) into
-			:tEnd from &_worklib.._tmp_input_demand
-		where (dow = 7);
-	quit;
+	proc means data=&_worklib.._tmp_input_demand Max noprint;
+		where dow =7;		
+	var Date;	
+	output out=&_worklib.._tmpstats(where=(_STAT_='MAX'));
+	run;
+	
+	/* Save relevant statistics in macro variables */
+	data _null_;
+	   set &_worklib.._tmpstats;
+	   call symputx('tEnd', Date);
+	run;
+
+	/* drop tmp table*/
+	proc delete data = &_worklib.._tmpstats;
+	run;
 
 	proc cas;
 	   timeData.timeSeries /
@@ -103,7 +123,6 @@
 	      casOut={caslib="&_worklib." name="_tmp_input_demand_week" replace=true};
 	   run;
 	quit;
-	
 	
 	proc tsmodel data=casuser._tmp_input_demand_week
         outobj=(outfor=&_worklib.._tmp_output_fd_demand_fcst);
