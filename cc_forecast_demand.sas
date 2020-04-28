@@ -34,8 +34,9 @@
    /* List work tables */
    %let _work_tables=%str(  
         &_worklib.._tmp_input_demand
+		&_worklib.._tmp_input_demand_week
+		&_worklib.._tmp_output_fd_demand_fcst
          );
-
 
    /* List output tables */
    %let output_tables=%str(         
@@ -51,99 +52,96 @@
 	run;
  
 
-/************************************/
-/************ANALYTICS *************/
-/***********************************/
+	/************************************/
+	/************ANALYTICS *************/
+	/***********************************/
+	
+	/* For debugging purposes */
+		%let _worklib=casuser;
+	
+	/* Prep Data  - Temporary, remove when data has been fixed*/
+	data &_worklib.._tmp_input_demand;
+		set &inlib..&input_demand. (rename = (date=datetime);
+		date=datepart(datetime);
+	run;
+	
+	/* Programatticaly obtain the first sunday and the last saturday in the input data */
+	
+	/* Hardcoded termporarily */
+	%let tStart=21247; /* March 4th, 2018 */
+	%let tEnd=21974; /* Feb 29, 2020 */
+	
+	proc cas;
+	   timeData.timeSeries /
+	      table={
+			caslib="&_worklib.", 
+			name="_tmp_input_demand", 
+			groupby={"facility" "service_line" "sub_service" "med_surg_indicator" "ip_op_indicator"}} 
+	      series={{
+			name="demand" 
+			acc="sum" 
+			setmiss=0}}
+	      timeId="date"
+	      tStart=&tStart.
+	      tEnd=&tEnd.
+	      interval="week"
+	      casOut={caslib="&_worklib." name="_tmp_input_demand_week" replace=true};
+	   run;
+	quit;
+	
+	
+	proc tsmodel data=casuser._tmp_input_demand_week
+        outobj=(outfor=&_worklib.._tmp_output_fd_demand_fcst);
+        id date interval=week;
+        by facility service_line sub_service med_surg_indicator ip_op_indicator;
+        var demand;
+        require atsm;
+        
+        submit;
+        
+        declare object tsdf(tsdf);
+        rc = tsdf.Initialize();
+        rc = tsdf.AddY(demand);
+        
+        declare object ev1(event);
+        rc = ev1.Initialize();
+        rc = tsdf.AddEvent(ev1,'USINDEPENDENCE', 'Required','MAYBE'); if rc < 0 then do; stop; end;
+        rc = tsdf.AddEvent(ev1,'THANKSGIVING', 'Required','MAYBE'); if rc < 0 then do; stop; end;
+        rc = tsdf.AddEvent(ev1,'NEWYEAR', 'Required','MAYBE'); if rc < 0 then do; stop; end;
+        rc = tsdf.AddEvent(ev1,'MEMORIAL', 'Required','MAYBE'); if rc < 0 then do; stop; end;
+        rc = tsdf.AddEvent(ev1,'LABOR', 'Required','MAYBE'); if rc < 0 then do; stop; end;
+        rc = tsdf.AddEvent(ev1,'EASTER', 'Required','MAYBE'); if rc < 0 then do; stop; end;
+        rc = tsdf.AddEvent(ev1,'CHRISTMAS', 'Required','MAYBE'); if rc < 0 then do; stop; end;
+        
+        declare object diagspec(diagspec);
+        rc = diagspec.Open();
+        rc = diagspec.SetESM();
+        rc = diagspec.SetARIMAX();
+        rc = diagspec.Close();
+        
+        declare object diagnose(diagnose);
+        rc = diagnose.Initialize(tsdf);
+        rc = diagnose.SetSpec(diagspec);
+        rc = diagnose.Run();
+        
+        declare object forecast(foreng);
+        rc = forecast.Initialize(diagnose);
+        rc = forecast.SetOption('lead', 12);
+        rc = forecast.Run();
+        
+        declare object outfor(outfor);
+        rc = outfor.Collect(forecast);
+        
+        endsubmit;
+	run;
+	
+	data &_worklib..output_fd_demand_fcst;
+		set &_worklib.._tmp_output_fd_demand_fcst;
+		if actual = .;
+	run;
 
-/* Prep Data  */
-data casuser._tmp_input_demand;
-	set cc.input_demand (
-		rename = 
-			(date=datetime)
-		where = 
-			(facility='Akron'
-			and service_line='Cardiac Services'
-			and sub_service='Cardiac Cath'
-			and med_surg_indicator='SURG'
-			and ip_op_indicator='I'));
-	date=datepart(datetime);
-run;
+	/* Dissagregate weekly forecasts into daily through a dow profile */
 
-/* proc cas; */
-/*    timeData.timeSeries / */
-/*       table={ */
-/* 		caslib="casuser",  */
-/* 		name="input_demand",  */
-/* 		groupby={"facility" "service_line" "sub_service" "med_surg_indicator" "ip_op_indicator"}}  */
-/*       series={{ */
-/* 		name="demand"  */
-/* 		acc="sum"  */
-/* 		setmiss=0}} */
-/*       timeId="date" */
-/*       tStart="Jan 1, 1998" */
-/*       tEnd="Dec 1, 2002" */
-/*       interval="day" */
-/*       sumOut="_tmp_ts_stats" */
-/*       casOut="_tmp_input_demand_ts"; */
-/*    run; */
-/* quit; */
-
-/* Forecast */
-
-proc cas;
-   timeData.forecast /
-      table={
-		caslib="casuser", 
-		name="_tmp_input_demand", 
-		groupby={"facility" "service_line" "sub_service" "med_surg_indicator" "ip_op_indicator"}} 
-      timeId={name='date'},
-      interval='day',
-/*       tStart='Jan 1, 1998', */
-/*       tEnd='Dec 1, 2002', */
-      dependents={{name='demand', accumulate='SUM'}},
-/*       predictors={{name='price', accumulate='AVG'}, */
-/*                   {name='discount', accumulate='AVG'}}, */
-      lead=10,
-      forOut={name='output_fd_demand_fcst'},
-/*       infoOut={name='infoOut'}, */
-/*       indepOut={name='indepOut={'}, */
-/*       selectOut={name='selectOut'}, */
-/*       specOut={name='specOut'} */
-	  ;
-   run;
-quit;
-
-/* Promote for visualization */
-/* proc delete data=cc.input_demand_ts; */
-/* run; */
-/* data cc.input_demand_ts (promote=yes); */
-/* 	set _tmp_out_ts; */
-/* 	dow=weekday(date); */
-/* run; */
-
-/* Get DOW profile */
-/* proc cas; */
-/* 	  aggregation.aggregate / table={caslib="cc", name="input_demand_ts",  */
-/* 	                                 groupby={"facility","service_line","sub_service","date", "dow"}} */
-/* 	                          saveGroupByFormat=false */
-/* 	                          varSpecs={{name="demand", summarySubset="sum",columnNames="demand"}} */
-/* 	                          casOut={caslib="cc",name="input_demand_agg",replace=true}; run; */
-/* quit; */
-/*  */
-/* proc delete data=cc.input_demand_dow; */
-/* run; */
-/*  */
-/* proc cas; */
-/* 	  aggregation.aggregate / table={caslib="cc", name="input_demand_agg",  */
-/* 	                                 groupby={"facility","service_line","sub_service", "dow"}} */
-/* 	                          saveGroupByFormat=false */
-/* 	                          varSpecs={{name="demand", summarySubset="mean", columnNames="meanDemand"}} */
-/* 	                          casOut={caslib="cc",name="input_demand_dow",replace=true}; run; */
-/* quit; */
-/*  */
-/* data cc.input_demand_dow(promote=yes); */
-/* 	set cc.input_demand_dow; */
-/* run; */
 
    /*************************/
    /******HOUSEKEEPING*******/
