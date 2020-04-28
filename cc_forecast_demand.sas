@@ -135,12 +135,14 @@
         endsubmit;
 	run;
 	
-	data &_worklib..output_fd_demand_fcst;
+
+	/* Dissagregate weekly forecasts into daily through a dow profile: issue #8 */
+	proc delete data=&_worklib..output_fd_demand_fcst; 
+	run;
+	data &_worklib..output_fd_demand_fcst (promote=yes);
 		set &_worklib.._tmp_output_fd_demand_fcst;
 		if actual = .;
 	run;
-
-	/* Dissagregate weekly forecasts into daily through a dow profile: issue #8 */
 
 
    /*************************/
