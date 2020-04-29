@@ -92,9 +92,10 @@
 		/* Master sets read from data */
 	 	set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES; 
 		set <str,str,str,str,str,num> FAC_SLINE_SSERV_IO_MS_DAYS;
-			
+		set <str,str,str,str> FAC_SLINE_SSERV_RES;	/*capacity file is moved to master, because it contains 'ALL' category */
+	
 		/* Derived Sets */
-		set <str,str,str,str> FAC_SLINE_SSERV_RES = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss,r>;
+/*		set <str,str,str,str> FAC_SLINE_SSERV_RES = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss,r>;*/
 		set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss>;
 		set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss,iof,msf>;
 		set <num> DAYS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <d>;
@@ -105,16 +106,12 @@
 
 	
 		num capacity{FAC_SLINE_SSERV_RES};
-
 		num utilization{FAC_SLINE_SSERV_IO_MS_RES};
-
 		num revenue{FAC_SLINE_SSERV_IO_MS};
 		num margin{FAC_SLINE_SSERV_IO_MS};
 		num losMean{FAC_SLINE_SSERV_IO_MS};
 		num numCancel{FAC_SLINE_SSERV_IO_MS};
-
 		num demand{FAC_SLINE_SSERV_IO_MS_DAYS};
-		
 		num minDay=min {d in DAYS} d;
 	
 	/* 	num losVar{FAC_SLINE_SSERV}; */
@@ -137,14 +134,14 @@
 		   	demand=predict;
 		
 		/* Capacity */
-/* 		read data &inlib..&input_capacity.  */
-/* 			into FAC_SLINE_SSERV_RES = [facility service_line sub_service resource] */
-/* 		   	capacity; */
+ 		read data &inlib..&input_capacity.  */
+ 			into FAC_SLINE_SSERV_RES = [facility service_line sub_service resource] */
+ 		   	capacity; 
 
 		/* Utilization */
-/* 		read data &inlib..&input_utilization.  */
-/* 			into FAC_SLINE_SSERV_IO_MS_RES = [facility service_line sub_service ip_op_indicator med_surg_indicator resource] */
-/* 		   	utilization=utilization_mean; */
+ 		read data &inlib..&input_utilization.  
+ 			into FAC_SLINE_SSERV_IO_MS_RES = [facility service_line sub_service ip_op_indicator med_surg_indicator resource] */
+ 		   	utilization=utilization_mean; 
 		
 		/* Financials */
 		read data &inlib..&input_financials.
@@ -172,11 +169,30 @@
 			NewPatients[f,sl,ss,iof,msf,d] <= demand[f,sl,ss,iof,msf,d]*OpenFlg[f,sl,ss];
 	
 		/* Total patients cannot exceed capacity */
-		/* Need to incorporate 'ALL' */
 		con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
+			/* if the capacity is shared across all sub-service for a facility and service-line*/
+			if (ss='ALL') then 
+				sum {<(f),(sl),ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+					NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d]
+			
+			/* if the capacity is shared across all sub-service and all service line for a facility*/
+			if (ss='ALL' and sl ='ALL') then
+				sum {<(f),sl,ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+					NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+
+			/* if the capacity is shared across all sub-service service-lines and facilities*/
+			if (ss='ALL' and sl ='ALL' and f = 'ALL') then
+			sum {<f,sl,ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+			
+			/* if the capacity is defined at a facility, service-line and sub-service level*/
+			else
 			sum {<(f),(sl),(ss),iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
-				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] <= capacity[f,sl,ss,r];
-	
+				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+
+			<= capacity[f,sl,ss,r];
+
+		/* Objective function(s) */
 		max Total_Revenue = 
 			sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
 	
