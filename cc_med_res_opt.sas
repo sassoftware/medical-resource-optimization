@@ -171,11 +171,29 @@
          NewPatients[f,sl,ss,iof,msf,d] <= max(demand[f,sl,ss,iof,msf,d],0)*OpenFlg[f,sl,ss];
    
       /* Total patients cannot exceed capacity */
-      /* Need to incorporate 'ALL' */
-      con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
-         sum {<f2,sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : 
-               (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
-            utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
+	  con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
+			/* if the capacity is shared across all sub-service for a facility and service-line*/
+			if (ss='ALL') then 
+				sum {<(f),(sl),ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+					NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d]
+			
+			/* if the capacity is shared across all sub-service and all service line for a facility*/
+			if (ss='ALL' and sl ='ALL') then
+				sum {<(f),sl,ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+					NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+
+			/* if the capacity is shared across all sub-service service-lines and facilities*/
+			if (ss='ALL' and sl ='ALL' and f = 'ALL') then
+			sum {<f,sl,ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+			
+			/* if the capacity is defined at a facility, service-line and sub-service level*/
+			else
+			sum {<(f),(sl),(ss),iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+
+			<= capacity[f,sl,ss,r];
+
    
       max Total_Revenue = 
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
@@ -184,7 +202,9 @@
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*margin[f,sl,ss,iof,msf];
 
       /******************Solve*******************************/
-expand;
+
+		/* expand; */
+
       solve obj Total_Revenue with milp;
 
       /******************Create output data*******************************/
