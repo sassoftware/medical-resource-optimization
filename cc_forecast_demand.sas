@@ -203,15 +203,28 @@
 		run;
 
 	 /* Dis-aggregate weekly forecasts into daily */
-		data &_worklib.._tmp_output_fd_demand_fcst_dly;
-			merge 
-				&_worklib.._tmp_output_fd_demand_fcst_week (in=nodes)
-				&_worklib.._tmp_input_demand_dow;
-			by facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator;
-			if nodes;
-			predict_date = put(intnx('day',date, (dow-1) ), date9.);
-			daily_predict = (predict * demand_proportion);
-		run;
+      data &_worklib.._tmp_output_fd_demand_fcst_dly;
+         set &_worklib.._tmp_output_fd_demand_fcst_week;
+         format predict_date date9.;
+
+         if _n_ = 1 then do;
+            declare hash h0(dataset:"&_worklib.._tmp_input_demand_dow", multidata:'y');
+            h0.defineKey('facility','service_line','sub_service','IP_OP_Indicator','Med_Surg_Indicator');
+            h0.defineData('dow','demand_proportion');
+            h0.defineDone();
+         end;
+
+         dow = .;
+         demand_proportion = .;
+         do rc0 = h0.find() by 0 while (rc0 = 0);
+            predict_date = intnx('day',date, (dow-1));
+            daily_predict = (predict * demand_proportion);
+            output;
+            rc0 = h0.find_next();
+         end;
+
+         drop rc0;
+      run;
 
 		data &_worklib..output_fd_demand_fcst;
 			set &_worklib.._tmp_output_fd_demand_fcst_dly;
