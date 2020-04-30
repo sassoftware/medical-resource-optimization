@@ -41,6 +41,8 @@
 		&_worklib.._tmp1_input_demand_dow 
 		&_worklib.._tmp2_input_demand_dow 
 		&_worklib.._tmp_input_demand_dow 
+		&_worklib.._tmp_input_demand_dow_mas
+		&_worklib.._tmp1_input_demand_dow_mas
         );	
 
    /* List output tables */
@@ -191,16 +193,39 @@
  	     casOut={caslib="casuser",name="_tmp2_input_demand_dow",replace=true}; run;  	
 	quit;
 
+	/* Aggregated table shows missing context in the historical data */ 
+	/* This step creates a master table - {facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator dow} */
+	data &_worklib.._tmp_input_demand_dow_mas;
+	set &_worklib.._tmp2_input_demand_dow;
+			do j=1 to 7;
+				dow = j;
+				output;
+			end;
+	keep facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator dow; 
+	run;
+
+	/* Join master table to the dow profile table - to get Sumdemand by context */	
+	/* Setting Sumdemand = 0 if the context doesn't exist in the historical data */
+	data &_worklib.._tmp1_input_demand_dow_mas;
+		merge 
+			&_worklib.._tmp_input_demand_dow_mas (in=nodes)
+			&_worklib.._tmp1_input_demand_dow;
+		by facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator dow;
+		if nodes;
+		if Sumdemand=. then Sumdemand=0;
+	run;
+	
 	/* combine two tables to compute demand proportion */	
-		data &_worklib.._tmp_input_demand_dow;
-			merge 
-				&_worklib.._tmp1_input_demand_dow (in=nodes)
-				&_worklib.._tmp2_input_demand_dow;
-			by facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator;
-			if nodes;
-			if Totaldemand = 0 or Totaldemand = . then demand_proportion = 0;
-			else demand_proportion= (Sumdemand / Totaldemand);
-		run;
+	data &_worklib.._tmp_input_demand_dow;
+		merge 
+			&_worklib.._tmp1_input_demand_dow_mas (in=nodes)
+			&_worklib.._tmp2_input_demand_dow;
+		by facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator;
+		if nodes;
+		if Totaldemand=. then Totaldemand=0;
+		if Totaldemand = 0 then demand_proportion = 0;
+		else demand_proportion= (Sumdemand / Totaldemand);
+	run;
 
 	 /* Dis-aggregate weekly forecasts into daily */
       data &_worklib.._tmp_output_fd_demand_fcst_dly;
