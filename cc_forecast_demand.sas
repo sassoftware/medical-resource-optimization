@@ -42,6 +42,7 @@
 		&_worklib.._tmp_input_demand_dow 
 		&_worklib.._tmp_input_demand_dow_mas
 		&_worklib.._tmp1_input_demand_dow_mas
+		&_worklib.._tmpstats
         );	
 
    /* List output tables */
@@ -74,11 +75,12 @@
 	
 	/* Programatticaly obtaining the first sunday and the last saturday in the input data*/
 	/* First Sunday */
-	proc means data=&_worklib.._tmp_input_demand Min noprint;
-		where dow =1;		
-	var Date;	
-	output out=&_worklib.._tmpstats(where=(_STAT_='MIN'));
-	run;
+	proc cas;
+ 	  aggregation.aggregate / table={caslib="casuser", name="_tmp_input_demand",
+		where= "dow = 1"} 
+ 	     varSpecs={{name="date", summarySubset="Min", columnNames="Date"}}
+ 	     casOut={caslib="casuser",name="_tmpstats",replace=true}; run; 
+	 quit;
 	
 	/* Save relevant statistics in macro variables */
 	data _null_;
@@ -86,25 +88,18 @@
 	   call symputx('tStart', Date);
 	run;
 
-	/* drop tmp table*/
-	proc delete data = &_worklib.._tmpstats;
-	run;
-
 	/* Last Saturday */
-	proc means data=&_worklib.._tmp_input_demand Max noprint;
-		where dow =7;		
-	var Date;	
-	output out=&_worklib.._tmpstats(where=(_STAT_='MAX'));
-	run;
-	
+	proc cas;
+ 	  aggregation.aggregate / table={caslib="casuser", name="_tmp_input_demand",
+		where= "dow = 7"} 
+ 	     varSpecs={{name="date", summarySubset="Max", columnNames="Date"}} 
+ 	     casOut={caslib="casuser",name="_tmpstats",replace=true}; run; 
+	quit;
+
 	/* Save relevant statistics in macro variables */
 	data _null_;
 	   set &_worklib.._tmpstats;
 	   call symputx('tEnd', Date);
-	run;
-
-	/* drop tmp table*/
-	proc delete data = &_worklib.._tmpstats;
 	run;
 
 	proc cas;
