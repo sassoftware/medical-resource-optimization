@@ -28,8 +28,8 @@
    %put TRACE: Entering &sysmacroname. with SYSCC=&SYSCC.;
 
    /* Check missing inputs */
-   %if %sysfunc(exist(&_worklib..output_fd_demand_fcst ))=0 %then %do;
-      %put FATAL: Missing &_worklib..output_fd_demand_fcst, exiting from &sysmacroname.;
+   %if %sysfunc(exist(&outlib..output_fd_demand_fcst))=0 %then %do;
+      %put FATAL: Missing &outlib..output_fd_demand_fcst, exiting from &sysmacroname.;
       %goto EXIT;
    %end;     
 
@@ -133,7 +133,7 @@
       /* Read data from SAS data sets */ 
    
       /* Demand Forecast*/
-      read data &_worklib..output_fd_demand_fcst 
+      read data &outlib..output_fd_demand_fcst 
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
@@ -220,11 +220,11 @@
    
    quit;
 
-	data &outlib..output_opt_detail;
+	data &outlib..output_opt_detail (promote=yes);
 		set &_worklib.._opt_detail;
 	run;
 	
-	data &outlib..output_opt_summary;
+	data &outlib..output_opt_summary (promote=yes);
 		set &_worklib.._opt_summary;
 	run;
 
