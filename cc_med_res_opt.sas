@@ -33,28 +33,28 @@
       %goto EXIT;
    %end;     
 
-   %if %sysfunc(exist(&inlib..&input_utilization.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_utilization., from &sysmacroname.;
+   %if %sysfunc(exist(&_worklib..input_utilization_pp))=0 %then %do;
+      %put FATAL: Missing &_worklib..input_utilization_pp, from &sysmacroname.;
       %goto EXIT;
    %end; 
 
-   %if %sysfunc(exist(&inlib..&input_capacity.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_capacity., from &sysmacroname.;
+   %if %sysfunc(exist(&_worklib..input_capacity_pp))=0 %then %do;
+      %put FATAL: Missing &_worklib..input_capacity_pp, from &sysmacroname.;
       %goto EXIT;
    %end; 
 
-   %if %sysfunc(exist(&inlib..&input_financials.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_financials., from &sysmacroname.;
+   %if %sysfunc(exist(&_worklib..input_financials_pp))=0 %then %do;
+      %put FATAL: Missing &_worklib..input_financials_pp, from &sysmacroname.;
       %goto EXIT;
    %end; 
 
-   %if %sysfunc(exist(&inlib..&input_service_attributes.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_service_attributes., from &sysmacroname.;
+   %if %sysfunc(exist(&_worklib..input_service_attributes_pp))=0 %then %do;
+      %put FATAL: Missing &_worklib..input_service_attributes_pp))=, from &sysmacroname.;
       %goto EXIT;
    %end; 
 
-   %if %sysfunc(exist(&inlib..&input_opt_parameters.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_opt_parameters., from &sysmacroname.;
+   %if %sysfunc(exist(&_worklib..input_opt_parameters_pp))=0 %then %do;
+      %put FATAL: Missing &_worklib..input_opt_parameters_pp, from &sysmacroname.;
       %goto EXIT;
    %end; 
 
@@ -68,13 +68,12 @@
          );
 */
 
-   /* List output tables 
+/*    List output tables  */
    %let output_tables=%str(         
-         &_worklib..output_dp_od_adj
-       &_worklib..output_dp_od_adj_und
-         &_worklib..output_dp_loc_cases
+       &outlib..output_opt_detail
+       &outlib..output_opt_summary
          );
-*/
+
 
    /* Delete output data if already exists 
    proc delete data= &output_tables.;
@@ -139,23 +138,23 @@
             demand=daily_predict;
 
       /* Capacity */
-      read data &inlib..&input_capacity. 
+      read data &_worklib..input_capacity_pp
          into FAC_SLINE_SSERV_RES = [facility service_line sub_service resource]
             capacity;
 
       /* Utilization */
-      read data &inlib..&input_utilization.
+      read data &_worklib..input_utilization_pp
          into FAC_SLINE_SSERV_IO_MS_RES = [facility service_line sub_service ip_op_indicator med_surg_indicator resource]
             utilization=utilization_mean;
 
       /* Financials */
-      read data &inlib..&input_financials.
+      read data &_worklib..input_financials_pp
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             revenue 
             margin;
       
       /* Service attributes */
-      read data &inlib..&input_service_attributes.
+      read data &_worklib..input_service_attributes_pp
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             numCancel=num_cancelled
             losMean=length_stay_mean;
@@ -174,23 +173,23 @@
 	  con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
 			/* if the capacity is shared across all sub-service for a facility and service-line*/
 			if (ss='ALL') then 
-				sum {<(f),(sl),ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
-					NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d]
+				sum {<(f),(sl),(ss),iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+					utilization[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d]
 			
 			/* if the capacity is shared across all sub-service and all service line for a facility*/
-			if (ss='ALL' and sl ='ALL') then
-				sum {<(f),sl,ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
-					NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+			else if (ss='ALL' and sl ='ALL') then
+				sum {<(f),(sl),(ss),iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+					utilization[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
 
 			/* if the capacity is shared across all sub-service service-lines and facilities*/
-			if (ss='ALL' and sl ='ALL' and f = 'ALL') then
-			sum {<f,sl,ss,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
-				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+			else if (ss='ALL' and sl ='ALL' and f = 'ALL') then
+			sum {<(f),(sl),(ss),iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
+				utilization[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
 			
 			/* if the capacity is defined at a facility, service-line and sub-service level*/
-			else
+			else 
 			sum {<(f),(sl),(ss),iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES} 
-				NumResPerPatientDay[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
+				utilization[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d] 
 
 			<= capacity[f,sl,ss,r];
 
@@ -203,18 +202,18 @@
 
       /******************Solve*******************************/
 
-		/* expand; */
+		expand;
 
       solve obj Total_Revenue with milp;
 
       /******************Create output data*******************************/
 
-      create data output_opt_detail
+      create data &outlib..output_opt_detail
          from [facility service_line sub_service ip_op_indicator med_surg_indicator day]=FAC_SLINE_SSERV_IO_MS_DAYS 
          NewPatients
          TotalPatients;
 
-      create data output_opt_summary
+      create data &outlib..output_opt_summary
          from [facility service_line sub_service]=FAC_SLINE_SSERV
          OpenFlg;
 

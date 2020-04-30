@@ -57,41 +57,62 @@
       %put FATAL: Missing &inlib..&input_opt_parameters., from &sysmacroname.;
       %goto EXIT;
    %end; 
-  
-   /* Delete tables that we're going to create and persist */
-   proc datasets nolist lib=&inlib;
-      delete &input_utilization._pp
-             &input_capacity._pp
-             &input_financials._pp
-             &input_service_attributes._pp
-             &input_demand._pp
-             &input_opt_parameters._pp;
-   quit;
 
-   proc datasets nolist lib=&_worklib;
-      delete _missing_values_utilization
-             _missing_values_capacity
-             _missing_values_financials
-             _missing_values_service_attrs
-             _missing_values_demand
-             _missing_values_opt_parameters
-             _duplicate_rows_utilization
-             _duplicate_rows_capacity
-             _duplicate_rows_financials
-             _duplicate_rows_service_attrs
-             _duplicate_rows_demand
-             _duplicate_rows_opt_parameters
-             _dropped_rows_utilization
-             _dropped_rows_capacity
-             _dropped_rows_financials
-             _dropped_rows_service_attributes
-             _dropped_rows_demand
-             _dropped_rows_opt_parameters;
-   quit;
+   /* List work tables */
+   %let _work_tables=%str(  
+			  &_worklib.._missing_values_utilization
+              &_worklib.._missing_values_capacity
+              &_worklib.._missing_values_financials
+              &_worklib.._missing_values_service_attrs
+              &_worklib.._missing_values_demand
+              &_worklib.._missing_values_opt_parameters
+              &_worklib.._duplicate_rows_utilization
+              &_worklib.._duplicate_rows_capacity
+              &_worklib.._duplicate_rows_financials
+              &_worklib.._duplicate_rows_service_attrs
+              &_worklib.._duplicate_rows_demand
+              &_worklib.._duplicate_rows_opt_parameters
+              &_worklib.._dropped_rows_utilization
+              &_worklib.._dropped_rows_capacity
+              &_worklib.._dropped_rows_financials
+              &_worklib.._dropped_rows_service_attributes
+              &_worklib.._dropped_rows_demand
+              &_worklib.._dropped_rows_opt_parameters;
+        );	
+
+	  /* List output tables */
+	   %let output_tables=%str(         
+	         &_worklib..input_utilization_pp
+             &_worklib..input_capacity_pp
+             &_worklib..input_financials_pp
+             &_worklib..input_service_attributes_pp
+             &_worklib..input_demand_pp
+             &_worklib..input_opt_parameters_pp;
+	         );
+
+	 /*Delete output data if already exists */
+		proc delete data= &output_tables.;
+		run;
+	
+	 /* Delete work data if already exists */
+		proc delete data= &_work_tables.;
+		run;
+  
+	/************************************/
+	/************ANALYTICS *************/
+	/***********************************/
+	
+	/* For debugging purposes */
+/* 		%let input_utilization=input_utilization; */
+/* 		%let input_capacity=input_capacity; */
+/* 		%let input_financials=input_financials; */
+/* 		%let input_service_attributes=input_service_attributes; */
+/*         %let input_demand=input_demand; */
+/*         %let input_opt_parameters=input_opt_parameters; */
 
    /* Check each table for missing values and duplicate rows. Write these to separate output tables 
       to be used for error handling. */
-   data &inlib..&input_utilization._pp
+   data &_worklib..input_utilization_pp
         &_worklib.._missing_values_utilization
         &_worklib.._duplicate_rows_utilization;
       set &inlib..&input_utilization;
@@ -99,11 +120,11 @@
       if facility = '' or service_line = '' or sub_service = '' 
          or ip_op_indicator = '' or med_surg_indicator = '' or resource = '' or utilization_mean = .
          then output &_worklib.._missing_values_utilization;
-      else if first.resource then output &inlib..&input_utilization._pp;
+      else if first.resource then output &_worklib..input_utilization_pp;
       else output  &_worklib.._duplicate_rows_utilization;
    run;
 
-   data &inlib..&input_capacity._pp
+   data &_worklib..input_capacity_pp
         &_worklib.._missing_values_capacity
         &_worklib.._duplicate_rows_capacity;
       set &inlib..&input_capacity;
@@ -111,11 +132,11 @@
       if facility = '' or service_line = '' or sub_service = '' 
          or resource = '' or capacity = .
          then output &_worklib.._missing_values_capacity;
-      else if first.resource then output &inlib..&input_capacity._pp;
+      else if first.resource then output &_worklib..input_capacity_pp;
       else output &_worklib.._duplicate_rows_capacity;
    run;
    
-   data &inlib..&input_financials._pp
+   data &_worklib..input_financials_pp
         &_worklib.._missing_values_financials
         &_worklib.._duplicate_rows_financials;
       set &inlib..&input_financials;
@@ -123,11 +144,11 @@
       if facility = '' or service_line = '' or sub_service = '' 
          or ip_op_indicator = '' or med_surg_indicator = '' or revenue = . or margin = .
          then output &_worklib.._missing_values_financials;
-      else if first.med_surg_indicator then output &inlib..&input_financials._pp;
+      else if first.med_surg_indicator then output &_worklib..input_financials_pp;
       else output &_worklib.._duplicate_rows_financials;
    run;
       
-   data &inlib..&input_service_attributes._pp
+   data &_worklib..input_service_attributes_pp
         &_worklib.._missing_values_service_attrs
         &_worklib.._duplicate_rows_service_attrs;
       set &inlib..&input_service_attributes;
@@ -135,11 +156,11 @@
       if facility = '' or service_line = '' or sub_service = '' 
          or ip_op_indicator = '' or med_surg_indicator = '' or num_cancelled = . or length_stay_mean = .
          then output &_worklib.._missing_values_service_attrs;
-      else if first.med_surg_indicator then output &inlib..&input_service_attributes._pp;
+      else if first.med_surg_indicator then output &_worklib..input_service_attributes_pp;
       else output &_worklib.._duplicate_rows_service_attrs;
    run;
 
-   data &inlib..&input_demand._pp
+   data &_worklib..input_demand_pp
         &_worklib.._missing_values_demand
         &_worklib.._duplicate_rows_demand;
       set &inlib..&input_demand;
@@ -147,18 +168,18 @@
       if facility = '' or service_line = '' or sub_service = '' 
          or ip_op_indicator = '' or med_surg_indicator = '' or date = . or demand = .
          then output &_worklib.._missing_values_demand;
-      else if first.date then output &inlib..&input_demand._pp;
+      else if first.date then output &_worklib..input_demand_pp;
       else output &_worklib.._duplicate_rows_demand;
    run;
 
-   data &inlib..&input_opt_parameters._pp
+   data &_worklib..input_opt_parameters_pp
         &_worklib.._missing_values_opt_parameters
         &_worklib.._duplicate_rows_opt_parameters;
       set &inlib..&input_opt_parameters;
       by facility service_line sub_service parm_name;
       if facility = '' or service_line = '' or sub_service = '' or parm_name = ''
          then output &_worklib.._missing_values_opt_parameters;
-      else if first.parm_name then output &inlib..&input_opt_parameters._pp;
+      else if first.parm_name then output &_worklib..input_opt_parameters_pp;
       else output &_worklib.._duplicate_rows_opt_parameters;
    run;   
       
@@ -171,19 +192,19 @@
       are NOT included in the utilization or capacity tables.*/
 
    data &_worklib..sets_complete_financials;
-      set &inlib..&input_financials._pp;
+      set &_worklib..input_financials_pp;
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       if first.med_surg_indicator then output;
    run;
 
    data &_worklib..sets_complete_service_attributes;
-      set &inlib..&input_service_attributes._pp;
+      set &_worklib..input_service_attributes_pp;
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       if first.med_surg_indicator then output;
    run;
 
    data &_worklib..sets_complete_demand;
-      set &inlib..&input_demand._pp;
+      set &_worklib..input_demand_pp;
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       if first.med_surg_indicator then output;
    run;
@@ -204,58 +225,58 @@
    quit;
 
    /* Remove the rows from each table that are not in the master set union */
-   data &inlib..&input_utilization._pp
+   data &_worklib..input_utilization_pp
         &_worklib.._dropped_rows_utilization;
-      set &inlib..&input_utilization._pp;
+      set &_worklib..input_utilization_pp;
       if _n_ = 1 then do;
          declare hash h0(dataset:"&_worklib..master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
       rc0 = h0.find();
-      if rc0 = 0 then output &inlib..&input_utilization._pp;
+      if rc0 = 0 then output &_worklib..input_utilization_pp;
       else output &_worklib.._dropped_rows_utilization;
       drop rc0;
    run;
    
-   data &inlib..&input_financials._pp
+   data &_worklib..input_financials_pp
         &_worklib.._dropped_rows_financials;
-      set &inlib..&input_financials._pp;
+      set &_worklib..input_financials_pp;
       if _n_ = 1 then do;
          declare hash h0(dataset:"&_worklib..master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
       rc0 = h0.find();
-      if rc0 = 0 then output &inlib..&input_financials._pp;
+      if rc0 = 0 then output &_worklib..input_financials_pp;
       else output &_worklib.._dropped_rows_financials;
       drop rc0;
    run;
 
-   data &inlib..&input_service_attributes._pp
+   data &_worklib..input_service_attributes_pp
         &_worklib.._dropped_rows_service_attributes;
-      set &inlib..&input_service_attributes._pp;
+      set &_worklib..input_service_attributes_pp;
       if _n_ = 1 then do;
          declare hash h0(dataset:"&_worklib..master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
       rc0 = h0.find();
-      if rc0 = 0 then output &inlib..&input_service_attributes._pp;
+      if rc0 = 0 then output &_worklib..input_service_attributes_pp;
       else output &_worklib.._dropped_rows_service_attributes;
       drop rc0;
    run;
 
-   data &inlib..&input_demand._pp
+   data &_worklib..input_demand_pp
         &_worklib.._dropped_rows_demand;
-      set &inlib..&input_demand._pp;
+      set &_worklib..input_demand_pp;
       if _n_ = 1 then do;
          declare hash h0(dataset:"&_worklib..master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
       rc0 = h0.find();
-      if rc0 = 0 then output &inlib..&input_demand._pp;
+      if rc0 = 0 then output &_worklib..input_demand_pp;
       else output &_worklib.._dropped_rows_demand;
       drop rc0;
    run;
@@ -263,14 +284,14 @@
    /* Remove the rows from &input_capacity that do not correspond to any facility/service_line/sub_service/resource
       remaining in utilization, but keep the rows that have ALL for any of the fields */
    data &_worklib..utilization_resources;
-      set &inlib..&input_utilization._pp;
+      set &_worklib..input_utilization_pp;
       by facility service_line sub_service resource;
       if first.resource;
    run;
    
-   data &inlib..&input_capacity._pp
+   data &_worklib..input_capacity_pp
         &_worklib.._dropped_rows_capacity;
-      set &inlib..&input_capacity._pp;
+      set &_worklib..input_capacity_pp;
       if _n_ = 1 then do;
          declare hash h0(dataset:"&_worklib..utilization_resources");
          h0.defineKey('facility','service_line','sub_service','resource');
@@ -278,7 +299,7 @@
       end;
       rc0 = h0.find();
       if rc0 = 0 or upcase(facility)='ALL' or upcase(service_line)='ALL' or upcase(sub_service='ALL')
-         or upcase(resource)='ALL' then output &inlib..&input_capacity._pp;
+         or upcase(resource)='ALL' then output &_worklib..input_capacity_pp;
       else output &_worklib.._dropped_rows_capacity;
       drop rc0;
    run;
@@ -295,9 +316,9 @@
       if first.sub_service;
    run;
    
-   data &inlib..&input_opt_parameters._pp
+   data &_worklib..input_opt_parameters_pp
         &_worklib.._dropped_rows_opt_parameters;
-      set &inlib..&input_opt_parameters._pp;
+      set &_worklib..input_opt_parameters_pp;
       if _n_ = 1 then do;
          declare hash h0(dataset:"&_worklib..master_sets_union");
          h0.defineKey('facility','service_line','sub_service');
@@ -305,7 +326,7 @@
       end;
       rc0 = h0.find();
       if rc0 = 0 or upcase(facility)='ALL' or upcase(service_line)='ALL' or upcase(sub_service)='ALL'
-         then output &inlib..&input_opt_parameters._pp;
+         then output &_worklib..input_opt_parameters_pp;
       else output &_worklib.._dropped_rows_opt_parameters;
       drop rc0;
    run;
@@ -330,6 +351,15 @@
       proc datasets nolist lib=&_worklib;
          delete &table_drop_list;
       quit;
+   %end;
+
+   /*************************/
+   /******HOUSEKEEPING*******/
+   /*************************/
+
+   %if &_debug.=0  %then %do;
+	proc delete data= &_work_tables.;
+	run;
    %end;
 
    %EXIT:

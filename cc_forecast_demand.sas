@@ -7,7 +7,6 @@
 %macro cc_forecast_demand(
 	inlib=cc
 	,outlib=cc
-	,input_demand =input_demand
 	,_worklib=casuser
 	,_debug=1
 	);
@@ -25,8 +24,8 @@
 
 	/* Check missing inputs */
 
-   %if %sysfunc(exist(&inlib..&input_demand.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_demand., from &sysmacroname.;
+   %if %sysfunc(exist(&_worklib..input_demand_pp))=0 %then %do;
+      %put FATAL: Missing &_worklib..input_demand_pp, from &sysmacroname.;
       %goto EXIT;
    %end; 
 
@@ -47,7 +46,7 @@
 
    /* List output tables */
    %let output_tables=%str(         
-         &_worklib..output_fd_demand_fcst
+         &outlib..output_fd_demand_fcst
          );
 
  /*Delete output data if already exists */
@@ -64,11 +63,11 @@
 	/***********************************/
 	
 	/* For debugging purposes */
-		%let _worklib=casuser;
+/* 		%let _worklib=casuser; */
 	
 	/* Prep Data  - Temporary, remove when data has been fixed*/
 	data &_worklib.._tmp_input_demand;
-		set &inlib..&input_demand. (rename = (date=datetime));
+		set &_worklib..input_demand_pp (rename = (date=datetime));
 		date=datepart(datetime);
 		dow= weekday(date); 
 	run;
@@ -251,7 +250,7 @@
          drop rc0;
       run;
 
-		data &_worklib..output_fd_demand_fcst;
+		data &outlib..output_fd_demand_fcst (promote=yes);
 			set &_worklib.._tmp_output_fd_demand_fcst_dly;
 		run;
 
