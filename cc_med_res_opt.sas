@@ -208,17 +208,25 @@
 
       /******************Create output data*******************************/
 
-      create data &outlib..output_opt_detail
+      create data &_worklib.._opt_detail
          from [facility service_line sub_service ip_op_indicator med_surg_indicator day]=FAC_SLINE_SSERV_IO_MS_DAYS 
          NewPatients
          TotalPatients;
 
-      create data &outlib..output_opt_summary
+      create data &_worklib.._opt_summary
          from [facility service_line sub_service]=FAC_SLINE_SSERV
          OpenFlg;
 
    
    quit;
+
+	data &outlib..output_opt_detail;
+		set &_worklib.._opt_detail;
+	run;
+	
+	data &outlib..output_opt_summary;
+		set &_worklib.._opt_summary;
+	run;
 
    /*************************/
    /******HOUSEKEEPING*******/
