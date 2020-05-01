@@ -12,6 +12,7 @@
                    ,input_service_attributes=input_service_attributes
                    ,input_demand=input_demand
                    ,input_opt_parameters=input_opt_parameters
+				   ,output_dp_exceptions=output_dp_exceptions
                    ,_worklib=casuser
                    ,_debug=1
                    );
@@ -90,7 +91,7 @@
              &_worklib..input_service_attributes_pp
              &_worklib..input_demand_pp
              &_worklib..input_opt_parameters_pp
-             &outlib..output_dp_exceptions
+             &outlib..&output_dp_exceptions
              );
 
    /*Delete output data if already exists */
@@ -495,7 +496,7 @@
       else if drop1 or drop2 or drop3 or drop4 or drop5 or drop6 then mismatch_hierarchy = 1;
    run;
 
-   data &outlib..output_dp_exceptions;
+   data &outlib..&output_dp_exceptions;
       retain table reason invalid_flag duplicate_flag mismatch_flag;
       format reason $128.;
       set &_worklib..data_exceptions;

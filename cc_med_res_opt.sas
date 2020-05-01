@@ -12,6 +12,8 @@
    ,input_financials=input_financials
    ,input_service_attributes=input_service_attributes
    ,input_opt_parameters=input_opt_parameters
+   ,output_opt_detail=output_opt_detail
+   ,output_opt_summary=output_opt_summary
    ,_worklib=casuser
    ,_debug=1
    );
@@ -70,8 +72,8 @@
 
 /*    List output tables  */
    %let output_tables=%str(         
-       &outlib..output_opt_detail
-       &outlib..output_opt_summary
+       &outlib..&output_opt_detail
+       &outlib..&output_opt_summary
          );
 
 
@@ -201,11 +203,11 @@
    
    quit;
 
-   data &outlib..output_opt_detail (promote=yes);
+   data &outlib..&output_opt_detail (promote=yes);
       set &_worklib.._opt_detail;
    run;
     
-   data &outlib..output_opt_summary (promote=yes);
+   data &outlib..&output_opt_summary (promote=yes);
       set &_worklib.._opt_summary;
    run;
 

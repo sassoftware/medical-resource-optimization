@@ -7,6 +7,8 @@
 %macro cc_forecast_demand(
 	inlib=cc
 	,outlib=cc
+	,input_demand =input_demand_pp
+	,output_fd_demand_fcst=output_fd_demand_fcst
 	,_worklib=casuser
 	,_debug=1
 	);
@@ -47,7 +49,7 @@
 
    /* List output tables */
    %let output_tables=%str(         
-         &outlib..output_fd_demand_fcst
+         &outlib..&output_fd_demand_fcst
          );
 
  /*Delete output data if already exists */
@@ -245,7 +247,7 @@
          drop rc0;
       run;
 
-		data &outlib..output_fd_demand_fcst (promote=yes);
+		data &outlib..&output_fd_demand_fcst (promote=yes);
 			set &_worklib.._tmp_output_fd_demand_fcst_dly;
 		run;
 
