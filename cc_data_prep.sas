@@ -479,7 +479,7 @@
           &_worklib.._dropped_rows_demand (in=drop5 keep=&keep_list_full)
           &_worklib.._dropped_rows_opt_parameters (in=drop6 keep=&keep_list_short);
           
-      if invalid1 or dup1 or drop1 then table = 'UTILIZATION';
+      if invalid1 or dup1 or drop1 then table = 'INPUT_UTILIZATION';
       else if invalid2 or dup2 or drop2 then table = 'INPUT_CAPACITY';
       else if invalid3 or dup3 or drop3 then table = 'INPUT_FINANCIALS';
       else if invalid4 or dup4 or drop4 then table = 'INPUT_SERVICE_ATTRIBUTES';
