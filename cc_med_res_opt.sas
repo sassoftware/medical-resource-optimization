@@ -96,6 +96,7 @@
       set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES; 
       set <str,str,str,str,str,num> FAC_SLINE_SSERV_IO_MS_DAYS;
       set <str,str,str,str> FAC_SLINE_SSERV_RES;
+	  set <str,str,str,str,str,str> PARAMS_SET;
          
       /* Derived Sets */
       set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
@@ -118,7 +119,16 @@
       num demand{FAC_SLINE_SSERV_IO_MS_DAYS};
       
       num minDay=min {d in DAYS} d;
-   
+
+
+/* 	  num parmValue{PARAMS_SET}; */
+/* 	  num totalDailyRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','RAPID_TESTS_PHASE_1']; */
+/* 	  num totalDailyNonRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','NOT_RAPID_TESTS_PHASE_1']; */
+/* 	  num daysTestBeforeAdmSurg=paramValue['ALL','ALL','ALL','ALL','SURG','TEST_DAYS_BA']; */
+	  num totalDailyRapidTests=300;
+	  num totalDailyNonRapidTests=1200;
+	  num daysTestBeforeAdmSurg=2;
+  
    /*    num losVar{FAC_SLINE_SSERV}; */
    /*    num visitorsMean{FAC_SLINE_SSERV}; */
    /*    num visitorsVar{FAC_SLINE_SSERV}; */
@@ -159,6 +169,11 @@
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             numCancel=num_cancelled
             losMean=length_stay_mean;
+
+      /* Parameters */
+/*       read data &_worklib..input_opt_parameters_pp */
+/*          into PARAMS_SET = [facility service_line sub_service ip_op_indicator med_surg_indicator parm_name] */
+/*             parmValue=parm_value; */
    
       /******************Model variables, constraints, objective function*******************************/
    
@@ -179,6 +194,16 @@
                (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
 
+	  expand Resources_Capacity;
+
+	  con COVID19_Day_Of_Admission_Testing{d in DAYS}:
+		  sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
+			TotalPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests + totalDailyNonRapidTests;
+
+	  con COVID19_Before_Admission_Testing{d in DAYS}:
+		  sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d-daysTestBeforeAdmSurg and d1 in DAYS} 
+			TotalPatients[f,sl,ss,iof,msf,d]  <=  totalDailyNonRapidTests;
+	
       max Total_Revenue = 
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
    
@@ -191,10 +216,18 @@
 
       /******************Create output data*******************************/
 
+	  num OptRevenue{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} = 
+		NewPatients[f,sl,ss,iof,msf,d].sol*revenue[f,sl,ss,iof,msf];
+
+	  num OptMargin{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} = 
+		NewPatients[f,sl,ss,iof,msf,d].sol*margin[f,sl,ss,iof,msf];
+
       create data &_worklib.._opt_detail
          from [facility service_line sub_service ip_op_indicator med_surg_indicator day]=FAC_SLINE_SSERV_IO_MS_DAYS 
          NewPatients
-         TotalPatients;
+         TotalPatients
+		 OptRevenue
+		 OptMargin;
 
       create data &_worklib.._opt_summary
          from [facility service_line sub_service]=FAC_SLINE_SSERV
