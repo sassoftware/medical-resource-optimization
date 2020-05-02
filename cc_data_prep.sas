@@ -12,7 +12,7 @@
                    ,input_service_attributes=input_service_attributes
                    ,input_demand=input_demand
                    ,input_opt_parameters=input_opt_parameters
-				   ,output_dp_exceptions=output_dp_exceptions
+                   ,output_dp_exceptions=output_dp_exceptions
                    ,_worklib=casuser
                    ,_debug=1
                    );
@@ -79,6 +79,17 @@
               &_worklib.._dropped_rows_service_attributes
               &_worklib.._dropped_rows_demand
               &_worklib.._dropped_rows_opt_parameters
+              &_worklib.._hierarchy_utilization
+              &_worklib.._hierarchy_capacity
+              &_worklib.._hierarchy_financials
+              &_worklib.._hierarchy_service_attributes
+              &_worklib.._hierarchy_demand
+              &_worklib.._hierarchy_opt_parameters
+              &_worklib..sets_complete_financials
+              &_worklib..sets_complete_service_attributes
+              &_worklib..sets_complete_demand
+              &_worklib..master_sets_union
+              &_worklib..utilization_resources
               &_worklib..data_exceptions
               work.inlib_contents
               );
@@ -95,12 +106,28 @@
              );
 
    /*Delete output data if already exists */
-   proc delete data= &output_tables.;
-   run;
+   %let i = 1;
+   %let table = %scan(&output_tables, &i, ' ');
+   %do %while (&table ne %str());
+      %if %sysfunc(exist(&table)) %then %do;
+         proc delete data= &table.;
+         run;
+      %end;
+      %let i = %eval(&i + 1);
+      %let table = %scan(&output_tables, &i, ' ');
+   %end;
 
    /* Delete work data if already exists */
-   proc delete data= &_work_tables.;
-   run;
+   %let i = 1;
+   %let table = %scan(&_work_tables, &i, ' ');
+   %do %while (&table ne %str());
+      %if %sysfunc(exist(&table)) %then %do;
+         proc delete data= &table.;
+         run;
+      %end;
+      %let i = %eval(&i + 1);
+      %let table = %scan(&_work_tables, &i, ' ');
+   %end;
   
    /************************************/
    /************ANALYTICS *************/
@@ -147,7 +174,8 @@
       to be used for error handling. */
    data &_worklib..input_utilization_pp
         &_worklib.._invalid_values_utilization
-        &_worklib.._duplicate_rows_utilization;
+        &_worklib.._duplicate_rows_utilization
+        &_worklib.._hierarchy_utilization;
       format facility $&facility_len..;
       format service_line $&service_line_len..;
       format sub_service $&sub_service_len..;
@@ -169,14 +197,18 @@
             or resource = '' or upcase(resource) = 'ALL'
             or utilization_mean = . or utilization_mean < 0
             then output &_worklib.._invalid_values_utilization;
-         else output &_worklib..input_utilization_pp;
+         else do;
+            output &_worklib..input_utilization_pp;
+            output &_worklib.._hierarchy_utilization;
+         end;
       end;
       else output  &_worklib.._duplicate_rows_utilization;
    run;
 
    data &_worklib..input_capacity_pp
         &_worklib.._invalid_values_capacity
-        &_worklib.._duplicate_rows_capacity;
+        &_worklib.._duplicate_rows_capacity
+        &_worklib.._hierarchy_capacity;
       format facility $&facility_len..;
       format service_line $&service_line_len..;
       format sub_service $&sub_service_len..;
@@ -193,14 +225,18 @@
             or resource = '' or upcase(resource)='ALL'
             or capacity = . or capacity < 0
             then output &_worklib.._invalid_values_capacity;
-         else output &_worklib..input_capacity_pp;
+         else do;
+            output &_worklib..input_capacity_pp;
+            output &_worklib.._hierarchy_capacity;
+         end;
       end;
       else output &_worklib.._duplicate_rows_capacity;
    run;
    
    data &_worklib..input_financials_pp
         &_worklib.._invalid_values_financials
-        &_worklib.._duplicate_rows_financials;
+        &_worklib.._duplicate_rows_financials
+        &_worklib.._hierarchy_financials;
       format facility $&facility_len..;
       format service_line $&service_line_len..;
       format sub_service $&sub_service_len..;
@@ -220,14 +256,18 @@
             or med_surg_indicator not in ('MED','SURG')
             or revenue = . or margin = .
             then output &_worklib.._invalid_values_financials;
-         else output &_worklib..input_financials_pp;
+         else do;
+            output &_worklib..input_financials_pp;
+            output &_worklib.._hierarchy_financials;
+         end;
       end;
       else output &_worklib.._duplicate_rows_financials;
    run;
       
    data &_worklib..input_service_attributes_pp
         &_worklib.._invalid_values_service_attrs
-        &_worklib.._duplicate_rows_service_attrs;
+        &_worklib.._duplicate_rows_service_attrs
+        &_worklib.._hierarchy_service_attributes;
       format facility $&facility_len..;
       format service_line $&service_line_len..;
       format sub_service $&sub_service_len..;
@@ -248,14 +288,18 @@
             or num_cancelled = . or num_cancelled < 0
             or length_stay_mean = . or length_stay_mean < 0
             then output &_worklib.._invalid_values_service_attrs;
-         else output &_worklib..input_service_attributes_pp;
+         else do;
+            output &_worklib..input_service_attributes_pp;
+            output &_worklib.._hierarchy_service_attributes;
+         end;
       end;
       else output &_worklib.._duplicate_rows_service_attrs;
    run;
 
    data &_worklib..input_demand_pp
         &_worklib.._invalid_values_demand
-        &_worklib.._duplicate_rows_demand;
+        &_worklib.._duplicate_rows_demand
+        &_worklib.._hierarchy_demand;
       format facility $&facility_len..;
       format service_line $&service_line_len..;
       format sub_service $&sub_service_len..;
@@ -276,14 +320,18 @@
             or date = . or date < 0
             or demand = . or demand < 0
             then output &_worklib.._invalid_values_demand;
-         else output &_worklib..input_demand_pp;
+         else do;
+            output &_worklib..input_demand_pp;
+            if first.med_surg_indicator then output &_worklib.._hierarchy_demand;
+         end;
       end;
       else output &_worklib.._duplicate_rows_demand;
    run;
 
    data &_worklib..input_opt_parameters_pp
         &_worklib.._invalid_values_opt_parameters
-        &_worklib.._duplicate_rows_opt_parameters;
+        &_worklib.._duplicate_rows_opt_parameters
+        &_worklib.._hierarchy_opt_parameters;
       format facility $&facility_len..;
       format service_line $&service_line_len..;
       format sub_service $&sub_service_len..;
@@ -297,7 +345,10 @@
       if first.parm_name then do;
          if facility = '' or service_line = '' or sub_service = '' or parm_name = ''
             then output &_worklib.._invalid_values_opt_parameters;
-         else output &_worklib..input_opt_parameters_pp;
+         else do;
+            output &_worklib..input_opt_parameters_pp;
+            if first.sub_service then output &_worklib.._hierarchy_opt_parameters;
+         end;
       end;
       else output &_worklib.._duplicate_rows_opt_parameters;
    run;   
@@ -337,12 +388,6 @@
       if in_financials and in_service_attributes and in_demand then output;
    run;
    
-   proc datasets nolist lib=&_worklib;
-      delete sets_complete_financials
-             sets_complete_service_attributes
-             sets_complete_demand;
-   quit;
-
    /* Remove the rows from each table that are not in the master set union */
    data &_worklib..input_utilization_pp
         &_worklib.._dropped_rows_utilization;
@@ -423,10 +468,6 @@
       drop rc0;
    run;
 
-   proc datasets nolist lib=&_worklib;
-      delete utilization_resources;
-   quit;
-
    /* Remove the rows from &input_opt_parameters that do not correspond to any facility/service_line/sub_service
       remaining in master_sets_union, but keep the rows that have ALL for any of the fields */
    data &_worklib..master_sets_union;
@@ -450,10 +491,6 @@
       drop rc0;
    run;
 
-   proc datasets nolist lib=&_worklib;
-      delete master_sets_union;
-   quit;
-   
    %let keep_list_full = facility service_line sub_service ip_op_indicator med_surg_indicator;
    %let keep_list_short = facility service_line sub_service;
    
@@ -501,6 +538,31 @@
       format reason $128.;
       set &_worklib..data_exceptions;
       by table &keep_list_full resource;
+      if _n_ = 1 then do;
+         declare hash h0(dataset:"&_worklib.._hierarchy_financials");
+         h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
+         h0.defineDone();
+
+         declare hash h1(dataset:"&_worklib.._hierarchy_service_attributes");
+         h1.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
+         h1.defineDone();
+         
+         declare hash h2(dataset:"&_worklib.._hierarchy_demand");
+         h2.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
+         h2.defineDone();
+
+         declare hash h3(dataset:"&_worklib.._hierarchy_utilization");
+         h3.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator','resource');
+         h3.defineDone();
+
+         declare hash h4(dataset:"&_worklib.._hierarchy_capacity");
+         h4.defineKey('facility','service_line','sub_service','resource');
+         h4.defineDone();
+         
+         declare hash h5(dataset:"&_worklib.._hierarchy_opt_parameters");
+         h5.defineKey('facility','service_line','sub_service');
+         h5.defineDone();      
+      end;
       
       if first.resource then do;
          reason = '';
@@ -517,12 +579,37 @@
          if duplicate_flag = 1 then reason = strip(reason) || '; Duplicate row';
          if mismatch_flag = 1 then reason = strip(reason) || '; Hierarchy mismatch';
          if reason ne '' then reason = substr(reason,3);
+
+         if mismatch_flag = 1 and invalid_flag = 0 then do;
+            exists_in_financials = 0;
+            exists_in_service_attributes = 0;
+            exists_in_demand = 0;
+            exists_in_utilization = 0;
+            exists_in_capacity = 0;
+            exists_in_opt_parameters = 0;
+         
+            if h0.find() = 0 then exists_in_financials = 1;
+            if h1.find() = 0 then exists_in_service_attributes = 1;
+            if h2.find() = 0 then exists_in_demand = 1;
+            if h3.find() = 0 then exists_in_utilization = 1;
+            if h4.find() = 0 then exists_in_capacity = 1;
+            if h5.find() = 0 then exists_in_opt_parameters = 1;
+         end;
+           
          output;
       end;
       
       drop invalid_value duplicate_value mismatch_hierarchy
            invalid_flag duplicate_flag mismatch_flag;
    run;
+
+   proc sql noprint;
+      select count(*) into :exception_rows 
+         from &outlib..&output_dp_exceptions;
+   quit;
+   %if &exception_rows > 0 %then %do;
+      %put WARNING: The table %upcase(&outlib..&output_dp_exceptions) has %left(&exception_rows) rows. Please examine this table to identify data problems.;
+   %end;
 
    /* Drop the error handling tables that have zero rows. */
    proc sql noprint;
@@ -547,8 +634,16 @@
    /*************************/
 
    %if &_debug.=0  %then %do;
-      proc delete data= &_work_tables.;
-      run;
+      %let i = 1;
+      %let table = %scan(&_work_tables, &i, ' ');
+      %do %while (&table ne %str());
+         %if %sysfunc(exist(&table)) %then %do;
+            proc delete data= &table.;
+            run;
+         %end;
+         %let i = %eval(&i + 1);
+         %let table = %scan(&_work_tables, &i, ' ');
+      %end;
    %end;
 
    %EXIT:
