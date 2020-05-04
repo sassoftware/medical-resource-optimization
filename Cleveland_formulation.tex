@@ -6,7 +6,6 @@
 \title{Cleveland Clinic - Medical Resource Optimization Mathematical Formulation}
 \maketitle
 
-
 \section*{Dimensions}
 \begin{itemize}
 \item[ ] $ r \in Resources$ : set of resources
@@ -21,7 +20,7 @@
 \section*{Data Parameters: Model Coefficients}
 \begin{itemize}
 \item[ ] $capacity_{f,sl,ss,r}$  is the capacity of resource $r$ at facility $f$, service line $sl$, sub-service $ss$
-\item[ ] $utilization_{f,sl,ss,io,ms,r}$ is the usage of resource $r$ per patient over their length of stay at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
+\item[ ] $utilization_{f,sl,ss,io,ms,r}$ is the usage of resource $r$ per patient per day at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $revenue_{f,sl,ss,io,ms}$  is the revenue per patient at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $margin_{f,sl,ss,io,ms}$  is the margin per patient at facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $demand_{f,sl,ss,io,ms,d}$ is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
@@ -45,11 +44,6 @@
 \sum_{\substack{d1 \in d \ \text{and} \\
 \max \{[d - losMean_{f,sl,ss,io,ms} + 1], \\ minday \} \leq d1 \leq d}}  NewPatients_{f,sl,ss,io,ms,d1} \quad \forall f,sl,ss,io,ms,d\ \\
 \end{align*}
-\begin{align*}
-&NumResPerPatientDay_{f,sl,ss,io,ms,r} \ \text{is the usage of resource $r$ per patient per day in facility $f$,service line $sl$, } \\ 
-&\text{subservice $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ where,} \\
-&NumResPerPatientDay_{f,sl,ss,io,ms,r} = utilization_{f,sl,ss,io,ms,r} / losMean_{f,sl,ss,io,ms} \quad \forall f,sl,ss,io,ms,r\ \\
-\end{align*}
 
 \section*{Objective Functions}
 \begin{itemize}
@@ -69,8 +63,6 @@ NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss} 
 &\text{equal to available capacity of resource $r$ for $f,sl,ss$.} 
 \end{align*}
 \begin{equation} 
-\sum_{io,ms} NumResPerPatientDay_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
+\sum_{io,ms} utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
 \end{equation}
-
-
 \end{document}
