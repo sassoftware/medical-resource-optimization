@@ -90,6 +90,12 @@
    /************ANALYTICS *************/
    /***********************************/
 
+   /* min_demand_ratio is the proportion of demand that must be satisfied if a sub-service is open. Set it to 1 if you 
+      want to require all demand to be satisfied. However, this might result in some sub-services not opening at all,
+      because there are not enough covid-19 tests to accommodate the full demand. Set it to a smaller value (e.g., 0.8 or 
+      0.6 or even 0.2) if you just want to make sure that we accept some minimum amount of the demand if we open a sub-service. */
+   %let min_demand_ratio = 1.0;
+
    proc optmodel;
    
       /* Master sets read from data */
@@ -119,7 +125,8 @@
       num demand{FAC_SLINE_SSERV_IO_MS_DAYS};
       
       num minDay=min {d in DAYS} d;
-
+      
+      num minDemandRatio init &min_demand_ratio;
 
 /*       num parmValue{PARAMS_SET}; */
 /*       num totalDailyRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','RAPID_TESTS_PHASE_1']; */
@@ -188,14 +195,17 @@
       con Maximum_Demand{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}:
          NewPatients[f,sl,ss,iof,msf,d] <= max(demand[f,sl,ss,iof,msf,d],0)*OpenFlg[f,sl,ss];
    
+      /* If a sub-service is open, we must satisfy a minimum proportion of the demand */
+      con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}:
+         sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]
+            >= minDemandRatio * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} demand[f,sl,ss,iof,msf,d] * OpenFlg[f,sl,ss];
+
       /* Total patients cannot exceed capacity */
       con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
          sum {<f2,sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : 
                (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
-
-      expand Resources_Capacity;
-
+            
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
           sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
             TotalPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests + totalDailyNonRapidTests;

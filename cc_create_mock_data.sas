@@ -11,7 +11,7 @@
    /*
    libname mock "/ordsrv3/OR_CENTER/FILES/Cleveland Clinic/tiny_input";
    */
-
+   
    %let facility_list = H1 H2;
    %let service_lines_list = Orthopedics Cardiology;
 
@@ -163,11 +163,11 @@
 
    data mock.input_demand;
       set base_table;
-      format date datetime.;
+      format date date.;
       call streaminit(104);
       /* Start on a Sunday and end on a Saturday so we get the endpoints 
          for forecasting in the right order. */
-      do date = '05May2019:00:00:00'dt to '25May2019:00:00:00'dt by 86400;
+      do date = '05May2019'd to '25May2019'd;
          if med_surg_indicator = 'SURG' then demand = round(4*rand('UNIFORM'),1);
          else demand = round(20*rand('UNIFORM'),1);
          output;
