@@ -7,8 +7,8 @@
 %macro cc_forecast_demand(
 	inlib=cc
 	,outlib=cc
-	,input_demand =input_demand_pp
 	,output_fd_demand_fcst=output_fd_demand_fcst
+	,lead_weeks=4
 	,_worklib=casuser
 	,_debug=1
 	);
@@ -70,18 +70,18 @@
 	
 	/* Prep Data  - Temporary, remove when data has been fixed*/
 	data &_worklib.._tmp_input_demand;
-		set &_worklib..input_demand_pp (rename = (date=datetime));
-		date=datepart(datetime);
+		set &_worklib..input_demand_pp /*(rename = (date=datetime))*/;
+/* 		date=datepart(datetime); */
 		dow= weekday(date); 
 	run;
 	
 	/* Programatticaly obtaining the first sunday and the last saturday in the input data*/
 	/* First Sunday */
 	proc cas;
- 	  aggregation.aggregate / table={caslib="casuser", name="_tmp_input_demand",
+ 	  aggregation.aggregate / table={caslib="&_worklib.", name="_tmp_input_demand",
 		where= "dow = 1"} 
  	     varSpecs={{name="date", summarySubset="Min", columnNames="Date"}}
- 	     casOut={caslib="casuser",name="_tmpstats",replace=true}; run; 
+ 	     casOut={caslib="&_worklib.",name="_tmpstats",replace=true}; run; 
 	 quit;
 	
 	/* Save relevant statistics in macro variables */
@@ -92,10 +92,10 @@
 
 	/* Last Saturday */
 	proc cas;
- 	  aggregation.aggregate / table={caslib="casuser", name="_tmp_input_demand",
+ 	  aggregation.aggregate / table={caslib="&_worklib.", name="_tmp_input_demand",
 		where= "dow = 7"} 
  	     varSpecs={{name="date", summarySubset="Max", columnNames="Date"}} 
- 	     casOut={caslib="casuser",name="_tmpstats",replace=true}; run; 
+ 	     casOut={caslib="&_worklib.",name="_tmpstats",replace=true}; run; 
 	quit;
 
 	/* Save relevant statistics in macro variables */
@@ -122,7 +122,7 @@
 	   run;
 	quit;
 	
-	proc tsmodel data=casuser._tmp_input_demand_week
+	proc tsmodel data=&_worklib.._tmp_input_demand_week
         outobj=(outfor=&_worklib.._tmp_output_fd_demand_fcst);
         id date interval=week;
         by facility service_line sub_service med_surg_indicator ip_op_indicator;
@@ -158,7 +158,7 @@
         
         declare object forecast(foreng);
         rc = forecast.Initialize(diagnose);
-        rc = forecast.SetOption('lead', 12);
+        rc = forecast.SetOption('lead', &lead_weeks.);
         rc = forecast.Run();
         
         declare object outfor(outfor);
@@ -176,17 +176,17 @@
 
 	/* calculating the average proportion of demand per day of week */
 	proc cas;
- 	  aggregation.aggregate / table={caslib="casuser", name="_TMP_INPUT_DEMAND",  
+ 	  aggregation.aggregate / table={caslib="&_worklib.", name="_TMP_INPUT_DEMAND",  
  	     groupby={"facility","service_line","sub_service","IP_OP_Indicator","Med_Surg_Indicator", "dow"}} 
 	     saveGroupByFormat=false 
  	     varSpecs={{name="demand", summarySubset="sum", columnNames="sumDemand"}} 
- 	     casOut={caslib="casuser",name="_tmp1_input_demand_dow",replace=true}; run; 
+ 	     casOut={caslib="&_worklib.",name="_tmp1_input_demand_dow",replace=true}; run; 
 	 
-	  aggregation.aggregate / table={caslib="casuser", name="_TMP_INPUT_DEMAND",  
+	  aggregation.aggregate / table={caslib="&_worklib.", name="_TMP_INPUT_DEMAND",  
  	     groupby={"facility","service_line","sub_service","IP_OP_Indicator","Med_Surg_Indicator"}} 
 	     saveGroupByFormat=false 
  	     varSpecs={{name="demand", summarySubset="sum", columnNames="TotalDemand"}} 
- 	     casOut={caslib="casuser",name="_tmp2_input_demand_dow",replace=true}; run;  	
+ 	     casOut={caslib="&_worklib.",name="_tmp2_input_demand_dow",replace=true}; run;  	
 	quit;
 
 	/* Aggregated table shows missing context in the historical data */ 
