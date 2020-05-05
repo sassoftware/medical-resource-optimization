@@ -94,7 +94,7 @@
       want to require all demand to be satisfied. However, this might result in some sub-services not opening at all,
       because there are not enough covid-19 tests to accommodate the full demand. Set it to a smaller value (e.g., 0.8 or 
       0.6 or even 0.2) if you just want to make sure that we accept some minimum amount of the demand if we open a sub-service. */
-   %let min_demand_ratio = 1;
+   %let min_demand_ratio = 1.0;
 
    proc optmodel;
    
@@ -126,6 +126,7 @@
       num maxCapacityWithoutCovid{FAC_SLINE_SSERV_IO_MS_DAYS} init 0;
       
       num minDay=min {d in DAYS} d;
+      num maxDay=max {d in DAYS} d;
       
       num minDemandRatio init &min_demand_ratio;
 
@@ -133,8 +134,8 @@
 /*       num totalDailyRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','RAPID_TESTS_PHASE_1']; */
 /*       num totalDailyNonRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','NOT_RAPID_TESTS_PHASE_1']; */
 /*       num daysTestBeforeAdmSurg=paramValue['ALL','ALL','ALL','ALL','SURG','TEST_DAYS_BA']; */
-      num totalDailyRapidTests=1;
-      num totalDailyNonRapidTests=1;
+      num totalDailyRapidTests=300;
+      num totalDailyNonRapidTests=1200;
       num daysTestBeforeAdmSurg=2;
   
    /*    num losVar{FAC_SLINE_SSERV}; */
@@ -190,6 +191,12 @@
       impvar TotalPatients{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} =
          sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
 
+      
+      /* Imp Variable:  Number of non-rapid tests available on day d (after partly using it on new patients who will be admitted for surgery after â€˜daysTestBeforeAdmSurgâ€™ days )*/
+      impvar NumNonRapidTestAvail{d in DAYS} =
+         totalDailyNonRapidTests - sum{<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS}
+                              NewPatients[f,sl,ss,iof,msf,d1];
+
       /* New patients cannot exceed demand if the sub service is open */
       /* TODO: Some demand forecasts are negative. I am treating them as zero in the max demand constraint, but should we 
          handle this in the forecasting step instead? If we're just going to set them to 0, we can leave it in optmodel, but 
@@ -214,14 +221,16 @@
                (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
             
+      /* Tests constraint – Total inpatients admitted should be less than the total available non-rapid test and daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
-          sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
-            TotalPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests + totalDailyNonRapidTests;
+         sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
+              NewPatients[f,sl,ss,iof,msf,d] - NumNonRapidTestAvail[d] <= totalDailyRapidTests ;
 
+      /* Non-Rapid tests constraint – total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS}:
-          sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d-daysTestBeforeAdmSurg and d1 in DAYS} 
-            TotalPatients[f,sl,ss,iof,msf,d]  <=  totalDailyNonRapidTests;
-    
+         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS} 
+              NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests;
+
       max Total_Revenue = 
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
    
@@ -276,9 +285,8 @@
          maxCapacityWithoutCovid;
 
       create data &_worklib.._opt_summary
-         from [facility service_line sub_service date]={<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}
+         from [facility service_line sub_service day]={<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}
          OpenFlg=(round(OpenFlg[f,sl,ss,d],0.01));
-
    quit;
 
    data &outlib..&output_opt_detail (promote=yes);
@@ -289,14 +297,6 @@
       set &_worklib.._opt_summary;
    run;
    
-data work.michelle_openFlg;
-set &_worklib.._opt_summary;
-run;
-proc sort data=michelle_openFlg;
-by facility service_line sub_service date;
-run;
-
-
    /*************************/
    /******HOUSEKEEPING*******/
    /*************************/
