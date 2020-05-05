@@ -125,6 +125,7 @@
       num demand{FAC_SLINE_SSERV_IO_MS_DAYS};
       
       num minDay=min {d in DAYS} d;
+	  num maxDay=max {d in DAYS} d;
       
       num minDemandRatio init &min_demand_ratio;
 
@@ -132,8 +133,8 @@
 /*       num totalDailyRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','RAPID_TESTS_PHASE_1']; */
 /*       num totalDailyNonRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','NOT_RAPID_TESTS_PHASE_1']; */
 /*       num daysTestBeforeAdmSurg=paramValue['ALL','ALL','ALL','ALL','SURG','TEST_DAYS_BA']; */
-      num totalDailyRapidTests=300;
-      num totalDailyNonRapidTests=1200;
+      num totalDailyRapidTests=3;
+      num totalDailyNonRapidTests=12;
       num daysTestBeforeAdmSurg=2;
   
    /*    num losVar{FAC_SLINE_SSERV}; */
@@ -188,7 +189,13 @@
       impvar TotalPatients{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} =
          sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
 
-      /* New patients cannot exceed demand if the sub service is open */
+      
+	/* Imp Variable:  Number of non-rapid tests available on day d (after partly using it on new patients who will be admitted for surgery after ‘daysTestBeforeAdmSurg’ days )*/
+      impvar NumNonRapidTestAvail{d in DAYS} =
+         totalDailyNonRapidTests - sum{<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS}
+                              NewPatients[f,sl,ss,iof,msf,d1];
+
+	/* New patients cannot exceed demand if the sub service is open */
       /* TODO: Some demand forecasts are negative. I am treating them as zero in the max demand constraint, but should we 
          handle this in the forecasting step instead? If we're just going to set them to 0, we can leave it in optmodel, but 
          if we need to do something more sophisticated, then it should probably go in the forecasting macro. */
@@ -206,14 +213,16 @@
                (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
             
-      con COVID19_Day_Of_Admission_Testing{d in DAYS}:
-          sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
-            TotalPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests + totalDailyNonRapidTests;
+	/* Tests constraint – Total inpatients admitted should be less than the total available non-rapid test and daily rapid test available  */
+	con COVID19_Day_Of_Admission_Testing{d in DAYS}:
+	        sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
+	                 NewPatients[f,sl,ss,iof,msf,d] - NumNonRapidTestAvail[d] <= totalDailyRapidTests ;
+	
+	/* Non-Rapid tests constraint – total available non-rapid test */
+	con COVID19_Before_Admission_Testing{d in DAYS}:
+	       sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS} 
+	                NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests;
 
-      con COVID19_Before_Admission_Testing{d in DAYS}:
-          sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d-daysTestBeforeAdmSurg and d1 in DAYS} 
-            TotalPatients[f,sl,ss,iof,msf,d]  <=  totalDailyNonRapidTests;
-    
       max Total_Revenue = 
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
    
@@ -221,7 +230,7 @@
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*margin[f,sl,ss,iof,msf];
 
       /******************Solve*******************************/
-
+	  /*EXPAND;*/
       solve obj Total_Revenue with milp;
 
       /******************Create output data*******************************/
@@ -242,7 +251,6 @@
       create data &_worklib.._opt_summary
          from [facility service_line sub_service]=FAC_SLINE_SSERV
          OpenFlg;
-
    
    quit;
 
