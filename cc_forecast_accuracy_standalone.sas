@@ -20,16 +20,6 @@ caslib _all_ assign;
 %let outlib=cc;
 %let _worklib=casuser;
 
-proc sql;
-  select max(date) into: max_date from &inlib..input_demand;
-quit;
-
-data &inlib..input_demand_train &inlib..input_demand_test;
-   set &inlib..input_demand;
-   if date <= (&max_date. - 30) then output &inlib..input_demand_train;
-   else output &inlib..input_demand_test;
-run;
-
 /* Submit code */
 %cc_data_prep(
     inlib=&inlib
@@ -38,15 +28,25 @@ run;
     ,input_capacity=input_capacity
     ,input_financials=input_financials
     ,input_service_attributes=input_service_attributes
-    ,input_demand=input_demand_train
+    ,input_demand=input_demand
     ,input_opt_parameters=input_parameters
 	,output_dp_exceptions=output_dp_exceptions
     ,_worklib=&_worklib
     ,_debug=0
     );
 
-data casuser.input_demand_pp;
-set cc.input_demand;
+proc sql;
+  select max(date) into: max_date from &_worklib..input_demand_pp;
+quit;
+
+data &_worklib..input_demand_train &_worklib..input_demand_test;
+   set &_worklib..input_demand_pp;
+   if date <= (&max_date. - 30) then output &_worklib..input_demand_train;
+   else output &_worklib..input_demand_test;
+run;
+
+data &_worklib..input_demand_pp;
+   set &_worklib..input_demand_train;
 run;
 
 %cc_forecast_demand(
@@ -62,7 +62,7 @@ run;
 data &outlib..output_fa_fit_fcst (promote=yes);
 	merge 
 		&_worklib..output_fd_demand_fcst (in=a keep = &hierarchy. predict_date daily_predict rename = (predict_date=date))
-		&inlib..input_demand (in=b keep = &hierarchy. date demand);
+		&_worklib..input_demand_pp (in=b keep = &hierarchy. date demand);
 	by &hierarchy. date;
 	if b;
 run;
