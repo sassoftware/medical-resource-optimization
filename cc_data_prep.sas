@@ -85,9 +85,7 @@
               &_worklib.._hierarchy_service_attributes
               &_worklib.._hierarchy_demand
               &_worklib.._hierarchy_opt_parameters
-              &_worklib..sets_complete_financials
-              &_worklib..sets_complete_service_attributes
-              &_worklib..sets_complete_demand
+              &_worklib.._hierarchies_not_in_util
               &_worklib..master_sets_union
               &_worklib..utilization_resources
               &_worklib..data_exceptions
@@ -141,7 +139,6 @@
 /*   %let input_demand=input_demand; */
 /*   %let input_opt_parameters=input_opt_parameters; */
 
-   /* Find max length of each column across all the tables */
    proc contents data=&inlib.._all_ out=work.inlib_contents noprint;
    run;
    
@@ -152,38 +149,98 @@
                                 "%upcase(&input_financials)", 
                                 "%upcase(&input_service_attributes)", 
                                 "%upcase(&input_demand)", 
-                                "%upcase(&input_opt_parameters)");
+                                "%upcase(&input_opt_parameters)")
+         and upcase(name) in ('FACILITY','SERVICE_LINE','SUB_SERVICE',
+                              'IP_OP_INDICATOR','MED_SURG_INDICATOR','RESOURCE');
    run;
    
+   /* For variables that already exist as character type in at least one table, 
+      find the longest length */
    proc sql noprint;
-      select max(length) into :facility_len from work.inlib_contents
-         where upcase(name) = 'FACILITY';
-      select max(length) into :service_line_len from work.inlib_contents
-         where upcase(name) = 'SERVICE_LINE';
-      select max(length) into :sub_service_len from work.inlib_contents
-         where upcase(name) = 'SUB_SERVICE';
-      select max(length) into :ip_op_len from work.inlib_contents
-         where upcase(name) = 'IP_OP_INDICATOR';
-      select max(length) into :med_surg_len from work.inlib_contents
-         where upcase(name) = 'MED_SURG_INDICATOR';
-      select max(length) into :resource_len from work.inlib_contents
-         where upcase(name) = 'RESOURCE';
+      select max(length) into :len_facility from work.inlib_contents
+         where upcase(name) = 'FACILITY' and type = 2;
+      select max(length) into :len_service_line from work.inlib_contents
+         where upcase(name) = 'SERVICE_LINE' and type = 2;
+      select max(length) into :len_sub_service from work.inlib_contents
+         where upcase(name) = 'SUB_SERVICE' and type = 2;
+      select max(length) into :len_ip_op_indicator from work.inlib_contents
+         where upcase(name) = 'IP_OP_INDICATOR' and type = 2;
+      select max(length) into :len_med_surg_indicator from work.inlib_contents
+         where upcase(name) = 'MED_SURG_INDICATOR' and type = 2;
+      select max(length) into :len_resource from work.inlib_contents
+         where upcase(name) = 'RESOURCE' and type = 2;
    quit;
-
+   
+   /* Find varchar variables that need to be converted to char */
+   proc sql noprint;
+      select distinct memname, count(distinct memname) 
+         into :memname_list separated by ' ',
+              :num_tables_convert
+         from work.inlib_contents
+         where type = 6;
+   quit;
+   
+   /* Initialize temp table names */   
+   %let input_utilization_table = &inlib..&input_utilization;
+   %let input_capacity_table = &inlib..&input_capacity;
+   %let input_financials_table = &inlib..&input_financials;
+   %let input_service_attributes_table = &inlib..&input_service_attributes;
+   %let input_demand_table = &inlib..&input_demand;
+   %let input_opt_parameters_table = &inlib..&input_opt_parameters;
+ 
+   /* Convert each varchar variable to char */
+   %do i = 1 %to &num_tables_convert;
+      %let tb = %scan(&memname_list, &i);
+      
+      proc sql noprint;
+         select name, count(*) 
+            into :name_list separated by ' ',
+                 :num_vars_convert
+            from work.inlib_contents
+            where memname = "&tb" and type = 6;
+         %do j = 1 %to &num_vars_convert;
+            select max(length(%scan(&name_list, &j))) 
+               into :varlen&j
+               from &inlib..&tb;
+         %end;
+      quit;
+      
+      data &_worklib..&tb._char;
+         set &inlib..&tb (rename=(%do j = 1 %to &num_vars_convert;
+                                     %scan(&name_list, &j) = tempvar&j
+                                  %end;
+                                  ));
+         %do j = 1 %to &num_vars_convert;                                     
+            %let vv = %scan(&name_list, &j);
+            length &vv $&&varlen&j;
+            &vv = tempvar&j;
+            drop tempvar&j;
+         %end;
+      run;
+      
+      %let &tb._table = &_worklib..&tb._char;
+      
+      /* Adjust column length macro variables if the new column has longer length */
+      %do j = 1 %to &num_vars_convert;
+         %let vv = %scan(&name_list, &j);
+         %if %sysevalf(&&varlen&j > &&len_&vv) %then %let len_&vv = &&varlen&j;
+      %end;
+   %end;
+   
    /* Check each table for invalid values and duplicate rows. Write these to separate output tables 
       to be used for error handling. */
    data &_worklib..input_utilization_pp
         &_worklib.._invalid_values_utilization
         &_worklib.._duplicate_rows_utilization
         &_worklib.._hierarchy_utilization;
-      format facility $&facility_len..;
-      format service_line $&service_line_len..;
-      format sub_service $&sub_service_len..;
-      format ip_op_indicator $&ip_op_len..;
-      format med_surg_indicator $&med_surg_len..;
-      format resource $&resource_len..;
-      
-      set &inlib..&input_utilization;
+      length facility $&len_facility;
+      length service_line $&len_service_line;
+      length sub_service $&len_sub_service;
+      length ip_op_indicator $&len_ip_op_indicator;
+      length med_surg_indicator $&len_med_surg_indicator;
+      length resource $&len_resource;
+        
+      set &input_utilization_table;
       by facility service_line sub_service ip_op_indicator med_surg_indicator resource;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -209,12 +266,12 @@
         &_worklib.._invalid_values_capacity
         &_worklib.._duplicate_rows_capacity
         &_worklib.._hierarchy_capacity;
-      format facility $&facility_len..;
-      format service_line $&service_line_len..;
-      format sub_service $&sub_service_len..;
-      format resource $&resource_len..;
-      
-      set &inlib..&input_capacity;
+      length facility $&len_facility;
+      length service_line $&len_service_line;
+      length sub_service $&len_sub_service;
+      length resource $&len_resource;
+
+      set &input_capacity_table;
       by facility service_line sub_service resource;
       if upcase(facility) = 'ALL' then facility = 'ALL';
       if upcase(service_line) = 'ALL' then service_line = 'ALL';
@@ -237,13 +294,13 @@
         &_worklib.._invalid_values_financials
         &_worklib.._duplicate_rows_financials
         &_worklib.._hierarchy_financials;
-      format facility $&facility_len..;
-      format service_line $&service_line_len..;
-      format sub_service $&sub_service_len..;
-      format ip_op_indicator $&ip_op_len..;
-      format med_surg_indicator $&med_surg_len..;
-      
-      set &inlib..&input_financials;
+      length facility $&len_facility;
+      length service_line $&len_service_line;
+      length sub_service $&len_sub_service;
+      length ip_op_indicator $&len_ip_op_indicator;
+      length med_surg_indicator $&len_med_surg_indicator;
+
+      set &input_financials_table;
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -268,13 +325,13 @@
         &_worklib.._invalid_values_service_attrs
         &_worklib.._duplicate_rows_service_attrs
         &_worklib.._hierarchy_service_attributes;
-      format facility $&facility_len..;
-      format service_line $&service_line_len..;
-      format sub_service $&sub_service_len..;
-      format ip_op_indicator $&ip_op_len..;
-      format med_surg_indicator $&med_surg_len..;
-      
-      set &inlib..&input_service_attributes;
+      length facility $&len_facility;
+      length service_line $&len_service_line;
+      length sub_service $&len_sub_service;
+      length ip_op_indicator $&len_ip_op_indicator;
+      length med_surg_indicator $&len_med_surg_indicator;
+
+      set &input_service_attributes_table;
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -300,13 +357,13 @@
         &_worklib.._invalid_values_demand
         &_worklib.._duplicate_rows_demand
         &_worklib.._hierarchy_demand;
-      format facility $&facility_len..;
-      format service_line $&service_line_len..;
-      format sub_service $&sub_service_len..;
-      format ip_op_indicator $&ip_op_len..;
-      format med_surg_indicator $&med_surg_len..;
-      
-      set &inlib..&input_demand;
+      length facility $&len_facility;
+      length service_line $&len_service_line;
+      length sub_service $&len_sub_service;
+      length ip_op_indicator $&len_ip_op_indicator;
+      length med_surg_indicator $&len_med_surg_indicator;
+
+      set &input_demand_table;
       by facility service_line sub_service ip_op_indicator med_surg_indicator date;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -332,11 +389,11 @@
         &_worklib.._invalid_values_opt_parameters
         &_worklib.._duplicate_rows_opt_parameters
         &_worklib.._hierarchy_opt_parameters;
-      format facility $&facility_len..;
-      format service_line $&service_line_len..;
-      format sub_service $&sub_service_len..;
-      
-      set &inlib..&input_opt_parameters;
+      length facility $&len_facility;
+      length service_line $&len_service_line;
+      length sub_service $&len_sub_service;
+
+      set &input_opt_parameters_table;
       by facility service_line sub_service parm_name;
       if upcase(facility) = 'ALL' then facility = 'ALL';
       if upcase(service_line) = 'ALL' then service_line = 'ALL';
@@ -355,39 +412,19 @@
       
    /* Now that we have removed invalid values from all the tables, we need to get a complete set of
       facility/service_line/sub_service/ip_op_indicator/med_surg_indicator that is common across all the 
-      tables that use this granularity. First we create the complete set for each table, then merge them to 
-      find the union. Note that I am not including sets_complete_utilization, because there
+      tables that use this granularity. Note that I am not including _hierarchy_utilization, because there
       might be some facility/service/subservice combinations that don't use any resources, but we 
       still want to include them in the optimization problem because they might use COVID-19 tests, which 
       are NOT included in the utilization or capacity tables.*/
-
-   data &_worklib..sets_complete_financials;
-      set &_worklib..input_financials_pp;
-      by facility service_line sub_service ip_op_indicator med_surg_indicator;
-      if first.med_surg_indicator then output;
-   run;
-
-   data &_worklib..sets_complete_service_attributes;
-      set &_worklib..input_service_attributes_pp;
-      by facility service_line sub_service ip_op_indicator med_surg_indicator;
-      if first.med_surg_indicator then output;
-   run;
-
-   data &_worklib..sets_complete_demand;
-      set &_worklib..input_demand_pp;
-      by facility service_line sub_service ip_op_indicator med_surg_indicator;
-      if first.med_surg_indicator then output;
-   run;
-    
-   /* Create master_sets_union. */
    data &_worklib..master_sets_union;
-      merge &_worklib..sets_complete_financials (in=in_financials)
-            &_worklib..sets_complete_service_attributes (in=in_service_attributes)
-            &_worklib..sets_complete_demand (in=in_demand);
+      merge &_worklib.._hierarchy_financials (in=in_financials)
+            &_worklib.._hierarchy_service_attributes (in=in_service_attributes)
+            &_worklib.._hierarchy_demand (in=in_demand);
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       if in_financials and in_service_attributes and in_demand then output;
+      keep facility service_line sub_service ip_op_indicator med_surg_indicator; 
    run;
-   
+
    /* Remove the rows from each table that are not in the master set union */
    data &_worklib..input_utilization_pp
         &_worklib.._dropped_rows_utilization;
@@ -401,6 +438,14 @@
       if rc0 = 0 then output &_worklib..input_utilization_pp;
       else output &_worklib.._dropped_rows_utilization;
       drop rc0;
+   run;
+   
+   data &_worklib.._hierarchies_not_in_util;
+      merge &_worklib..input_utilization_pp (in=in_util)
+            &_worklib..master_sets_union (in=in_master);
+      by facility service_line sub_service ip_op_indicator med_surg_indicator;
+      if in_master and not in_util;
+      keep facility service_line sub_service ip_op_indicator med_surg_indicator;
    run;
    
    data &_worklib..input_financials_pp
@@ -515,9 +560,11 @@
           &_worklib.._dropped_rows_financials (in=drop3 keep=&keep_list_full)
           &_worklib.._dropped_rows_service_attributes (in=drop4 keep=&keep_list_full)
           &_worklib.._dropped_rows_demand (in=drop5 keep=&keep_list_full)
-          &_worklib.._dropped_rows_opt_parameters (in=drop6 keep=&keep_list_short);
+          &_worklib.._dropped_rows_opt_parameters (in=drop6 keep=&keep_list_short)
           
-      if invalid1 or dup1 or drop1 then table = 'INPUT_UTILIZATION';
+          &_worklib.._hierarchies_not_in_util (in=not_in_util keep=&keep_list_full);
+          
+      if invalid1 or dup1 or drop1 or not_in_util then table = 'INPUT_UTILIZATION';
       else if invalid2 or dup2 or drop2 then table = 'INPUT_CAPACITY';
       else if invalid3 or dup3 or drop3 then table = 'INPUT_FINANCIALS';
       else if invalid4 or dup4 or drop4 then table = 'INPUT_SERVICE_ATTRIBUTES';
@@ -530,7 +577,7 @@
       
       if invalid1 or invalid2 or invalid3 or invalid4 or invalid5 or invalid6 then invalid_value = 1;
       else if dup1 or dup2 or dup3 or dup4 or dup5 or dup6 then duplicate_value = 1;
-      else if drop1 or drop2 or drop3 or drop4 or drop5 or drop6 then mismatch_hierarchy = 1;
+      else if drop1 or drop2 or drop3 or drop4 or drop5 or drop6 or not_in_util then mismatch_hierarchy = 1;
    run;
 
    data &outlib..&output_dp_exceptions;

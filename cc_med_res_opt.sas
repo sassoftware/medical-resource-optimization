@@ -123,8 +123,10 @@
       num numCancel{FAC_SLINE_SSERV_IO_MS};
 
       num demand{FAC_SLINE_SSERV_IO_MS_DAYS};
+      num maxCapacityWithoutCovid{FAC_SLINE_SSERV_IO_MS_DAYS} init 0;
       
       num minDay=min {d in DAYS} d;
+      num maxDay=max {d in DAYS} d;
       
       num minDemandRatio init &min_demand_ratio;
 
@@ -143,7 +145,7 @@
    /*    num maxPctReschedule{FAC_SLINE_SSERV}; */
    
       /* Decide to open or not a sub service */
-      var OpenFlg{FAC_SLINE_SSERV} BINARY;
+      var OpenFlg{FAC_SLINE_SSERV, DAYS} BINARY;
    
       /* Related to how many new patients are actually accepted */
       var NewPatients{FAC_SLINE_SSERV_IO_MS_DAYS};
@@ -182,38 +184,53 @@
 /*          into PARAMS_SET = [facility service_line sub_service ip_op_indicator med_surg_indicator parm_name] */
 /*             parmValue=parm_value; */
    
+      
       /******************Model variables, constraints, objective function*******************************/
    
       /* Calculate total number of patients for day d */
       impvar TotalPatients{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} =
          sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
 
+      
+      /* Imp Variable:  Number of non-rapid tests available on day d (after partly using it on new patients who will be admitted for surgery after â€˜daysTestBeforeAdmSurgâ€™ days )*/
+      impvar NumNonRapidTestAvail{d in DAYS} =
+         totalDailyNonRapidTests - sum{<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS}
+                              NewPatients[f,sl,ss,iof,msf,d1];
+
       /* New patients cannot exceed demand if the sub service is open */
       /* TODO: Some demand forecasts are negative. I am treating them as zero in the max demand constraint, but should we 
          handle this in the forecasting step instead? If we're just going to set them to 0, we can leave it in optmodel, but 
          if we need to do something more sophisticated, then it should probably go in the forecasting macro. */
       con Maximum_Demand{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}:
-         NewPatients[f,sl,ss,iof,msf,d] <= max(demand[f,sl,ss,iof,msf,d],0)*OpenFlg[f,sl,ss];
+         NewPatients[f,sl,ss,iof,msf,d] <= max(demand[f,sl,ss,iof,msf,d],0)*OpenFlg[f,sl,ss,d];
    
       /* If a sub-service is open, we must satisfy a minimum proportion of the demand */
       con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}:
          sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]
-            >= minDemandRatio * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} demand[f,sl,ss,iof,msf,d] * OpenFlg[f,sl,ss];
-
+            >= minDemandRatio 
+               * OpenFlg[f,sl,ss,d]
+               * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} maxCapacityWithoutCovid[f,sl,ss,iof,msf,d];
+               
+      /* If a sub-service opens, it must stay open for the remainder of the horizon */
+      con Service_Stay_Open{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: d + 1 in DAYS}:
+         OpenFlg[f,sl,ss,d+1] >= OpenFlg[f,sl,ss,d];
+               
       /* Total patients cannot exceed capacity */
       con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
          sum {<f2,sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : 
                (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
             
+      /* Tests constraint – Total inpatients admitted should be less than the total available non-rapid test and daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
-          sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
-            TotalPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests + totalDailyNonRapidTests;
+         sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
+              NewPatients[f,sl,ss,iof,msf,d] - NumNonRapidTestAvail[d] <= totalDailyRapidTests ;
 
+      /* Non-Rapid tests constraint – total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS}:
-          sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d-daysTestBeforeAdmSurg and d1 in DAYS} 
-            TotalPatients[f,sl,ss,iof,msf,d]  <=  totalDailyNonRapidTests;
-    
+         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS} 
+              NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests;
+
       max Total_Revenue = 
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
    
@@ -222,7 +239,34 @@
 
       /******************Solve*******************************/
 
+      /* First we want to find out what is the maximum demand we can handle without the covid-19 tests. 
+         We drop the COVID constraint and the minimum demand constraint. We're also going to fix OpenFlg to 1 
+         for every sub-service (i.e., the only reason we might not open a sub-service is because we don't have enough 
+         COVID-19 tests), so we can also drop the Service_Stay_Open constraints. */
+      drop COVID19_Day_Of_Admission_Testing
+           COVID19_Before_Admission_Testing
+           Minimum_Demand
+           Service_Stay_Open;
+           
+      for {<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS} fix OpenFlg[f,sl,ss,d] = 1;
+
       solve obj Total_Revenue with milp;
+      
+      /* The maximum demand without covid-19 tests is equal to the number of new patients that we saw, 
+         subject to other resource capacity constraints */
+      for {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}
+         maxCapacityWithoutCovid[f,sl,ss,iof,msf,d] = NewPatients[f,sl,ss,iof,msf,d].sol;
+      
+      /* Now restore the COVID constraints, the minimum demand constraints, and the Service_Stay_Open constraints, 
+         and unfix OpenFlg, and then solve again. */
+      restore COVID19_Day_Of_Admission_Testing
+              COVID19_Before_Admission_Testing
+              Minimum_Demand
+              Service_Stay_Open;
+           
+      unfix OpenFlg;
+
+      solve obj Total_Revenue with milp / primalin;
 
       /******************Create output data*******************************/
 
@@ -237,13 +281,12 @@
          NewPatients
          TotalPatients
          OptRevenue
-         OptMargin;
+         OptMargin
+         maxCapacityWithoutCovid;
 
       create data &_worklib.._opt_summary
-         from [facility service_line sub_service]=FAC_SLINE_SSERV
-         OpenFlg;
-
-   
+         from [facility service_line sub_service day]={<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}
+         OpenFlg=(round(OpenFlg[f,sl,ss,d],0.01));
    quit;
 
    data &outlib..&output_opt_detail (promote=yes);
@@ -253,7 +296,7 @@
    data &outlib..&output_opt_summary (promote=yes);
       set &_worklib.._opt_summary;
    run;
-
+   
    /*************************/
    /******HOUSEKEEPING*******/
    /*************************/
