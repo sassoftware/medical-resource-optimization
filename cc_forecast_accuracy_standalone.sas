@@ -7,7 +7,6 @@
 
 /* Start cas session */
 cas mysess;
-/* cas mysess sessopts=(nworkers=2); */
 caslib _all_ assign;
 
 /* Point to the code */
@@ -45,6 +44,10 @@ run;
     ,_worklib=&_worklib
     ,_debug=0
     );
+
+data casuser.input_demand_pp;
+set cc.input_demand;
+run;
 
 %cc_forecast_demand(
     inlib=&inlib
