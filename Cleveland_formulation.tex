@@ -26,15 +26,19 @@
 \item[ ] $demand_{f,sl,ss,io,ms,d}$ is the maximum demand of facility $f$, service line $sl$, sub-service $ss$, and day $d$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $losMean_{f,sl,ss,io,ms}$  is the mean hospitalization time of facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item[ ] $minday$ is the minimum day among the set $ d \in Days$, ${\min\limits_{d \in Days} d}$
-\end{itemize}
+\item[ ] $maxday$ is the maximum day among the set $ d \in Days$, ${\max\limits_{d \in Days} d}$
+\item[ ] $dlyRapidTest_{d}$ is the total daily rapid tests available across all facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ \item[ ] $dlyNonRapidTest_{d}$ is the total daily non-rapid tests for COVID-19 available across all facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ 
+
+\pagebreak
+
+\item[ ] $daysBeforeSurgAdm$ is the number of days before which a surgery patient should be tested for COVID-19 (using a non-rapid test kit) 
+\item[ ] $minDemandRatio$ is the minimum proportion of demand that must be satisfied at a sub-service $ss$ if its is open at a facility $f$, service line $sl$ \end{itemize}
 
 \section*{Decision Variables}
 \begin{itemize}
-\item [ ] $NewPatients_{f,sl,ss,io,ms,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$, , for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ $ms$
+\item [ ] $NewPatients_{f,sl,ss,io,ms,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \item [ ] $OpenFlg_{f,sl,ss}$ $\in$ \{0,1\} is the binary variable indicating if facility $f$, service line $sl$, sub-service $ss$ is open
 \end{itemize}
-
-\pagebreak
 
 \section*{Variables}
 \begin{align*}
@@ -44,13 +48,25 @@
 \sum_{\substack{d1 \in d \ \text{and} \\
 \max \{[d - losMean_{f,sl,ss,io,ms} + 1], \\ minday \} \leq d1 \leq d}}  NewPatients_{f,sl,ss,io,ms,d1} \quad \forall f,sl,ss,io,ms,d\ \\
 \end{align*}
+\begin{align*}
+&NumNonRapidTestAvl_{d} \ \text{is the number of non-rapid tests available on day $d$, after using it  on new patients} \\
+&\text{who will be admitted for surgery after '$daysBeforeSurgAdm$' days, where,} \\
+& NumNonRapidTestAvl_{d} = dlyNonRapidTest_{d} - 
+\sum_{\substack{f,sl,ss,io,ms \ \text{and} \ d1 \in d \ \text{and} \\
+\min \{[d+ \\ daysBeforeSurgAdm], \\ maxday \} \\
+\text{and} \ ms = 'SURG'}}  NewPatients_{f,sl,ss,io,ms,d1} \quad \forall d\ \\
+\end{align*}
+
 
 \section*{Objective Functions}
 \begin{itemize}
 \item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,io,ms,d} NewPatients_{f,sl,ss,io,ms,d} \ revenue_{f,sl,ss,io,ms}$
 \item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,io,ms,d} NewPatients_{f,sl,ss,io,ms,d} \ margin_{f,sl,ss,io,ms}$
 \end{itemize}
+
+
 \section*{Constraints}
+
 \begin{align*}
 &\text{Maximum demand constraint: Number of patients accepted for $f,sl,ss,io,ms$ should be less than the maximum} \\
 &\text{demand for day $d$.} 
@@ -58,6 +74,7 @@
 \begin{equation} 
 NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss} \quad \forall f,sl,ss,io,ms,d\
 \end{equation}
+
 \begin{align*}
 &\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than } \\
 &\text{equal to available capacity of resource $r$ for $f,sl,ss$.} 
@@ -65,4 +82,36 @@ NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss} 
 \begin{equation} 
 \sum_{io,ms} utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
 \end{equation}
+
+\pagebreak
+
+\begin{align*}
+&\text{Minimum proportion of demand constraint: If a sub-service $ss$ is open at $f,sl$ then, we should at the least} \\
+&\text{satisfy a minimum proportion of demand of $f,sl,ss$.} 
+\end{align*}
+\begin{equation} 
+\sum_{io,ms} NewPatients_{f,sl,ss,io,ms,d} \geq minDemandRatio \ \sum_{io,ms} demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss} \quad \forall f,sl,ss,d,r\
+\end{equation}
+
+\begin{align*}
+&\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted for $f,sl,ss,ms$ in day $d$ should be } \\
+&\text{less than the total available non-rapid test for the day and daily rapid test available.} 
+\end{align*}
+\begin{equation} 
+\sum_{\substack{f,sl,ss,io,ms \\ 
+\text{and} \ io = 'I'}} NewPatients_{f,sl,ss,io,ms,d} - NumNonRapidTestAvl_{d}  \leq dlyRapidTest_{d}  \quad \forall d\
+\end{equation}
+
+
+\begin{align*}
+&\text{COVID-19 surgery patient tests constraint: Total number of surgery patients who will be admitted for surgery } \\
+&\text{after '$daysBeforeSurgAdm$' days for $f,sl,ss,io$ in day $d$ should be less than the the total non-rapid test} \\
+&\text{available for the day $d$.} 
+\end{align*}
+\begin{equation} 
+\sum_{\substack{f,sl,ss,io,ms \ \text{and} \ d1 \in d \ \text{and} \\
+\min \{[d+ \\ daysBeforeSurgAdm], \\ maxday \} \\
+\text{and} \ ms = 'SURG'}} NewPatients_{f,sl,ss,io,ms,d1} \leq dlyNonRapidTest_{d}  \quad \forall d\
+\end{equation}
+
 \end{document}
