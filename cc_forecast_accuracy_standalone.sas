@@ -12,7 +12,6 @@ caslib _all_ assign;
 /* Point to the code */
 %let my_code_path=/r/ge.unx.sas.com/vol/vol410/u41/supazh/casuser/Cleveland_Clinic/gitrepo;
 %include "&my_code_path./cc_forecast_demand.sas";
-%include "&my_code_path./cc_forecast_demand_yoy.sas";
 %include "&my_code_path./cc_med_res_opt.sas";
 %include "&my_code_path./cc_data_prep.sas";
 
@@ -31,10 +30,10 @@ caslib _all_ assign;
     ,input_service_attributes=input_service_attributes
     ,input_demand=input_demand
     ,input_opt_parameters=input_opt_parameters
-   ,output_hierarchy_mismatch=output_hierarchy_mismatch
-   ,output_resource_mismatch=output_resource_mismatch
-   ,output_invalid_values=output_invalid_values
-   ,output_duplicate_rows=output_duplicate_rows
+    ,output_hierarchy_mismatch=output_hierarchy_mismatch
+    ,output_resource_mismatch=output_resource_mismatch
+    ,output_invalid_values=output_invalid_values
+    ,output_duplicate_rows=output_duplicate_rows
     ,_worklib=&_worklib
     ,_debug=0
     );
@@ -58,15 +57,7 @@ run;
     ,outlib=&outlib.
 	,output_fd_demand_fcst=output_fd_demand_fcst
 	,lead_weeks=5
-    ,_worklib=casuser
-    ,_debug=0
-    );
-
-%cc_forecast_demand_yoy(
-    inlib=&inlib
-    ,outlib=&outlib.
-	,output_fd_demand_fcst_yoy=output_fd_demand_fcst_yoy
-	,lead_weeks=5
+	,forecast_model = yoy
     ,_worklib=casuser
     ,_debug=0
     );
