@@ -227,8 +227,8 @@
               NewPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests ;
 
       /* Non-Rapid tests constraint - total available non-rapid test */
-      con COVID19_Before_Admission_Testing{d in DAYS}:
-         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d+daysTestBeforeAdmSurg and d1 in DAYS} 
+      con COVID19_Before_Admission_Testing{d in DAYS : d+daysTestBeforeAdmSurg in DAYS}:
+         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d+daysTestBeforeAdmSurg} 
               NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests;
 
       max Total_Revenue = 
