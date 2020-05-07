@@ -30,13 +30,18 @@ proc casutil;
 	promote casdata="Input_Capacity" outcaslib="cc" incaslib="casuser" drop;                   
 quit;
 
-/* Fix date */
-/* data casuser.input_demand (drop = datechar); */
-/* set cc.input_demand (rename = (date=datechar)); */
-/* date=input(datechar,MMDDYY10.); */
-/* run; */
-/*  */
-/* data cc.input_demand (promote=yes); */
-/* set casuser.input_demand; */
-/* run; */
+/* Fix date - change to work table later and remove the delete */
+
+	data &_worklib..&input_demand.;
+		set &inlib..&input_demand. (rename = (date=datechar));
+		date=input(datechar,MMDDYY10.);
+		drop datechar;
+	run;
+
+    proc delete data= &inlib..&input_demand.;
+    run;
+	
+	data &inlib..&input_demand. (promote=yes);
+		set &_worklib..&input_demand.;
+	run;
 

@@ -14,6 +14,7 @@
    ,input_opt_parameters=input_opt_parameters
    ,output_opt_detail=output_opt_detail
    ,output_opt_summary=output_opt_summary
+	,min_demand_ratio=1
    ,_worklib=casuser
    ,_debug=1
    );
@@ -74,6 +75,7 @@
    %let output_tables=%str(         
        &outlib..&output_opt_detail
        &outlib..&output_opt_summary
+	   &outlib..output_opt_detail_agg
          );
 
 
@@ -90,11 +92,14 @@
    /************ANALYTICS *************/
    /***********************************/
 
+	/* For debugging */
+	%let filter=%str((where=(service_line ~= 'Evaluation and Management')));
+
    /* min_demand_ratio is the proportion of demand that must be satisfied if a sub-service is open. Set it to 1 if you 
       want to require all demand to be satisfied. However, this might result in some sub-services not opening at all,
       because there are not enough covid-19 tests to accommodate the full demand. Set it to a smaller value (e.g., 0.8 or 
       0.6 or even 0.2) if you just want to make sure that we accept some minimum amount of the demand if we open a sub-service. */
-   %let min_demand_ratio = 1.0;
+/*    %let min_demand_ratio = 1.0; */
 
    proc optmodel;
    
@@ -130,11 +135,11 @@
       
       num minDemandRatio init &min_demand_ratio;
 
-/*       num parmValue{PARAMS_SET}; */
+/*       num paramValue{PARAMS_SET}; */
 /*       num totalDailyRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','RAPID_TESTS_PHASE_1']; */
 /*       num totalDailyNonRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','NOT_RAPID_TESTS_PHASE_1']; */
 /*       num daysTestBeforeAdmSurg=paramValue['ALL','ALL','ALL','ALL','SURG','TEST_DAYS_BA']; */
-      num totalDailyRapidTests=300;
+      num totalDailyRapidTests=190;
       num totalDailyNonRapidTests=1200;
       num daysTestBeforeAdmSurg=2;
   
@@ -148,42 +153,42 @@
       var OpenFlg{FAC_SLINE_SSERV, DAYS} BINARY;
    
       /* Related to how many new patients are actually accepted */
-      var NewPatients{FAC_SLINE_SSERV_IO_MS_DAYS};
+      var NewPatients{FAC_SLINE_SSERV_IO_MS_DAYS} >= 0;
    
       /* Read data from SAS data sets */ 
    
       /* Demand Forecast*/
-      read data &outlib..output_fd_demand_fcst 
+      read data &outlib..output_fd_demand_fcst &filter.
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
       /* Capacity */
-      read data &_worklib..input_capacity_pp
+      read data &_worklib..input_capacity_pp &filter.
          into FAC_SLINE_SSERV_RES = [facility service_line sub_service resource]
             capacity;
 
       /* Utilization */
-      read data &_worklib..input_utilization_pp
+      read data &_worklib..input_utilization_pp &filter.
          into FAC_SLINE_SSERV_IO_MS_RES = [facility service_line sub_service ip_op_indicator med_surg_indicator resource]
             utilization=utilization_mean;
 
       /* Financials */
-      read data &_worklib..input_financials_pp
+      read data &_worklib..input_financials_pp &filter.
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             revenue 
             margin;
       
       /* Service attributes */
-      read data &_worklib..input_service_attributes_pp
+      read data &_worklib..input_service_attributes_pp &filter.
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             numCancel=num_cancelled
             losMean=length_stay_mean;
 
       /* Parameters */
-/*       read data &_worklib..input_opt_parameters_pp */
+/*       read data &_worklib..input_opt_parameters_pp &filter. */
 /*          into PARAMS_SET = [facility service_line sub_service ip_op_indicator med_surg_indicator parm_name] */
-/*             parmValue=parm_value; */
-   
+/*             paramValue=parm_value; */
+/*     */
       
       /******************Model variables, constraints, objective function*******************************/
    
@@ -205,11 +210,11 @@
          NewPatients[f,sl,ss,iof,msf,d] <= max(demand[f,sl,ss,iof,msf,d],0)*OpenFlg[f,sl,ss,d];
    
       /* If a sub-service is open, we must satisfy a minimum proportion of the demand */
-      con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}:
-         sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]
-            >= minDemandRatio 
-               * OpenFlg[f,sl,ss,d]
-               * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} maxCapacityWithoutCovid[f,sl,ss,iof,msf,d];
+/*       con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}: */
+/*          sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d] */
+/*             >= minDemandRatio  */
+/*                * OpenFlg[f,sl,ss,d] */
+/*                * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} maxCapacityWithoutCovid[f,sl,ss,iof,msf,d]; */
                
       /* If a sub-service opens, it must stay open for the remainder of the horizon */
       con Service_Stay_Open{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: d + 1 in DAYS}:
@@ -221,15 +226,15 @@
                (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
             
-      /* Tests constraint – Total inpatients admitted should be less than the total available non-rapid test and daily rapid test available  */
+      /* Tests constraint ï¿½ Total inpatients admitted should be less than the total available non-rapid test and daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
          sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
-              NewPatients[f,sl,ss,iof,msf,d] - NumNonRapidTestAvail[d] <= totalDailyRapidTests ;
+              NewPatients[f,sl,ss,iof,msf,d] /*- NumNonRapidTestAvail[d]*/ <= totalDailyRapidTests ;
 
-      /* Non-Rapid tests constraint – total available non-rapid test */
+      /* Non-Rapid tests constraint ï¿½ total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS}:
-         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS} 
-              NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests;
+         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d-daysTestBeforeAdmSurg) 
+              NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests*(d1 in DAYS);
 
       max Total_Revenue = 
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
@@ -289,8 +294,32 @@
          OpenFlg=(round(OpenFlg[f,sl,ss,d],0.01));
    quit;
 
+   data &_worklib.._opt_detail_week;
+	  format date date9.;
+	  format week_start_date date9.;
+      set &_worklib.._opt_detail (rename =(day=date));
+	  week_num=week(date);
+      year_num=year(date);
+      week_start_date=input(put(year_num, 4.)||"W"||put(week_num,z2.)||"01", weekv9.);
+   run;
+
+	proc cas;
+	  aggregation.aggregate / table={caslib="&_worklib.", name="_opt_detail_week",  
+ 	     groupby={"facility","service_line","sub_service","week_start_date"}} 
+	     saveGroupByFormat=false 
+ 	     varSpecs={{name="NewPatients", summarySubset="sum", columnNames="NewPatients"}
+				   {name="OptMargin", summarySubset="sum", columnNames="OptMargin"}
+				   {name="OptRevenue", summarySubset="sum", columnNames="OptRevenue"}} 
+ 	     casOut={caslib="&_worklib.",name="_opt_detail_agg",replace=true}; run;  
+	quit;
+
    data &outlib..&output_opt_detail (promote=yes);
+	  format day date9.;
       set &_worklib.._opt_detail;
+   run;
+
+   data &outlib..output_opt_detail_agg (promote=yes);
+      set &_worklib.._opt_detail_agg;
    run;
     
    data &outlib..&output_opt_summary (promote=yes);
