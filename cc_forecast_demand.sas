@@ -70,7 +70,7 @@
 	/***********************************/
 	
 	/* For debugging purposes */
-/* 		%let _worklib=casuser; */
+ 		/*%let _worklib=casuser; */
 	
 	/* Prep Data  - Temporary, remove when data has been fixed*/
 	data &_worklib.._tmp_input_demand;
@@ -192,6 +192,7 @@
 		dem_year = year(date);
 		forecast_year = dem_year+1;
 		rename demand = Predict;
+		drop date;
 	run;
 
 	proc cas; 
