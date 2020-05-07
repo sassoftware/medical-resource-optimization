@@ -7,6 +7,7 @@
 %macro cc_forecast_demand(
 	inlib=cc
 	,outlib=cc
+	,input_demand = input_demand_pp
 	,output_fd_demand_fcst=output_fd_demand_fcst
 	,lead_weeks=4
 	,forecast_model = tsmdl
@@ -27,8 +28,8 @@
 
 	/* Check missing inputs */
 
-   %if %sysfunc(exist(&_worklib..input_demand_pp))=0 %then %do;
-      %put FATAL: Missing &_worklib..input_demand_pp, from &sysmacroname.;
+   %if %sysfunc(exist(&_worklib..&input_demand.))=0 %then %do;
+      %put FATAL: Missing &_worklib..&input_demand., from &sysmacroname.;
       %goto EXIT;
    %end; 
 
@@ -74,7 +75,7 @@
 	
 	/* Prep Data  - Temporary, remove when data has been fixed*/
 	data &_worklib.._tmp_input_demand;
-		set &_worklib..input_demand_pp /*(rename = (date=datetime))*/;
+		set &_worklib..&input_demand. /*(rename = (date=datetime))*/;
 /* 		date=datepart(datetime); */
 		dow= weekday(date); 
 	run;

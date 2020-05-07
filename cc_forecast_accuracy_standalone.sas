@@ -55,6 +55,7 @@ run;
 %cc_forecast_demand(
     inlib=&inlib
     ,outlib=&outlib.
+	,input_demand = input_demand_pp
 	,output_fd_demand_fcst=output_fd_demand_fcst
 	,lead_weeks=5
 	,forecast_model = yoy
