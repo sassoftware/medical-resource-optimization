@@ -7,7 +7,6 @@
 
 /* Start cas session */
 cas mysess;
-/* cas mysess sessopts=(nworkers=2); */
 caslib _all_ assign;
 
 /* Point to the code */
@@ -18,18 +17,8 @@ caslib _all_ assign;
 
 /* Define libraries */
 %let inlib=cc;
-%let outlib=cc;
+%let outlib=casuser;
 %let _worklib=casuser;
-
-proc sql;
-  select max(date) into: max_date from &inlib..input_demand;
-quit;
-
-data &inlib..input_demand_train &inlib..input_demand_test;
-   set &inlib..input_demand;
-   if date <= (&max_date. - 30) then output &inlib..input_demand_train;
-   else output &inlib..input_demand_test;
-run;
 
 /* Submit code */
 %cc_data_prep(
@@ -39,16 +28,27 @@ run;
     ,input_capacity=input_capacity
     ,input_financials=input_financials
     ,input_service_attributes=input_service_attributes
-    ,input_demand=input_demand_train
-    ,input_opt_parameters=input_parameters
+    ,input_demand=input_demand
+    ,input_opt_parameters=input_opt_parameters
 	,output_dp_exceptions=output_dp_exceptions
     ,_worklib=&_worklib
     ,_debug=0
     );
 
+proc sql;
+  select max(date) into: max_date from &_worklib..input_demand_pp;
+quit;
+
+data &_worklib..input_demand_train &_worklib..input_demand_test;
+   set &_worklib..input_demand_pp;
+   if date <= (&max_date. - 30) then output &_worklib..input_demand_train;
+   else output &_worklib..input_demand_test;
+run;
+
 %cc_forecast_demand(
     inlib=&inlib
     ,outlib=&outlib.
+	,input_demand=input_demand_train
 	,output_fd_demand_fcst=output_fd_demand_fcst
 	,lead_weeks=5
     ,_worklib=casuser
@@ -58,21 +58,26 @@ run;
 %let hierarchy=%str(facility service_line sub_service ip_op_indicator med_surg_indicator);
 data &outlib..output_fa_fit_fcst (promote=yes);
 	merge 
-		&_worklib..output_fd_demand_fcst (in=a keep = &hierarchy. predict_date daily_predict rename = (predict_date=date))
-		&inlib..input_demand (in=b keep = &hierarchy. date demand);
+		&outlib..output_fd_demand_fcst (in=a keep = &hierarchy. predict_date daily_predict rename = (predict_date=date))
+		&_worklib..input_demand_pp (in=b keep = &hierarchy. date demand);
 	by &hierarchy. date;
 	if b;
 run;
 
 data &_worklib.._tmp_fcst;
+	format date date9.;
+	format week_start_date date9.;
 	set &outlib..output_fa_fit_fcst;
 	if daily_predict~=.;
 	if demand ~=.;
+	  week_num=week(date);
+      year_num=year(date);
+      week_start_date=input(put(year_num, 4.)||"W"||put(week_num,z2.)||"01", weekv9.);
 run;
 
 proc cas;
  	  aggregation.aggregate / table={caslib="&_worklib.", name="_tmp_fcst"
-		groupby={"facility","service_line","sub_service","date"}} 
+		groupby={"facility","service_line","sub_service","ip_op_indicator","week_start_date"}} 
 		saveGroupByFormat=false 
  	     varSpecs={{name="daily_predict", summarySubset="Sum", columnNames="Total_Fcst"}
 			 	   {name="demand", summarySubset="Sum", columnNames="Total_Demand"}} 		   	  	
@@ -87,11 +92,12 @@ run;
 
 proc cas;
  	  aggregation.aggregate / table={caslib="&_worklib.", name="_tmp_fa_ape"
-		groupby={"facility","service_line"}} 
+		groupby={"facility","service_line","ip_op_indicator"}} 
 		saveGroupByFormat=false 
- 	     varSpecs={{name="ape", summarySubset="Mean", columnNames="MAPE", weight="Total_Demand"}} 	       
+ 	     varSpecs={{name="ape", summarySubset="Mean", columnNames="MAPE", weight="Total_Demand"}
+				 	{name="Total_Demand", summarySubset="Mean", columnNames="Avg_Weekly_Demand"}} 	       
  	     casOut={caslib="&_worklib.",name="_tmp_fa_mape",replace=true}; run; 
-	quit;
+quit;
 
 data &outlib..output_fa_mape (promote=yes);
    set &_worklib.._tmp_fa_mape;
