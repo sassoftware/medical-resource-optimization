@@ -14,7 +14,7 @@
    ,input_opt_parameters=input_opt_parameters
    ,output_opt_detail=output_opt_detail
    ,output_opt_summary=output_opt_summary
-	,min_demand_ratio=1
+   ,min_demand_ratio=1
    ,_worklib=casuser
    ,_debug=1
    );
@@ -65,17 +65,17 @@
    %let _work_tables=%str(  
         &_worklib.._TMP_OD_2
         &_worklib.._TMP_OD_1
-      &_worklib.._tmp_od_adj_und_1
-      &_worklib.._tmp_od_adj_und_2
-      &_worklib.._tmp_od_adj_und_3
+        &_worklib.._tmp_od_adj_und_1
+        &_worklib.._tmp_od_adj_und_2
+        &_worklib.._tmp_od_adj_und_3
          );
 */
 
-/*    List output tables  */
+   /* List output tables */
    %let output_tables=%str(         
-       &outlib..&output_opt_detail
-       &outlib..&output_opt_summary
-	   &outlib..output_opt_detail_agg
+        &outlib..&output_opt_detail
+        &outlib..&output_opt_summary
+        &outlib..output_opt_detail_agg
          );
 
 
@@ -92,8 +92,8 @@
    /************ANALYTICS *************/
    /***********************************/
 
-	/* For debugging */
-	%let filter=%str((where=(service_line ~= 'Evaluation and Management')));
+   /* For debugging */
+   %let filter=%str((where=(service_line ~= 'Evaluation and Management')));
 
    /* min_demand_ratio is the proportion of demand that must be satisfied if a sub-service is open. Set it to 1 if you 
       want to require all demand to be satisfied. However, this might result in some sub-services not opening at all,
@@ -197,11 +197,6 @@
          sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
 
       
-      /* Imp Variable:  Number of non-rapid tests available on day d (after partly using it on new patients who will be admitted for surgery after ‘daysTestBeforeAdmSurg’ days )*/
-      impvar NumNonRapidTestAvail{d in DAYS} =
-         totalDailyNonRapidTests - sum{<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=min(d+daysTestBeforeAdmSurg,maxDay) and d1 in DAYS}
-                              NewPatients[f,sl,ss,iof,msf,d1];
-
       /* New patients cannot exceed demand if the sub service is open */
       /* TODO: Some demand forecasts are negative. I am treating them as zero in the max demand constraint, but should we 
          handle this in the forecasting step instead? If we're just going to set them to 0, we can leave it in optmodel, but 
@@ -210,11 +205,11 @@
          NewPatients[f,sl,ss,iof,msf,d] <= max(demand[f,sl,ss,iof,msf,d],0)*OpenFlg[f,sl,ss,d];
    
       /* If a sub-service is open, we must satisfy a minimum proportion of the demand */
-/*       con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}: */
-/*          sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d] */
-/*             >= minDemandRatio  */
-/*                * OpenFlg[f,sl,ss,d] */
-/*                * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} maxCapacityWithoutCovid[f,sl,ss,iof,msf,d]; */
+      con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}:
+         sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]
+            >= minDemandRatio
+               * OpenFlg[f,sl,ss,d]
+               * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} maxCapacityWithoutCovid[f,sl,ss,iof,msf,d];
                
       /* If a sub-service opens, it must stay open for the remainder of the horizon */
       con Service_Stay_Open{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: d + 1 in DAYS}:
@@ -226,15 +221,15 @@
                (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
             
-      /* Tests constraint � Total inpatients admitted should be less than the total available non-rapid test and daily rapid test available  */
+      /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
          sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
-              NewPatients[f,sl,ss,iof,msf,d] /*- NumNonRapidTestAvail[d]*/ <= totalDailyRapidTests ;
+              NewPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests ;
 
-      /* Non-Rapid tests constraint � total available non-rapid test */
+      /* Non-Rapid tests constraint - total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS}:
-         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d-daysTestBeforeAdmSurg) 
-              NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests*(d1 in DAYS);
+         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d+daysTestBeforeAdmSurg and d1 in DAYS} 
+              NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests;
 
       max Total_Revenue = 
          sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
@@ -295,26 +290,26 @@
    quit;
 
    data &_worklib.._opt_detail_week;
-	  format date date9.;
-	  format week_start_date date9.;
+      format date date9.;
+      format week_start_date date9.;
       set &_worklib.._opt_detail (rename =(day=date));
-	  week_num=week(date);
+      week_num=week(date);
       year_num=year(date);
       week_start_date=input(put(year_num, 4.)||"W"||put(week_num,z2.)||"01", weekv9.);
    run;
 
-	proc cas;
-	  aggregation.aggregate / table={caslib="&_worklib.", name="_opt_detail_week",  
- 	     groupby={"facility","service_line","sub_service","week_start_date"}} 
-	     saveGroupByFormat=false 
- 	     varSpecs={{name="NewPatients", summarySubset="sum", columnNames="NewPatients"}
-				   {name="OptMargin", summarySubset="sum", columnNames="OptMargin"}
-				   {name="OptRevenue", summarySubset="sum", columnNames="OptRevenue"}} 
- 	     casOut={caslib="&_worklib.",name="_opt_detail_agg",replace=true}; run;  
-	quit;
+   proc cas;
+      aggregation.aggregate / table={caslib="&_worklib.", name="_opt_detail_week",  
+         groupby={"facility","service_line","sub_service","week_start_date"}} 
+         saveGroupByFormat=false 
+         varSpecs={{name="NewPatients", summarySubset="sum", columnNames="NewPatients"}
+                   {name="OptMargin", summarySubset="sum", columnNames="OptMargin"}
+                   {name="OptRevenue", summarySubset="sum", columnNames="OptRevenue"}} 
+         casOut={caslib="&_worklib.",name="_opt_detail_agg",replace=true}; run;  
+   quit;
 
    data &outlib..&output_opt_detail (promote=yes);
-	  format day date9.;
+      format day date9.;
       set &_worklib.._opt_detail;
    run;
 
