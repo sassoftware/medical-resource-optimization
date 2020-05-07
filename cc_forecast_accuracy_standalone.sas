@@ -30,7 +30,6 @@ caslib _all_ assign;
     ,input_service_attributes=input_service_attributes
     ,input_demand=input_demand
     ,input_opt_parameters=input_opt_parameters
-	,output_dp_exceptions=output_dp_exceptions
     ,_worklib=&_worklib
     ,_debug=0
     );
