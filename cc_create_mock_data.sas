@@ -225,7 +225,7 @@
 
    proc sql noprint;
       create table base_fac_serv_sub as
-         select distinct facility, service_line, sub_service
+         select distinct facility, service_line, sub_service, ip_op_indicator, med_surg_indicator
          from base_table;
       create table mock.input_opt_parameters as
          select a.*, b.*

@@ -10,6 +10,7 @@
 	,input_demand=input_demand_pp
 	,output_fd_demand_fcst=output_fd_demand_fcst
 	,lead_weeks=4
+	,forecast_model = tsmdl
 	,_worklib=casuser
 	,_debug=1
 	);
@@ -46,6 +47,9 @@
 		&_worklib.._tmp_input_demand_dow_mas
 		&_worklib.._tmp1_input_demand_dow_mas
 		&_worklib.._tmpstats
+		&_worklib.._tmp2_input_demand_woy 
+		&_worklib.._tmp_output_fcst_woy_mas
+		&_worklib.._tmp1_output_fcst_woy_mas
         );	
 
    /* List output tables */
@@ -67,7 +71,7 @@
 	/***********************************/
 	
 	/* For debugging purposes */
-/* 		%let _worklib=casuser; */
+ 		/*%let _worklib=casuser; */
 	
 	/* Prep Data  - Temporary, remove when data has been fixed*/
 	data &_worklib.._tmp_input_demand;
@@ -122,7 +126,10 @@
 	      casOut={caslib="&_worklib." name="_tmp_input_demand_week" replace=true};
 	   run;
 	quit;
-	
+
+%if &forecast_model. = tsmdl %then 
+%do;
+/* Start here for ts model */	
 	proc tsmodel data=&_worklib.._tmp_input_demand_week
         outobj=(outfor=&_worklib.._tmp_output_fd_demand_fcst);
         id date interval=week;
@@ -168,13 +175,74 @@
         endsubmit;
 	run;
 	
-	/* Dissagregate weekly forecasts into daily through a dow profile: issue #8 */
 	data &_worklib.._tmp_output_fd_demand_fcst_week;
 		set &_worklib.._tmp_output_fd_demand_fcst;
 		if actual = .;
 		if date >= &tEnd;
+	run;	
+%end;
+
+%if &forecast_model. = yoy %then 
+%do;
+/* Start here for the yoy model */ 
+%let forecast_tEnd = &tEnd + (&lead_weeks*7);	
+	
+	data &_worklib.._tmp2_input_demand_woy;
+		set &_worklib.._tmp_input_demand_week;
+		woy = week(date);
+		dem_year = year(date);
+		forecast_year = dem_year+1;
+		rename demand = Predict;
+		drop date;
 	run;
 
+	proc cas; 
+	  aggregation.aggregate / table={caslib="&_worklib.", name="_TMP_INPUT_DEMAND",  
+		 groupby={"facility","service_line","sub_service","IP_OP_Indicator","Med_Surg_Indicator"}} 
+		 saveGroupByFormat=false 
+		 varSpecs={{name="demand", summarySubset="sum", columnNames="TotalDemand"}} 
+		 casOut={caslib="&_worklib.",name="_tmp2_input_demand_dow",replace=true}; run;  	
+	quit;
+
+	/* Master list for next two years {f,sl,ss, iof,msf} & 52 weeks */
+	data &_worklib.._tmp_output_fcst_woy_mas;
+	set &_worklib.._tmp2_input_demand_dow;
+			do i=0 to 1;
+				do j=0 to 53;
+					woy = j;
+					forecast_year=year(input("&sysdate9",date9.))+i;				
+					dem_year=forecast_year-1;
+					date=intnx('week',mdy(1,1,forecast_year),woy-1,'b');
+					date_wk_end=intnx('week',mdy(1,1,forecast_year),woy-1,'e');
+					yr_date_wk_start = year(date);
+					yr_date_wk_end = year(date_wk_end);
+					output;
+			end;
+		end;	
+	drop i j;
+	run;
+
+	/* truncating the master list for next 52 weeks from &tEND */
+	data &_worklib.._tmp1_output_fcst_woy_mas;
+	set &_worklib.._tmp_output_fcst_woy_mas;
+		if (yr_date_wk_start = forecast_year) or (yr_date_wk_end = forecast_year);		
+		if date >= &tEnd.;
+		if date <= &forecast_tEnd.;		
+		keep facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator woy dem_year forecast_year date; 	
+	run;	
+
+	data &_worklib.._tmp_output_fd_demand_fcst_week;
+		merge 
+			&_worklib.._tmp1_output_fcst_woy_mas (in=nodes)
+			&_worklib.._tmp2_input_demand_woy;
+		by facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator woy dem_year forecast_year;		
+		if nodes;
+		if Predict=. then Predict=0;
+	keep facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator woy dem_year forecast_year date Predict;	
+	run;
+%end;
+	
+/******* Dissagregate weekly forecasts into daily through a dow profile: issue #8 *******/
 	/* calculating the average proportion of demand per day of week */
 	proc cas;
  	  aggregation.aggregate / table={caslib="&_worklib.", name="_TMP_INPUT_DEMAND",  
