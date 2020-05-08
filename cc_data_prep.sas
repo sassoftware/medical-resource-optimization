@@ -12,6 +12,8 @@
                    ,input_service_attributes=input_service_attributes
                    ,input_demand=input_demand
                    ,input_opt_parameters=input_opt_parameters
+                   ,include_str=%str(1=1)
+                   ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
                    ,output_resource_mismatch=output_resource_mismatch
                    ,output_invalid_values=output_invalid_values
@@ -98,6 +100,14 @@
               &_worklib..master_sets_union
               &_worklib..distinct_fac_sl_ss
               &_worklib..resources_in_utilization
+              &_worklib..util_resources_fac_sl_ss_r
+              &_worklib..util_resources_fac_r
+              &_worklib..util_resources_sl_r
+              &_worklib..util_resources_ss_r
+              &_worklib..util_resources_fac_sl_r
+              &_worklib..util_resources_fac_ss_r
+              &_worklib..util_resources_sl_ss_r
+              &_worklib..util_resources_r
               work.inlib_contents
               );
 
@@ -252,7 +262,7 @@
       length med_surg_indicator $&len_med_surg_indicator;
       length resource $&len_resource;
         
-      set &input_utilization_table;
+      set &input_utilization_table (where=((&include_str) and not (&exclude_str)));
       by facility service_line sub_service ip_op_indicator med_surg_indicator resource;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -283,7 +293,7 @@
       length sub_service $&len_sub_service;
       length resource $&len_resource;
 
-      set &input_capacity_table;
+      set &input_capacity_table (where=((&include_str) and not (&exclude_str)));
       by facility service_line sub_service resource;
       if upcase(facility) = 'ALL' then facility = 'ALL';
       if upcase(service_line) = 'ALL' then service_line = 'ALL';
@@ -312,7 +322,7 @@
       length ip_op_indicator $&len_ip_op_indicator;
       length med_surg_indicator $&len_med_surg_indicator;
 
-      set &input_financials_table;
+      set &input_financials_table (where=((&include_str) and not (&exclude_str)));
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -343,7 +353,7 @@
       length ip_op_indicator $&len_ip_op_indicator;
       length med_surg_indicator $&len_med_surg_indicator;
 
-      set &input_service_attributes_table;
+      set &input_service_attributes_table (where=((&include_str) and not (&exclude_str)));
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -375,7 +385,7 @@
       length ip_op_indicator $&len_ip_op_indicator;
       length med_surg_indicator $&len_med_surg_indicator;
 
-      set &input_demand_table;
+      set &input_demand_table (where=((&include_str) and not (&exclude_str)));
       by facility service_line sub_service ip_op_indicator med_surg_indicator date;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
@@ -405,7 +415,7 @@
       length service_line $&len_service_line;
       length sub_service $&len_sub_service;
 
-      set &input_opt_parameters_table;
+      set &input_opt_parameters_table (where=((&include_str) and not (&exclude_str)));
       by facility service_line sub_service parm_name;
       if upcase(facility) = 'ALL' then facility = 'ALL';
       if upcase(service_line) = 'ALL' then service_line = 'ALL';
@@ -563,7 +573,7 @@
       sub_service_bak = sub_service;
    run;
    
-   data &outlib..&output_resource_mismatch;
+   data &_worklib..resources_in_utilization;
       set &_worklib..resources_in_utilization;
       if _n_ = 1 then do;
          declare hash h0(dataset:'casuser.input_capacity_pp');
@@ -598,20 +608,70 @@
    run;
 
    /* Remove the rows from &input_capacity that do not correspond to any facility/service_line/sub_service/resource
-      remaining in utilization, but keep the rows that have ALL for any of the fields */
+      remaining in utilization. The CAPACITY table can have a value of 'ALL' for any combination of facility, 
+      service_line, and sub_service, so we need to consider all of these combinations when we look for matching
+      records in UTILIZATION. */
+   %let combinations = fac_sl_ss_r
+                       fac_r
+                       sl_r
+                       ss_r
+                       fac_sl_r
+                       fac_ss_r
+                       sl_ss_r
+                       r;
+   
+   %do i = 1 %to 8;
+      %let suffix = %scan(&combinations, &i, ' ');
+      %let by_string = %str();
+      %if %index(&suffix, fac) > 0 %then %let by_string = &by_string facility;
+      %if %index(&suffix, sl) > 0 %then %let by_string = &by_string service_line;
+      %if %index(&suffix, ss) > 0 %then %let by_string = &by_string sub_service;
+      %let by_string = &by_string resource;
+   
+      data &_worklib..util_resources_&suffix;
+         set &_worklib..input_utilization_pp (keep=&by_string);
+         by &by_string;
+         if first.resource;
+      run;
+   %end;
+   
    data &_worklib..input_capacity_pp
         &_worklib.._dropped_rows_capacity;
       set &_worklib..input_capacity_pp;
       if _n_ = 1 then do;
-         declare hash h0(dataset:"&_worklib..resources_in_utilization");
-         h0.defineKey('facility','service_line','sub_service','resource');
-         h0.defineDone();
+         %do i = 1 %to 8;
+            %let suffix = %scan(&combinations, &i, ' ');
+            declare hash h&i(dataset:"&_worklib..util_resources_&suffix");
+            h&i..defineKey(ALL:'YES');
+            h&i..defineDone();
+         %end;
       end;
-      rc0 = h0.find();
-      if rc0 = 0 or upcase(facility)='ALL' or upcase(service_line)='ALL' or upcase(sub_service='ALL')
-         then output &_worklib..input_capacity_pp;
+   
+      if 0 then rc0 = 0;
+      %do i = 1 %to 8;
+         %let suffix = %scan(&combinations, &i, ' ');
+         %let fac_operator = EQ;
+         %let sl_operator = EQ;
+         %let ss_operator = EQ;
+         %if %index(&suffix, fac) > 0 %then %let fac_operator = NE;
+         %if %index(&suffix, sl) > 0 %then %let sl_operator = NE;
+         %if %index(&suffix, ss) > 0 %then %let ss_operator = NE;
+      
+         else if facility &fac_operator 'ALL'
+           and service_line &sl_operator 'ALL'
+           and sub_service &ss_operator 'ALL' then rc0 = h&i..find();
+      %end;
+      if rc0 = 0 then output &_worklib..input_capacity_pp;
       else output &_worklib.._dropped_rows_capacity;
       drop rc0;
+   run;
+   
+   data &outlib..&output_resource_mismatch;
+      merge &_worklib..resources_in_utilization (in=in_util)
+            &_worklib.._dropped_rows_capacity (drop=capacity in=in_cap);
+      by facility service_line sub_service resource;
+      in_utilization = in_util;
+      in_capacity = in_cap;
    run;
 
    /* Remove the rows from &input_opt_parameters that do not correspond to any facility/service_line/sub_service
