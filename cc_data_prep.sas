@@ -430,7 +430,7 @@
       
       if first.parm_name then do;
          if facility = '' or service_line = '' or sub_service = '' 
-            or ip_op_indicator = '' or med_surg_indicator = '' or parm_name = ''
+            /*or ip_op_indicator = '' or med_surg_indicator = '' */ or parm_name = ''
             then output &_worklib.._invalid_values_opt_parameters;
          else do;
             output &_worklib..input_opt_parameters_pp;
@@ -716,10 +716,30 @@
       select count(*) into :n_duplicate_rows 
          from &outlib..&output_duplicate_rows;
    quit;
+   
    %if &n_hierarchy_mismatch > 0 %then %put WARNING: There are %left(&n_hierarchy_mismatch) rows in the %upcase(&outlib..&output_hierarchy_mismatch) table.;
+   %else %do;
+      proc delete data=&outlib..&output_hierarchy_mismatch; 
+      quit;
+   %end;
+      
    %if &n_resource_mismatch > 0 %then %put WARNING: There are %left(&n_resource_mismatch) rows in the %upcase(&outlib..&output_resource_mismatch) table.;
+   %else %do;
+      proc delete data=&outlib..&output_resource_mismatch;
+      quit;
+   %end;
+   
    %if &n_invalid_values > 0 %then %put WARNING: There are %left(&n_invalid_values) rows in the %upcase(&outlib..&output_invalid_values) table.;
+   %else %do;
+      proc delete data=&outlib..&output_invalid_values;
+      quit;
+   %end;
+   
    %if &n_duplicate_rows > 0 %then %put WARNING: There are %left(&n_duplicate_rows) rows in the %upcase(&outlib..&output_duplicate_rows) table.;
+   %else %do;
+      proc delete data=&outlib..&output_duplicate_rows;
+      quit;
+   %end;
 
    /* Drop the error handling tables that have zero rows. */
    proc sql noprint;
