@@ -18,6 +18,7 @@
    ,output_resource_usage=output_opt_resource_usage
    ,output_covid_test_usage=output_opt_covid_test_usage
    ,min_demand_ratio=1
+   ,secondary_objective_tolerance=0.99
    ,_worklib=casuser
    ,_debug=1
    );
@@ -138,9 +139,9 @@
 
    /* Fill in daily capacities of covid tests for the entire planning horizon */
    proc sql noprint;
-      select parm_value into :planning_horizon 
-      from &_worklib..opt_parameters_non_date
-      where parm_name = 'PLANNING_HORIZON';
+      select min(predict_date), max(predict_date)
+         into :min_date, :max_date
+         from &outlib..output_fd_demand_fcst
    quit;
    
    data &_worklib..opt_parameters_date / single=yes;
@@ -152,7 +153,16 @@
          prev_date = date;
          prev_rapid = rapid_tests;
          prev_not_rapid = not_rapid_tests;
-         output;
+
+         do date = &min_date to first_date - 1;
+            rapid_tests = 0;
+            not_rapid_tests = 0;
+            if &min_date <= date <= &max_date then output;
+         end;
+         date = first_date;
+         rapid_tests = prev_rapid;
+         not_rapid_tests = prev_not_rapid;
+         if &min_date <= date <= &max_date then output;
       end;
       else do;
          this_date = date;
@@ -161,22 +171,22 @@
          do date = prev_date + 1 to this_date - 1;
             rapid_tests = prev_rapid;
             not_rapid_tests = prev_not_rapid;
-            if date < first_date + 7 * &planning_horizon then output;
+            if &min_date <= date <= &max_date then output;
          end;
          date = this_date;
          rapid_tests = this_rapid_tests;
          not_rapid_tests = this_not_rapid_tests;
-         if date < first_date + 7 * &planning_horizon then output;
+         if &min_date <= date <= &max_date then output;
          prev_date = date;
          prev_rapid = rapid_tests;
          prev_not_rapid = not_rapid_tests;
       end;
-      if eof then do date = prev_date + 1 to (first_date + 7 * &planning_horizon - 1);
-         output;
+      if eof then do date = prev_date + 1 to &max_date;
+         if &min_date <= date <= &max_date then output;
       end;
       drop sequence _name_ first_date prev_: this_:;
    run;
-   
+
    proc cas; 
       loadactionset 'optimization'; 
       run; 
@@ -186,7 +196,6 @@
       set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES;   /* From utilization */ 
       set <str,str,str,str,str,num> FAC_SLINE_SSERV_IO_MS_DAYS;  /* From demand */
       set <str,str,str,str> FAC_SLINE_SSERV_RES;                 /* From capacity */
-      set <num> COVID_TESTING_DATES;                             /* From opt_parameters_date */
          
       /* Derived Sets */
       set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
@@ -209,8 +218,6 @@
       
       num totalDailyRapidTests{DAYS};
       num totalDailyNonRapidTests{DAYS};
-      num rapidTestCapacity{COVID_TESTING_DATES};
-      num nonRapidTestCapacity{COVID_TESTING_DATES};
       
       num minDemandRatio init &min_demand_ratio;
 
@@ -248,24 +255,15 @@
 
       /* Covid test capacity */
       read data &_worklib..opt_parameters_date
-         into COVID_TESTING_DATES = [date] 
-            rapidTestCapacity=rapid_tests
-            nonRapidTestCapacity=not_rapid_tests;
+         into [date] 
+            totalDailyRapidTests=rapid_tests
+            totalDailyNonRapidTests=not_rapid_tests;
             
       /* Parameters */
 /*       read data &_worklib..input_opt_parameters_pp */
 /*          into PARAMS_SET = [facility service_line sub_service ip_op_indicator med_surg_indicator parm_name] */
 /*             paramValue=parm_value; */
 /*     */
-
-      for {d in DAYS} do;
-         totalDailyRapidTests[d] = 0;
-         totalDailyNonRapidTests[d] = 0;
-         if (d in COVID_TESTING_DATES) then do;
-            totalDailyRapidTests[d] = rapidTestCapacity[d];
-            totalDailyNonRapidTests[d] = nonRapidTestCapacity[d];
-         end;
-      end;
 
       /* Create decomp blocks to decompose the problem by facility */
       set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
@@ -393,8 +391,32 @@
            
       unfix OpenFlg;
       unfix ReschedulePatients; 
+
+      num primary_objective_value init 0;
+      con Primary_Objective_Constraint: 
+          sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND} NewPatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf]
+        + sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL} ReschedulePatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf]
+        >= &secondary_objective_tolerance * primary_objective_value;
       
-      solve obj Total_Revenue with milp / primalin maxtime = 600 loglevel=3 /* decomp=(method=user) */;
+      if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
+
+         drop Primary_Objective_Constraint;
+         solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 /* decomp=(method=user) */;
+
+         if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
+
+            put Total_Revenue.sol=;
+            put Total_Margin.sol=;
+
+            primary_objective_value = Total_Revenue.sol;
+            restore Primary_Objective_Constraint;
+
+            solve obj Total_Margin with milp / primalin maxtime=300 loglevel=3;
+
+            put Total_Revenue.sol=;
+            put Total_Margin.sol=;
+         end;
+      end; 
 
       /******************Create output data*******************************/
 
@@ -433,14 +455,10 @@
          if f ne 'ALL' then Resources_Capacity[f,sl,ss,r,d].body 
          else Resources_Capacity_ALL[f,sl,ss,r,d].body;
          
-      num OptResourceUtilization{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS} = 
-         OptResourceUsage[f,sl,ss,r,d] / capacity[f,sl,ss,r];
-      
       create data &_worklib.._opt_resource_usage
          from [facility service_line sub_service resource day]={<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}
          capacity = capacity[f,sl,ss,r]
-         usage = (round(OptResourceUsage[f,sl,ss,r,d],0.01))
-         utilization = (round(OptResourceUtilization[f,sl,ss,r,d],0.01));
+         usage = (round(OptResourceUsage[f,sl,ss,r,d],0.01));
 
       create data &_worklib.._opt_covid_test_usage
          from [day]={d in DAYS}
@@ -458,9 +476,7 @@
       format date date9.;
       format week_start_date date9.;
       set &_worklib.._opt_detail (rename =(day=date));
-      week_num=week(date);
-      year_num=year(date);
-      week_start_date=input(put(year_num, 4.)||"W"||put(week_num,z2.)||"01", weekv9.);
+      week_start_date = date - (weekday(date)-1);
    run;
 
    proc cas;
@@ -500,6 +516,7 @@
    data &outlib..&output_resource_usage (promote=yes);
       format date date9.;
       set &_worklib.._opt_resource_usage (rename=(day=date));
+      utilization = round(usage / capacity, 0.001);
    run;
    
    data &outlib..&output_covid_test_usage (promote=yes);
