@@ -1,4 +1,4 @@
-%let data_path=/ordsrv3/OR_CENTER/FILES/Cleveland Clinic/Customer_Input/05062020;
+%let data_path=/ordsrv3/OR_CENTER/FILES/Cleveland Clinic/Customer_Input/05092020;
 
 cas mysess;
 caslib _all_ assign;
@@ -31,6 +31,8 @@ proc casutil;
 quit;
 
 /* Fix date - change to work table later and remove the delete */
+%let _worklib = casuser;
+%let input_demand = input_demand;
 
 	data &_worklib..&input_demand.;
 		set &inlib..&input_demand. (rename = (date=datechar));

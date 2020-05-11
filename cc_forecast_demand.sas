@@ -57,13 +57,29 @@
          &outlib..&output_fd_demand_fcst
          );
 
- /*Delete output data if already exists */
-	proc delete data= &output_tables.;
-	run;
+   /*Delete output data if already exists */
+   %let i = 1;
+   %let table = %scan(&output_tables, &i, ' ');
+   %do %while (&table ne %str());
+      %if %sysfunc(exist(&table)) %then %do;
+         proc delete data= &table.;
+         run;
+      %end;
+      %let i = %eval(&i + 1);
+      %let table = %scan(&output_tables, &i, ' ');
+   %end;
 
- /* Delete work data if already exists */
-	proc delete data= &_work_tables.;
-	run;
+   /* Delete work data if already exists */
+   %let i = 1;
+   %let table = %scan(&_work_tables, &i, ' ');
+   %do %while (&table ne %str());
+      %if %sysfunc(exist(&table)) %then %do;
+         proc delete data= &table.;
+         run;
+      %end;
+      %let i = %eval(&i + 1);
+      %let table = %scan(&_work_tables, &i, ' ');
+   %end;
  
 
 	/************************************/
@@ -325,8 +341,16 @@
    /*************************/
 
    %if &_debug.=0  %then %do;
-	proc delete data= &_work_tables.;
-	run;
+      %let i = 1;
+      %let table = %scan(&_work_tables, &i, ' ');
+      %do %while (&table ne %str());
+         %if %sysfunc(exist(&table)) %then %do;
+            proc delete data= &table.;
+            run;
+         %end;
+         %let i = %eval(&i + 1);
+         %let table = %scan(&_work_tables, &i, ' ');
+      %end;
    %end;
 
    %EXIT:

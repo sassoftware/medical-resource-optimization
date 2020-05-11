@@ -13,7 +13,10 @@
    ,input_service_attributes=input_service_attributes
    ,input_opt_parameters=input_opt_parameters
    ,output_opt_detail=output_opt_detail
+   ,output_opt_detail_agg=output_opt_detail_agg
    ,output_opt_summary=output_opt_summary
+   ,output_resource_usage=output_opt_resource_usage
+   ,output_covid_test_usage=output_opt_covid_test_usage
    ,min_demand_ratio=1
    ,_worklib=casuser
    ,_debug=1
@@ -61,264 +64,394 @@
       %goto EXIT;
    %end; 
 
-   /* List work tables 
-   %let _work_tables=%str(  
-        &_worklib.._TMP_OD_2
-        &_worklib.._TMP_OD_1
-        &_worklib.._tmp_od_adj_und_1
-        &_worklib.._tmp_od_adj_und_2
-        &_worklib.._tmp_od_adj_und_3
+   /* List work tables */
+   %let _work_tables=%str( 
+        &_worklib..opt_parameters_date
+        &_worklib..opt_parameters_non_date
+        &_worklib.._opt_detail
+        &_worklib.._opt_summary
+        &_worklib.._opt_resource_usage
+        &_worklib.._opt_covid_test_usage
+        &_worklib.._opt_detail_week
+        &_worklib.._opt_detail_agg
          );
-*/
 
    /* List output tables */
    %let output_tables=%str(         
         &outlib..&output_opt_detail
+        &outlib..&output_opt_detail_agg
         &outlib..&output_opt_summary
-        &outlib..output_opt_detail_agg
+        &outlib..&output_resource_usage
+        &outlib..&output_covid_test_usage
          );
 
+   /*Delete output data if already exists */
+   %let i = 1;
+   %let table = %scan(&output_tables, &i, ' ');
+   %do %while (&table ne %str());
+      %if %sysfunc(exist(&table)) %then %do;
+         proc delete data= &table.;
+         run;
+      %end;
+      %let i = %eval(&i + 1);
+      %let table = %scan(&output_tables, &i, ' ');
+   %end;
 
-   /* Delete output data if already exists */
-   proc delete data= &output_tables.;
-   run;
-
-   /* Delete work data if already exists
-   proc delete data= &_work_tables.;
-   run;
- */
+   /* Delete work data if already exists */
+   %let i = 1;
+   %let table = %scan(&_work_tables, &i, ' ');
+   %do %while (&table ne %str());
+      %if %sysfunc(exist(&table)) %then %do;
+         proc delete data= &table.;
+         run;
+      %end;
+      %let i = %eval(&i + 1);
+      %let table = %scan(&_work_tables, &i, ' ');
+   %end;
 
    /************************************/
    /************ANALYTICS *************/
    /***********************************/
 
-   /* For debugging */
-   %let filter1=%str((where=(service_line ~= 'Evaluation and Management' and ip_op_indicator='I')));
-   %let filter2=%str((where=(service_line ~= 'Evaluation and Management')));
+   /* Divide INPUT_OPT_PARAMETERS_PP into two tables: one for the date-specific phases and the 
+      other for non-date-specific parameters */
+   data &_worklib..opt_parameters_date (keep=sequence parameter value)
+        &_worklib..opt_parameters_non_date (drop=start sequence parameter value);
+      set &_worklib..input_opt_parameters_pp;
+      parm_name = upcase(parm_name);
+      parm_value = upcase(parm_value);
+      if index(parm_name, 'PHASE_') > 0 then do;
+         start = index(parm_name, 'PHASE_');
+         parameter = substr(parm_name, 1, start-2);
+         sequence = scan(substr(parm_name, start),2,'_') + 0;
+         if parameter = 'DATE' then value = input(parm_value, mmddyy10.);
+         else value = parm_value + 0;
+         output &_worklib..opt_parameters_date;
+      end;
+      else output &_worklib..opt_parameters_non_date;
+   run;
+   
+   proc transpose data=&_worklib..opt_parameters_date out=&_worklib..opt_parameters_date;
+      by sequence;
+      id parameter;
+   run;
 
-   /* min_demand_ratio is the proportion of demand that must be satisfied if a sub-service is open. Set it to 1 if you 
-      want to require all demand to be satisfied. However, this might result in some sub-services not opening at all,
-      because there are not enough covid-19 tests to accommodate the full demand. Set it to a smaller value (e.g., 0.8 or 
-      0.6 or even 0.2) if you just want to make sure that we accept some minimum amount of the demand if we open a sub-service. */
-/*    %let min_demand_ratio = 1.0; */
-
-   proc optmodel;
+   /* Fill in daily capacities of covid tests for the entire planning horizon */
+   proc sql noprint;
+      select parm_value into :planning_horizon 
+      from &_worklib..opt_parameters_non_date
+      where parm_name = 'PLANNING_HORIZON';
+   quit;
+   
+   data &_worklib..opt_parameters_date / single=yes;
+      set &_worklib..opt_parameters_date end=eof;
+      retain first_date prev_date prev_rapid prev_not_rapid;
+      by sequence;
+      if _n_ = 1 then do;
+         first_date = date;
+         prev_date = date;
+         prev_rapid = rapid_tests;
+         prev_not_rapid = not_rapid_tests;
+         output;
+      end;
+      else do;
+         this_date = date;
+         this_rapid_tests = rapid_tests;
+         this_not_rapid_tests = not_rapid_tests;
+         do date = prev_date + 1 to this_date - 1;
+            rapid_tests = prev_rapid;
+            not_rapid_tests = prev_not_rapid;
+            if date < first_date + 7 * &planning_horizon then output;
+         end;
+         date = this_date;
+         rapid_tests = this_rapid_tests;
+         not_rapid_tests = this_not_rapid_tests;
+         if date < first_date + 7 * &planning_horizon then output;
+         prev_date = date;
+         prev_rapid = rapid_tests;
+         prev_not_rapid = not_rapid_tests;
+      end;
+      if eof then do date = prev_date + 1 to (first_date + 7 * &planning_horizon - 1);
+         output;
+      end;
+      drop sequence _name_ first_date prev_: this_:;
+   run;
+   
+   proc cas; 
+      loadactionset 'optimization'; 
+      run; 
+      source pgm;
    
       /* Master sets read from data */
-      set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES; /* From utilization */
-      set <str,str,str,str,str,num> FAC_SLINE_SSERV_IO_MS_DAYS; /* From demand */
-      set <str,str,str,str> FAC_SLINE_SSERV_RES; /* From capacity */
-      set <str,str,str,str,str,str> PARAMS_SET;
+      set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES;   /* From utilization */ 
+      set <str,str,str,str,str,num> FAC_SLINE_SSERV_IO_MS_DAYS;  /* From demand */
+      set <str,str,str,str> FAC_SLINE_SSERV_RES;                 /* From capacity */
+      set <num> COVID_TESTING_DATES;                             /* From opt_parameters_date */
          
       /* Derived Sets */
-	  set HIER_IN_UTIL = setof {<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES} <f,sl,ss,iof,msf>;
-
-      set <str,str,str> FAC_SLINE_SSERV = 
-		setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS/*: <f,sl,ss,iof,msf> in HIER_IN_UTIL*/} <f,sl,ss>;
-
-      set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = 
-		setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS/*: <f,sl,ss,iof,msf> in HIER_IN_UTIL*/} <f,sl,ss,iof,msf>;
-
-/* 	 set FAC_SLINE_SSERV_IO_MS_DAYS1 =  */
-/* 		setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS: <f,sl,ss,iof,msf> in HIER_IN_UTIL} <f,sl,ss,iof,msf,d>; */
-/*  */
-/* 	 set FAC_SLINE_SSERV_RES1 =  */
-/* 		setof {<f,sl,ss,r> in FAC_SLINE_SSERV_RES: <f,sl,ss> in {setof <f,sl,ss,iof,msf> in HIER_IN_UTIL <f,sl,ss>} <f,sl,ss,iof,msf,d>; */
-
-
+      set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
+      set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss,iof,msf>;
       set <num> DAYS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <d>;
 
       num capacity{FAC_SLINE_SSERV_RES};
-
       num utilization{FAC_SLINE_SSERV_IO_MS_RES};
 
       num revenue{FAC_SLINE_SSERV_IO_MS};
       num margin{FAC_SLINE_SSERV_IO_MS};
       num losMean{FAC_SLINE_SSERV_IO_MS};
-      num numCancel{FAC_SLINE_SSERV_IO_MS};
+      num numCancel{FAC_SLINE_SSERV_IO_MS} init 0;
 
       num demand{FAC_SLINE_SSERV_IO_MS_DAYS};
-      num maxCapacityWithoutCovid{FAC_SLINE_SSERV_IO_MS_DAYS} init 0;
+      num newPatientsBeforeCovid{FAC_SLINE_SSERV_IO_MS_DAYS} init 0;
       
       num minDay=min {d in DAYS} d;
       num maxDay=max {d in DAYS} d;
       
+      num totalDailyRapidTests{DAYS};
+      num totalDailyNonRapidTests{DAYS};
+      num rapidTestCapacity{COVID_TESTING_DATES};
+      num nonRapidTestCapacity{COVID_TESTING_DATES};
+      
       num minDemandRatio init &min_demand_ratio;
 
-/*       num paramValue{PARAMS_SET}; */
-/*       num totalDailyRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','RAPID_TESTS_PHASE_1']; */
-/*       num totalDailyNonRapidTests=paramValue['ALL','ALL','ALL','ALL','ALL','NOT_RAPID_TESTS_PHASE_1']; */
-/*       num daysTestBeforeAdmSurg=paramValue['ALL','ALL','ALL','ALL','SURG','TEST_DAYS_BA']; */
-      num totalDailyRapidTests=190;
-      num totalDailyNonRapidTests=1200;
       num daysTestBeforeAdmSurg=2;
   
-   /*    num losVar{FAC_SLINE_SSERV}; */
-   /*    num visitorsMean{FAC_SLINE_SSERV}; */
-   /*    num visitorsVar{FAC_SLINE_SSERV}; */
-   /*    num minPctReschedule{FAC_SLINE_SSERV}; */
-   /*    num maxPctReschedule{FAC_SLINE_SSERV}; */
-   
-   
-      /* Read data from SAS data sets */ 
+      /* Read data from CAS tables */ 
    
       /* Demand Forecast*/
-      read data &outlib..output_fd_demand_fcst &filter1.
+      read data &outlib..output_fd_demand_fcst
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
       /* Capacity */
-      read data &_worklib..input_capacity_pp &filter2.
+      read data &_worklib..input_capacity_pp
          into FAC_SLINE_SSERV_RES = [facility service_line sub_service resource]
             capacity;
 
       /* Utilization */
-      read data &_worklib..input_utilization_pp &filter1.
+      read data &_worklib..input_utilization_pp
          into FAC_SLINE_SSERV_IO_MS_RES = [facility service_line sub_service ip_op_indicator med_surg_indicator resource]
             utilization=utilization_mean;
 
       /* Financials */
-      read data &_worklib..input_financials_pp &filter1.
+      read data &_worklib..input_financials_pp
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             revenue 
             margin;
       
       /* Service attributes */
-      read data &_worklib..input_service_attributes_pp &filter1.
+      read data &_worklib..input_service_attributes_pp
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
+            /* DEBUG: If you don't want to use cancellations, comment out the next line so we don't read num_cancelled */
             numCancel=num_cancelled
             losMean=length_stay_mean;
 
+      /* Covid test capacity */
+      read data &_worklib..opt_parameters_date
+         into COVID_TESTING_DATES = [date] 
+            rapidTestCapacity=rapid_tests
+            nonRapidTestCapacity=not_rapid_tests;
+            
       /* Parameters */
-/*       read data &_worklib..input_opt_parameters_pp &filter. */
+/*       read data &_worklib..input_opt_parameters_pp */
 /*          into PARAMS_SET = [facility service_line sub_service ip_op_indicator med_surg_indicator parm_name] */
 /*             paramValue=parm_value; */
 /*     */
-      
-      /******************Model variables, constraints, objective function*******************************/
 
+      for {d in DAYS} do;
+         totalDailyRapidTests[d] = 0;
+         totalDailyNonRapidTests[d] = 0;
+         if (d in COVID_TESTING_DATES) then do;
+            totalDailyRapidTests[d] = rapidTestCapacity[d];
+            totalDailyNonRapidTests[d] = nonRapidTestCapacity[d];
+         end;
+      end;
+
+      /* Create decomp blocks to decompose the problem by facility */
+      set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
+      num block_id{f in FACILITIES};
+      num id init 0;
+      for {f in FACILITIES} do;
+         block_id[f] = id;
+         id = id + 1;
+      end;
+
+      /******************Model variables, constraints, objective function*******************************/
+   
       /* Decide to open or not a sub service */
       var OpenFlg{FAC_SLINE_SSERV, DAYS} BINARY;
    
-      /* Related to how many new patients are actually accepted */
-      var NewPatients{FAC_SLINE_SSERV_IO_MS_DAYS} >= 0 INTEGER;
-   
+      /* Related to how many new patients are actually accepted. Note that we're only going to assign NewPatients on 
+         days that have positive demand, and we're only going to assign ReschedulePatients for sub-services that have 
+         positive cancellations, so first we create sets to restrict the variable hierarchies. (I'm creating the 
+         sets here instead of up above with the other sets, because these depend on demand[] and numCancel[] so they 
+         have to come after the read data statements.) */
+      set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_DEMAND = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : demand[f,sl,ss,iof,msf,d] > 0};
+      set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_CANCEL = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : numCancel[f,sl,ss,iof,msf] > 0};
+      var NewPatients{VAR_HIERARCHY_POSITIVE_DEMAND} >= 0;
+      var ReschedulePatients{VAR_HIERARCHY_POSITIVE_CANCEL} >= 0;
+
       /* Calculate total number of patients for day d */
       impvar TotalPatients{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} =
-         sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
-
+         sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} 
+            ((if <f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d1] else 0)
+           + (if <f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl,ss,iof,msf,d1] else 0));
       
       /* New patients cannot exceed demand if the sub service is open */
-      /* TODO: Some demand forecasts are negative. I am treating them as zero in the max demand constraint, but should we 
-         handle this in the forecasting step instead? If we're just going to set them to 0, we can leave it in optmodel, but 
-         if we need to do something more sophisticated, then it should probably go in the forecasting macro. */
-      con Maximum_Demand{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}:
-         NewPatients[f,sl,ss,iof,msf,d] <= max(demand[f,sl,ss,iof,msf,d],0)*OpenFlg[f,sl,ss,d];
+      con Maximum_Demand{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND}:
+         NewPatients[f,sl,ss,iof,msf,d] <= demand[f,sl,ss,iof,msf,d]*OpenFlg[f,sl,ss,d]
+                   suffixes=(block=block_id[f]);
    
-      /* If a sub-service is open, we must satisfy a minimum proportion of the demand */
-      con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}:
-         sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]
-            >= minDemandRatio
+      /* Rescheduled patients are not allowed if the sub service is not open. In this constraint, numCancel
+         acts as a big-M coefficient. */
+      con Reschedule_Allowed{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL}:
+         ReschedulePatients[f,sl,ss,iof,msf,d] <= numCancel[f,sl,ss,iof,msf]*OpenFlg[f,sl,ss,d]
+                   suffixes=(block=block_id[f]);
+      
+      /* The total number of patients rescheduled across all the days cannot exceed the number of 
+         cancelled patients. */
+      con Reschedule_Maximum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS : numCancel[f,sl,ss,iof,msf] > 0}:
+         sum{d in DAYS} ReschedulePatients[f,sl,ss,iof,msf,d] <= numCancel[f,sl,ss,iof,msf]
+                   suffixes=(block=block_id[f]);
+         
+      /* If a sub-service is open, we must satisfy a minimum proportion of the demand if minDemandRatio > 0 */
+      con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS : minDemandRatio > 0}:
+         sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} 
+                ((if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d] else 0)
+               + (if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl,ss,iof,msf,d] else 0))
+            >= minDemandRatio 
                * OpenFlg[f,sl,ss,d]
-               * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} maxCapacityWithoutCovid[f,sl,ss,iof,msf,d];
+               * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} newPatientsBeforeCovid[f,sl,ss,iof,msf,d]
+                   suffixes=(block=block_id[f]);
                
       /* If a sub-service opens, it must stay open for the remainder of the horizon */
       con Service_Stay_Open{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: d + 1 in DAYS}:
-         OpenFlg[f,sl,ss,d+1] >= OpenFlg[f,sl,ss,d];
-
-	/* Temporary constraint: only allow full horizon opening - not staged */
-	 con Open_Only_First_Day {<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: d=minDay}:
-		 OpenFlg[f,sl,ss,d+1]= OpenFlg[f,sl,ss,d];
+         OpenFlg[f,sl,ss,d+1] >= OpenFlg[f,sl,ss,d]
+                   suffixes=(block=block_id[f]);
                
-      /* Total patients cannot exceed capacity */
-      con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}:
-         sum {<f2,sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : 
-               (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
+      /* Total patients cannot exceed capacity. We are breaking these into two sets of constraints -- one where facility 
+         is not equal to 'ALL' and one where facility is equal to 'ALL' -- so that we can define decomp blocks for the 
+         ones that do not span all facilities. */
+      con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS : f ne 'ALL'}:
+         sum {<(f),sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
+            utilization[f,sl2,ss2,iof,msf,r]*TotalPatients[f,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r]
+                   suffixes=(block=block_id[f]);
+
+      con Resources_Capacity_ALL{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS : f = 'ALL'}:
+         sum {<f2,sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
-            
+         
       /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
-         sum {<f,sl,ss,iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS : iof='I'} 
-              NewPatients[f,sl,ss,iof,msf,d] <= totalDailyRapidTests ;
+         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I'} NewPatients[f,sl,ss,iof,msf,d] 
+       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I'} ReschedulePatients[f,sl,ss,iof,msf,d]
+         <= totalDailyRapidTests[d];
 
       /* Non-Rapid tests constraint - total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS : d+daysTestBeforeAdmSurg in DAYS}:
-         sum {<f,sl,ss,iof,msf,d1> in FAC_SLINE_SSERV_IO_MS_DAYS : msf='SURG' and d1=d+daysTestBeforeAdmSurg} 
-              NewPatients[f,sl,ss,iof,msf,d1]  <=  totalDailyNonRapidTests;
+         sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1=d+daysTestBeforeAdmSurg} NewPatients[f,sl,ss,iof,msf,d1]
+       + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1=d+daysTestBeforeAdmSurg} ReschedulePatients[f,sl,ss,iof,msf,d1]
+         <= totalDailyNonRapidTests[d];
 
       max Total_Revenue = 
-         sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf];
+          sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND} NewPatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf]
+        + sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL} ReschedulePatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf];
    
       max Total_Margin = 
-         sum{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} NewPatients[f,sl,ss,iof,msf,d]*margin[f,sl,ss,iof,msf];
+          sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND} NewPatients[f,sl,ss,iof,msf,d] * margin[f,sl,ss,iof,msf]
+        + sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL} ReschedulePatients[f,sl,ss,iof,msf,d] * margin[f,sl,ss,iof,msf];
 
       /******************Solve*******************************/
 
-	/* If not limited to demand or covid19 tests, how would capacity be managed */
-/* 	 drop   */
-/*            Minimum_Demand */
-/* 		   Maximum_Demand */
-/* 		   ; */
-
-	/* Do not open any hierarchy that is not restricted by utilization */
-/* 	for {<f,sl,ss,iof,msf> in HIER_IN_UTIL, d in DAYS} fix OpenFlg[f,sl,ss,d] = 0; */
-
-/* 	solve obj Total_Revenue with milp; */
-
-
       /* First we want to find out what is the maximum demand we can handle without the covid-19 tests. 
-         We drop the COVID constraint and the minimum demand constraint. We're also going to fix OpenFlg to 1 
+         We drop the COVID constraints and the minimum demand constraints. We're also going to fix OpenFlg to 1 
          for every sub-service (i.e., the only reason we might not open a sub-service is because we don't have enough 
-         COVID-19 tests), so we can also drop the Service_Stay_Open constraints. */
+         COVID-19 tests), so we can also drop the Service_Stay_Open constraints. And we fix ReschedulePatients to 0
+         because we only want to consider original demand (i.e., non-covid impacts) to calculate newPatientsBeforeCovid. */
       drop COVID19_Day_Of_Admission_Testing
            COVID19_Before_Admission_Testing
            Minimum_Demand
-           Service_Stay_Open
-		   ;
+           Service_Stay_Open;
            
-      for {<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS} fix OpenFlg[f,sl,ss,d] = 1;
+      fix OpenFlg = 1;
+      fix ReschedulePatients = 0;
 
-      solve obj Total_Revenue with milp;
+      solve obj Total_Revenue with milp / maxtime=300 loglevel=3 /* decomp=(method=user) */;
       
       /* The maximum demand without covid-19 tests is equal to the number of new patients that we saw, 
          subject to other resource capacity constraints */
       for {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}
-         maxCapacityWithoutCovid[f,sl,ss,iof,msf,d] = NewPatients[f,sl,ss,iof,msf,d].sol;
+         newPatientsBeforeCovid[f,sl,ss,iof,msf,d] = 
+            if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d].sol else 0;
       
       /* Now restore the COVID constraints, the minimum demand constraints, and the Service_Stay_Open constraints, 
-         and unfix OpenFlg, and then solve again. */
+         and unfix OpenFlg and ReschedulePatients, and then solve again. */
       restore COVID19_Day_Of_Admission_Testing
               COVID19_Before_Admission_Testing
               Minimum_Demand
               Service_Stay_Open;
            
       unfix OpenFlg;
-
-      solve obj Total_Revenue with milp / primalin;
-
-
+      unfix ReschedulePatients; 
+      
+      solve obj Total_Revenue with milp / primalin maxtime = 600 loglevel=3 /* decomp=(method=user) */;
 
       /******************Create output data*******************************/
 
+      num OptNewPatients {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} = 
+         if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d].sol else 0;
+
+      num OptReschedulePatients {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} = 
+         if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl,ss,iof,msf,d].sol else 0;
+
       num OptRevenue{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} = 
-        NewPatients[f,sl,ss,iof,msf,d].sol*revenue[f,sl,ss,iof,msf];
+        (if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d].sol else 0 
+       + if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl,ss,iof,msf,d].sol else 0) 
+       * revenue[f,sl,ss,iof,msf];
 
       num OptMargin{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} = 
-        NewPatients[f,sl,ss,iof,msf,d].sol*margin[f,sl,ss,iof,msf];
+        (if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d].sol else 0 
+       + if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl,ss,iof,msf,d].sol else 0) 
+       * margin[f,sl,ss,iof,msf];
 
       create data &_worklib.._opt_detail
          from [facility service_line sub_service ip_op_indicator med_surg_indicator day]
-			={<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}
-         NewPatients=(round(NewPatients[f,sl,ss,iof,msf,d],0.01))
-         TotalPatients=(round(NewPatients[f,sl,ss,iof,msf,d],0.01))
+               = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}
+         NewPatients=(round(OptNewPatients[f,sl,ss,iof,msf,d],0.01))
+         ReschedulePatients=(round(OptReschedulePatients[f,sl,ss,iof,msf,d],0.01))
+         TotalPatients=(round(TotalPatients[f,sl,ss,iof,msf,d],0.01))
          OptRevenue=(round(OptRevenue[f,sl,ss,iof,msf,d],0.01))
          OptMargin=(round(OptMargin[f,sl,ss,iof,msf,d],0.01))
-		 demand
-         maxCapacityWithoutCovid;
+         Demand=(round(demand[f,sl,ss,iof,msf,d],0.01))
+         NewPatientsBeforeCovid=(round(newPatientsBeforeCovid[f,sl,ss,iof,msf,d],0.01));
 
       create data &_worklib.._opt_summary
          from [facility service_line sub_service day]={<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}
          OpenFlg=(round(OpenFlg[f,sl,ss,d],0.01));
+
+      num OptResourceUsage{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS} = 
+         if f ne 'ALL' then Resources_Capacity[f,sl,ss,r,d].body 
+         else Resources_Capacity_ALL[f,sl,ss,r,d].body;
+         
+      num OptResourceUtilization{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS} = 
+         OptResourceUsage[f,sl,ss,r,d] / capacity[f,sl,ss,r];
+      
+      create data &_worklib.._opt_resource_usage
+         from [facility service_line sub_service resource day]={<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}
+         capacity = capacity[f,sl,ss,r]
+         usage = (round(OptResourceUsage[f,sl,ss,r,d],0.01))
+         utilization = (round(OptResourceUtilization[f,sl,ss,r,d],0.01));
+
+      create data &_worklib.._opt_covid_test_usage
+         from [day]={d in DAYS}
+            rapidTestsAvailable=totalDailyRapidTests[d]
+            rapidTestsUsed=COVID19_Day_Of_Admission_Testing[d].body
+            nonRapidTestsAvailable=totalDailyNonRapidTests[d]
+            nonRapidTestsUsed=(if (d+daysTestBeforeAdmSurg in DAYS) then COVID19_Before_Admission_Testing[d].body else 0);
+
+      endsource; 
+      runOptmodel result=runOptmodelResult / code=pgm printlevel=0; 
+      run; 
    quit;
 
    data &_worklib.._opt_detail_week;
@@ -335,10 +468,12 @@
          groupby={"facility","service_line","sub_service","week_start_date"}} 
          saveGroupByFormat=false 
          varSpecs={{name="NewPatients", summarySubset="sum", columnNames="NewPatients"}
+                   {name="ReschedulePatients", summarySubset="sum", columnNames="ReschedulePatients"}
+                   {name="TotalPatients", summarySubset="sum", columnNames="TotalPatients"}
                    {name="OptMargin", summarySubset="sum", columnNames="OptMargin"}
                    {name="OptRevenue", summarySubset="sum", columnNames="OptRevenue"}
-					{name="Demand", summarySubset="sum", columnNames="Demand"}
-					{name="maxCapacityWithoutCovid", summarySubset="sum", columnNames="maxCapacityWithoutCovid"}} 
+                   {name="Demand", summarySubset="sum", columnNames="Demand"}
+                   {name="NewPatientsBeforeCovid", summarySubset="sum", columnNames="NewPatientsBeforeCovid"}}
          casOut={caslib="&_worklib.",name="_opt_detail_agg",replace=true}; run;  
    quit;
 
@@ -347,17 +482,29 @@
       set &_worklib.._opt_detail;
    run;
 
-   data &outlib..output_opt_detail_agg (promote=yes);
+   data &outlib..&output_opt_detail_agg (promote=yes);
       set &_worklib.._opt_detail_agg;
-	    DailyNewPatients=NewPatients/7;
-		DailyOptMargin=OptMargin/7;
-		DailyOptRevenue=OptRevenue/7;
-		DailyDemand=Demand/7;
-		DailyMaxCapacityWithoutCovid=maxCapacityWithoutCovid/7;
-	run;
+      DailyNewPatients=NewPatients/7;
+      DailyReschedulePatients=ReschedulePatients/7;
+      DailyTotalPatients=TotalPatients/7;
+      DailyOptMargin=OptMargin/7;
+      DailyOptRevenue=OptRevenue/7;
+      DailyDemand=Demand/7;
+      DailyNewPatientsBeforeCovid=NewPatientsBeforeCovid/7;
+   run;
     
    data &outlib..&output_opt_summary (promote=yes);
       set &_worklib.._opt_summary;
+   run;
+   
+   data &outlib..&output_resource_usage (promote=yes);
+      format date date9.;
+      set &_worklib.._opt_resource_usage (rename=(day=date));
+   run;
+   
+   data &outlib..&output_covid_test_usage (promote=yes);
+      format date date9.;
+      set &_worklib.._opt_covid_test_usage (rename=(day=date));
    run;
    
    /*************************/
@@ -365,8 +512,16 @@
    /*************************/
 
    %if &_debug.=0  %then %do;
-   proc delete data= &_work_tables.;
-   run;
+      %let i = 1;
+      %let table = %scan(&_work_tables, &i, ' ');
+      %do %while (&table ne %str());
+         %if %sysfunc(exist(&table)) %then %do;
+            proc delete data= &table.;
+            run;
+         %end;
+         %let i = %eval(&i + 1);
+         %let table = %scan(&_work_tables, &i, ' ');
+      %end;
    %end;
 
    %EXIT:
