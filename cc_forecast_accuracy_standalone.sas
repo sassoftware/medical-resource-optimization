@@ -10,14 +10,14 @@ cas mysess;
 caslib _all_ assign;
 
 /* Point to the code */
-%let my_code_path=/r/ge.unx.sas.com/vol/vol410/u41/supazh/casuser/Cleveland_Clinic/gitrepo;
+%let my_code_path=/r/sanyo.unx.sas.com/vol/vol920/u92/navikt/casuser/covid/code/MRO/git;
 %include "&my_code_path./cc_forecast_demand.sas";
 %include "&my_code_path./cc_med_res_opt.sas";
 %include "&my_code_path./cc_data_prep.sas";
 
 /* Define libraries */
 %let inlib=cc;
-%let outlib=casuser;
+%let outlib=cc;
 %let _worklib=casuser;
 
 /* Submit code */
@@ -30,10 +30,15 @@ caslib _all_ assign;
     ,input_service_attributes=input_service_attributes
     ,input_demand=input_demand
     ,input_opt_parameters=input_opt_parameters
-    ,output_hierarchy_mismatch=output_hierarchy_mismatch
-    ,output_resource_mismatch=output_resource_mismatch
-    ,output_invalid_values=output_invalid_values
-    ,output_duplicate_rows=output_duplicate_rows
+/*
+    ,include_str=%str(facility in ('Hillcrest','ALL') )
+*/
+    ,exclude_str=%str(facility in ('Florida','CCCHR') or service_line='Evaluation and Management')
+    ,los_rounding_threshold=0.5
+    ,output_hierarchy_mismatch=output_dp_hierarchy_mismatch
+    ,output_resource_mismatch=output_dp_resource_mismatch
+    ,output_invalid_values=output_dp_invalid_values
+    ,output_duplicate_rows=output_dp_duplicate_rows
     ,_worklib=&_worklib
     ,_debug=0
     );
@@ -53,8 +58,8 @@ run;
     ,outlib=&outlib.
 	,input_demand = input_demand_train
 	,output_fd_demand_fcst=output_fd_demand_fcst
-	,lead_weeks=5
-	,forecast_model = yoy
+	,lead_weeks=26
+	,forecast_model = tsmdl
     ,_worklib=casuser
     ,_debug=0
     );
