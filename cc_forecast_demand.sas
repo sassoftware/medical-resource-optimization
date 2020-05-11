@@ -123,6 +123,10 @@
 	data _null_;
 	   set &_worklib.._tmpstats;
 	   call symputx('tEnd', Date);
+	   
+	   if Date < today() then gap_weeks = intck('week',Date,today()) + 1;
+	   else gap_weeks = 0;
+	   call symputx('gap_weeks', gap_weeks);
 	run;
 
 	proc cas;
@@ -142,6 +146,8 @@
 	      casOut={caslib="&_worklib." name="_tmp_input_demand_week" replace=true};
 	   run;
 	quit;
+	
+	%let forecast_weeks = %eval(&lead_weeks + &gap_weeks);
 
 %if &forecast_model. = tsmdl %then 
 %do;
@@ -182,7 +188,7 @@
         
         declare object forecast(foreng);
         rc = forecast.Initialize(diagnose);
-        rc = forecast.SetOption('lead', &lead_weeks.);
+        rc = forecast.SetOption('lead', &forecast_weeks.);
         rc = forecast.Run();
         
         declare object outfor(outfor);
@@ -201,7 +207,7 @@
 %if &forecast_model. = yoy %then 
 %do;
 /* Start here for the yoy model */ 
-%let forecast_tEnd = &tEnd + (&lead_weeks*7);	
+%let forecast_tEnd = &tEnd + (&forecast_weeks*7);	
 	
 	data &_worklib.._tmp2_input_demand_woy;
 		set &_worklib.._tmp_input_demand_week;
@@ -325,7 +331,7 @@
          do rc0 = h0.find() by 0 while (rc0 = 0);
             predict_date = intnx('day',date, (dow-1));
             daily_predict = (predict * demand_proportion);
-            output;
+            if today() < predict_date <= today() + 7 * &lead_weeks then output;
             rc0 = h0.find_next();
          end;
 
