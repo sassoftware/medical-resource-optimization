@@ -60,6 +60,8 @@ run;
     );
 
 %let hierarchy=%str(facility service_line sub_service ip_op_indicator med_surg_indicator);
+proc delete data=&outlib..output_fa_fit_fcst;
+run;
 data &outlib..output_fa_fit_fcst (promote=yes);
 	merge 
 		&outlib..output_fd_demand_fcst (in=a keep = &hierarchy. predict_date daily_predict rename = (predict_date=date))
@@ -103,6 +105,8 @@ proc cas;
  	     casOut={caslib="&_worklib.",name="_tmp_fa_mape",replace=true}; run; 
 quit;
 
+proc delete data=&outlib..output_fa_mape;
+run;
 data &outlib..output_fa_mape (promote=yes);
    set &_worklib.._tmp_fa_mape;
 run;
