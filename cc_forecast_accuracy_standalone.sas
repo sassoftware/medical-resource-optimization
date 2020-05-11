@@ -54,7 +54,7 @@ run;
 	,input_demand = input_demand_train
 	,output_fd_demand_fcst=output_fd_demand_fcst
 	,lead_weeks=5
-	,forecast_model = yoy
+	,forecast_model = tsmdl
     ,_worklib=casuser
     ,_debug=0
     );
@@ -106,5 +106,34 @@ quit;
 data &outlib..output_fa_mape (promote=yes);
    set &_worklib.._tmp_fa_mape;
 run;
-		
-		
+
+
+/* to compare models*/
+/*Delete output data if already exists */
+proc delete data= &outlib..output_fa_mape_cons;
+run;
+
+proc FEDSQL sessref=mysess;
+create table &outlib..output_fa_mape_cons as
+ select 
+	A.facility, A.service_line, A.ip_op_indicator, 
+	A.MAPE AS MAPE_TSMDL, A.Avg_Weekly_Demand AS Avg_Weekly_Demand_TSMDL,
+	B.MAPE AS MAPE_YOY, B.Avg_Weekly_Demand AS Avg_Weekly_Demand_YOY	
+
+FROM &outlib..output_fa_mape_tsmdl A
+LEFT OUTER JOIN &outlib..output_fa_mape_yoy B
+on
+A.facility = B.facility AND A.service_line=B.service_line 
+AND A.ip_op_indicator =B.ip_op_indicator
+;
+QUIT;
+
+proc casutil;
+	promote casdata="OUTPUT_FA_MAPE_CONS" outcaslib="casuser" incaslib="casuser" drop;                   
+quit;
+
+
+
+
+
+
