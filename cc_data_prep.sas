@@ -14,6 +14,7 @@
                    ,input_opt_parameters=input_opt_parameters
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
+                   ,los_rounding_threshold=0.5
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
                    ,output_resource_mismatch=output_resource_mismatch
                    ,output_invalid_values=output_invalid_values
@@ -368,6 +369,8 @@
             or length_stay_mean = . or length_stay_mean < 0
             then output &_worklib.._invalid_values_service_attrs;
          else do;
+            if length_stay_mean - floor(length_stay_mean) <= &los_rounding_threshold then length_stay_mean = floor(length_stay_mean);
+            else length_stay_mean = ceil(length_stay_mean);
             output &_worklib..input_service_attributes_pp;
             output &_worklib.._hierarchy_service_attributes;
          end;
@@ -414,19 +417,24 @@
       length facility $&len_facility;
       length service_line $&len_service_line;
       length sub_service $&len_sub_service;
+      length ip_op_indicator $&len_ip_op_indicator;
+      length med_surg_indicator $&len_med_surg_indicator;
 
       set &input_opt_parameters_table (where=((&include_str) and not (&exclude_str)));
-      by facility service_line sub_service parm_name;
+      by facility service_line sub_service ip_op_indicator med_surg_indicator parm_name;
       if upcase(facility) = 'ALL' then facility = 'ALL';
       if upcase(service_line) = 'ALL' then service_line = 'ALL';
       if upcase(sub_service) = 'ALL' then sub_service = 'ALL';
+      if upcase(ip_op_indicator) = 'ALL' then ip_op_indicator = 'ALL';
+      if upcase(med_surg_indicator) = 'ALL' then med_surg_indicator = 'ALL';
       
       if first.parm_name then do;
-         if facility = '' or service_line = '' or sub_service = '' or parm_name = ''
+         if facility = '' or service_line = '' or sub_service = '' 
+            /*or ip_op_indicator = '' or med_surg_indicator = '' */ or parm_name = ''
             then output &_worklib.._invalid_values_opt_parameters;
          else do;
             output &_worklib..input_opt_parameters_pp;
-            if first.sub_service then output &_worklib.._hierarchy_opt_parameters;
+            if first.med_surg_indicator then output &_worklib.._hierarchy_opt_parameters;
          end;
       end;
       else output &_worklib.._duplicate_rows_opt_parameters;
@@ -674,7 +682,7 @@
       in_capacity = in_cap;
    run;
 
-   /* Remove the rows from &input_opt_parameters that do not correspond to any facility/service_line/sub_service
+   /* Remove the rows from &input_opt_parameters that do not correspond to any hierarchy
       remaining in master_sets_union, but keep the rows that have ALL for any of the fields */
    data &_worklib..distinct_fac_sl_ss;
       set &_worklib..master_sets_union (keep=facility service_line sub_service);
@@ -692,6 +700,7 @@
       end;
       rc0 = h0.find();
       if rc0 = 0 or upcase(facility)='ALL' or upcase(service_line)='ALL' or upcase(sub_service)='ALL'
+         or upcase(ip_op_indicator)='ALL' or upcase(med_surg_indicator)='ALL'
          then output &_worklib..input_opt_parameters_pp;
       else output &_worklib.._dropped_rows_opt_parameters;
       drop rc0;
@@ -707,10 +716,30 @@
       select count(*) into :n_duplicate_rows 
          from &outlib..&output_duplicate_rows;
    quit;
+   
    %if &n_hierarchy_mismatch > 0 %then %put WARNING: There are %left(&n_hierarchy_mismatch) rows in the %upcase(&outlib..&output_hierarchy_mismatch) table.;
+   %else %do;
+      proc delete data=&outlib..&output_hierarchy_mismatch; 
+      quit;
+   %end;
+      
    %if &n_resource_mismatch > 0 %then %put WARNING: There are %left(&n_resource_mismatch) rows in the %upcase(&outlib..&output_resource_mismatch) table.;
+   %else %do;
+      proc delete data=&outlib..&output_resource_mismatch;
+      quit;
+   %end;
+   
    %if &n_invalid_values > 0 %then %put WARNING: There are %left(&n_invalid_values) rows in the %upcase(&outlib..&output_invalid_values) table.;
+   %else %do;
+      proc delete data=&outlib..&output_invalid_values;
+      quit;
+   %end;
+   
    %if &n_duplicate_rows > 0 %then %put WARNING: There are %left(&n_duplicate_rows) rows in the %upcase(&outlib..&output_duplicate_rows) table.;
+   %else %do;
+      proc delete data=&outlib..&output_duplicate_rows;
+      quit;
+   %end;
 
    /* Drop the error handling tables that have zero rows. */
    proc sql noprint;
