@@ -19,6 +19,7 @@
    ,output_covid_test_usage=output_opt_covid_test_usage
    ,min_demand_ratio=1
    ,secondary_objective_tolerance=0.99
+   ,allow_opening_only_on_phase=0
    ,_worklib=casuser
    ,_debug=1
    );
@@ -136,12 +137,23 @@
       by sequence;
       id parameter;
    run;
+   
+   /* If &allow_opening_only_on_phase = 1, we want to save the phase dates into a macro variable list before 
+      we fill in the rest of the dates for daily capacities. */
+   %let allowed_opening_dates = %str();
+   %if &allow_opening_only_on_phase = 1 %then %do;
+      proc sql noprint;
+         select date into :allowed_opening_dates separated by ','
+         from &_worklib..opt_parameters_date;
+      quit;
+   %end;
 
    /* Fill in daily capacities of covid tests for the entire planning horizon */
    proc sql noprint;
       select min(predict_date), max(predict_date)
          into :min_date, :max_date
          from &outlib..output_fd_demand_fcst
+         where predict_date > today();
    quit;
    
    data &_worklib..opt_parameters_date / single=yes;
@@ -186,7 +198,7 @@
       end;
       drop sequence _name_ first_date prev_: this_:;
    run;
-
+   
    proc cas; 
       loadactionset 'optimization'; 
       run; 
@@ -207,6 +219,8 @@
 
       num revenue{FAC_SLINE_SSERV_IO_MS};
       num margin{FAC_SLINE_SSERV_IO_MS};
+      num alreadyOpen{FAC_SLINE_SSERV_IO_MS};
+      num fixOpenFlg{FAC_SLINE_SSERV};
       num losMean{FAC_SLINE_SSERV_IO_MS};
       num numCancel{FAC_SLINE_SSERV_IO_MS} init 0;
 
@@ -226,7 +240,7 @@
       /* Read data from CAS tables */ 
    
       /* Demand Forecast*/
-      read data &outlib..output_fd_demand_fcst
+      read data &outlib..output_fd_demand_fcst (where=(predict_date > today()))
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
@@ -244,13 +258,16 @@
       read data &_worklib..input_financials_pp
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             revenue 
-            margin;
+            margin
+            alreadyOpen=already_open_flag;
       
       /* Service attributes */
       read data &_worklib..input_service_attributes_pp
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             /* DEBUG: If you don't want to use cancellations, comment out the next line so we don't read num_cancelled */
+            /*
             numCancel=num_cancelled
+            */
             losMean=length_stay_mean;
 
       /* Covid test capacity */
@@ -265,6 +282,15 @@
 /*             paramValue=parm_value; */
 /*     */
 
+      /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
+      num week{d in DAYS} = week(d);
+      set <num> WEEKS = setof{d in DAYS} week[d];
+      
+      /* alreadyOpen is at the FAC/SL/SSERV/IO/MS level. We need to convert it to FAC/SL/SSERV level since that's 
+         how we define OpenFlg. Take the max across all IO/MS values. */
+      for {<f,sl,ss> in FAC_SLINE_SSERV} 
+         fixOpenFlg[f,sl,ss] = max{<(f),(sl),(ss),iof,msf> in FAC_SLINE_SSERV_IO_MS} alreadyOpen[f,sl,ss,iof,msf];
+      
       /* Create decomp blocks to decompose the problem by facility */
       set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
       num block_id{f in FACILITIES};
@@ -273,6 +299,7 @@
          block_id[f] = id;
          id = id + 1;
       end;
+
 
       /******************Model variables, constraints, objective function*******************************/
    
@@ -312,19 +339,25 @@
          sum{d in DAYS} ReschedulePatients[f,sl,ss,iof,msf,d] <= numCancel[f,sl,ss,iof,msf]
                    suffixes=(block=block_id[f]);
          
-      /* If a sub-service is open, we must satisfy a minimum proportion of the demand if minDemandRatio > 0 */
-      con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS : minDemandRatio > 0}:
-         sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} 
+      /* If a sub-service is open, we must satisfy a minimum proportion of the weekly demand if minDemandRatio > 0 */
+      con Minimum_Demand{<f,sl,ss> in FAC_SLINE_SSERV, w in WEEKS : minDemandRatio > 0}:
+         sum {<(f),(sl),(ss),iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : week[d]=w} 
                 ((if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d] else 0)
                + (if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl,ss,iof,msf,d] else 0))
-            >= minDemandRatio 
-               * OpenFlg[f,sl,ss,d]
-               * sum {<(f),(sl),(ss),iof,msf,(d)> in FAC_SLINE_SSERV_IO_MS_DAYS} newPatientsBeforeCovid[f,sl,ss,iof,msf,d]
+            >= minDemandRatio * sum {<(f),(sl),(ss),iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : week[d]=w} 
+                                     newPatientsBeforeCovid[f,sl,ss,iof,msf,d] * OpenFlg[f,sl,ss,d]
                    suffixes=(block=block_id[f]);
                
       /* If a sub-service opens, it must stay open for the remainder of the horizon */
       con Service_Stay_Open{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: d + 1 in DAYS}:
          OpenFlg[f,sl,ss,d+1] >= OpenFlg[f,sl,ss,d]
+                   suffixes=(block=block_id[f]);
+
+      /* Only allow openings on the phase dates or on the first day */
+      con Allowed_Opening_Dates{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: &allow_opening_only_on_phase = 1 
+                                                                         and d - 1 in DAYS 
+                                                                         and d not in {&allowed_opening_dates}} : 
+         OpenFlg[f,sl,ss,d] = OpenFlg[f,sl,ss,d-1]
                    suffixes=(block=block_id[f]);
                
       /* Total patients cannot exceed capacity. We are breaking these into two sets of constraints -- one where facility 
@@ -369,7 +402,8 @@
       drop COVID19_Day_Of_Admission_Testing
            COVID19_Before_Admission_Testing
            Minimum_Demand
-           Service_Stay_Open;
+           Service_Stay_Open
+           Allowed_Opening_Dates;
            
       fix OpenFlg = 1;
       fix ReschedulePatients = 0;
@@ -387,10 +421,13 @@
       restore COVID19_Day_Of_Admission_Testing
               COVID19_Before_Admission_Testing
               Minimum_Demand
-              Service_Stay_Open;
+              Service_Stay_Open
+              Allowed_Opening_Dates;
            
       unfix OpenFlg;
       unfix ReschedulePatients; 
+      for {<f,sl,ss> in FAC_SLINE_SSERV : fixOpenFlg[f,sl,ss] = 1} 
+         fix OpenFlg[f,sl,ss,minDay] = 1;
 
       num primary_objective_value init 0;
       con Primary_Objective_Constraint: 

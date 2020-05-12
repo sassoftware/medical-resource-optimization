@@ -174,13 +174,30 @@
       end;
    run;
 
-   data base_parameters_table;
+   data table mock.input_opt_parameters;
+      format facility $8. service_line sub_service $32. ip_op_indicator med_surg_indicator $4.;
       format parm_name $32. parm_value $32. parm_desc $256.;
-      
-      parm_name = 'DAYS_BEFORE_SERVICE';
-      parm_value = '3';
-      parm_desc = 'Number of days before service for COVID-19 test. Use 0 if not populated.';
+       
+      facility = 'ALL';
+      service_line = 'ALL';
+      sub_service = 'ALL';
+
+      ip_op_indicator = 'ALL';
+      med_surg_indicator = 'SURG';
+      parm_name = 'TEST_DAYS_BA';
+      parm_value = '2';
+      parm_desc = 'Number of days before admission for COVID-19 test. Use 0 if not populated.';
       output;
+
+      ip_op_indicator = 'I';
+      med_surg_indicator = 'ALL';
+      parm_name = 'RAPID_TEST_DA';
+      parm_value = '100';
+      parm_desc = 'PCT of patients to be applied rapid-tests on the day of admission.';
+      output;
+
+      ip_op_indicator = 'ALL';
+      med_surg_indicator = 'ALL';
 
       parm_name = 'TEST_FREQ_DAYS';
       parm_value = '5';
@@ -197,24 +214,34 @@
       parm_desc = 'Required to open all service_lines/sub_services together (1) or not (0). Use 0 if not populated.';
       output;
 
-      parm_name = 'TESTS_NUM_PHASE_1';
-      parm_value = '1400';
-      parm_desc = 'Number of available tests in Phase 1. Use unlimited if not populated.';
-      output;
-
-      parm_name = 'TESTS_DATE_PHASE_1';
+      parm_name = 'DATE_PHASE_1';
       parm_value = '4/27/2020';
       parm_desc = 'Date at which tests are available in Phase 1. Use first day in planning horizon.';
       output;
 
-      parm_name = 'TESTS_NUM_PHASE_2';
-      parm_value = '1600';
-      parm_desc = 'Number of available tests in Phase 2. Do not use if not populated.';
+      parm_name = 'NOT_RAPID_TESTS_PHASE_1';
+      parm_value = '10';
+      parm_desc = 'Number of daily available non-rapid tests in Phase 1. Use unlimited if not populated.';
       output;
 
-      parm_name = 'TESTS_DATE_PHASE_2';
+      parm_name = 'RAPID_TESTS_PHASE_1';
+      parm_value = '5';
+      parm_desc = 'Number of daily available rapid tests in Phase 1. Use unlimited if not populated.';
+      output;
+
+      parm_name = 'DATE_PHASE_2';
       parm_value = '5/15/2020';
-      parm_desc = 'Date at which tests are available in Phase 2. Do not use if not populated.';
+      parm_desc = 'Date at which tests are available in Phase 2. Use first day in planning horizon.';
+      output;
+
+      parm_name = 'NOT_RAPID_TESTS_PHASE_2';
+      parm_value = '15';
+      parm_desc = 'Number of daily available non-rapid tests in Phase 2. Use unlimited if not populated.';
+      output;
+
+      parm_name = 'RAPID_TESTS_PHASE_2';
+      parm_value = '8';
+      parm_desc = 'Number of daily available rapid tests in Phase 2. Use unlimited if not populated.';
       output;
 
       parm_name = 'PLANNING_HORIZON';
@@ -222,15 +249,6 @@
       parm_desc = 'Number of weeks to forecast demand and plan re-opening. Use 12 if not populated.';
       output;
    run;
-
-   proc sql noprint;
-      create table base_fac_serv_sub as
-         select distinct facility, service_line, sub_service, ip_op_indicator, med_surg_indicator
-         from base_table;
-      create table mock.input_opt_parameters as
-         select a.*, b.*
-         from base_fac_serv_sub as a, base_parameters_table as b;
-   quit;    
 
    /* Uncomment this section only if you want to replace the promoted data */
    /*
