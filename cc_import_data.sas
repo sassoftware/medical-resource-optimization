@@ -1,4 +1,4 @@
-%let data_path=/ordsrv3/OR_CENTER/FILES/Cleveland Clinic/Customer_Input/05092020;
+%let data_path=/ordsrv3/OR_CENTER/FILES/Cleveland Clinic/Customer_Input/05112020;
 
 cas mysess;
 caslib _all_ assign;
