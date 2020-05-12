@@ -94,12 +94,13 @@ week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \for
 \end{equation}
 
 \begin{align*}
-&\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted for $f,sl,ss,ms$ in day $d$ should be } \\
-&\text{less than the total available non-rapid test for the day and daily rapid test available.} 
+&\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted (excluding surgical patients) for $f,sl,ss,ms$ } \\
+&\text{in day $d$ should be less than the total available non-rapid test for the day and daily rapid test available.} 
 \end{align*}
 \begin{equation} 
 \sum_{\substack{f,sl,ss,io,ms \\ 
-\text{and} \ io = 'I'}} NewPatients_{f,sl,ss,io,ms,d} \leq dlyRapidTest_{d}  \quad \forall d\
+\text{and} \ io = 'I' \\
+\text{and} \ ms != 'SURG'}} NewPatients_{f,sl,ss,io,ms,d} \leq dlyRapidTest_{d}  \quad \forall d\
 \end{equation}
 
 
