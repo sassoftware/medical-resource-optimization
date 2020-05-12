@@ -39,7 +39,7 @@ caslib _all_ assign;
     ,output_invalid_values=output_dp_invalid_values
     ,output_duplicate_rows=output_dp_duplicate_rows
     ,_worklib=&_worklib
-    ,_debug=0
+    ,_debug=1
     );
 
 %cc_forecast_accuracy(
