@@ -327,6 +327,7 @@
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       ip_op_indicator = upcase(ip_op_indicator);
       med_surg_indicator = upcase(med_surg_indicator);
+      if already_open_flag not in (0,1) then already_open_flag = 0;
       
       if first.med_surg_indicator then do;
          if facility = '' or upcase(facility) = 'ALL' 
