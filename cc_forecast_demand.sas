@@ -331,7 +331,7 @@
          do rc0 = h0.find() by 0 while (rc0 = 0);
             predict_date = intnx('day',date, (dow-1));
             daily_predict = (predict * demand_proportion);
-            if today() < predict_date <= today() + 7 * &lead_weeks then output;
+            if /*today() <*/ predict_date <= today() + 7 * &lead_weeks then output;
             rc0 = h0.find_next();
          end;
 
