@@ -374,8 +374,8 @@
          
       /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
-         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I'} NewPatients[f,sl,ss,iof,msf,d] 
-       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I'} ReschedulePatients[f,sl,ss,iof,msf,d]
+         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I' and msf ne 'SURG'} NewPatients[f,sl,ss,iof,msf,d] 
+       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} ReschedulePatients[f,sl,ss,iof,msf,d]
          <= totalDailyRapidTests[d];
 
       /* Non-Rapid tests constraint - total available non-rapid test */
