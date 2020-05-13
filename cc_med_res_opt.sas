@@ -225,6 +225,7 @@
       set <str,str,str,str> FAC_SLINE_SSERV_RES;                 /* From capacity */
       set <str,str,str> ALREADY_OPEN_SERVICES;                   /* From opt_parameters */
       set <str,str,str> MIN_DEMAND_RATIO_CONSTRAINTS;            /* From opt_parameters */
+	  set <str,str,str> EMER_SURGICAL_PTS_RATIO_CONSTRAINTS;     /* From opt_parameters */
          
       /* Derived Sets */
       set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
@@ -243,6 +244,8 @@
       num newPatientsBeforeCovid{FAC_SLINE_SSERV_IO_MS_DAYS} init 0;
       
       str minDemandRatio{MIN_DEMAND_RATIO_CONSTRAINTS};
+	  str emerSurgRatioip{EMER_SURGICAL_PTS_RATIO_CONSTRAINTS};
+ 	  num emerSurgRatio{FAC_SLINE_SSERV} init 0;
       
       num minDay=min {d in DAYS} d;
       num maxDay=max {d in DAYS} d;
@@ -298,6 +301,19 @@
       read data &_worklib..opt_parameters_non_date (where=(parm_name='MIN_DEMAND_RATIO'))
          into MIN_DEMAND_RATIO_CONSTRAINTS = [facility service_line sub_service]
             minDemandRatio = parm_value;
+
+    /* emergency surgical ratio constraints */
+      read data &_worklib..opt_parameters_non_date (where=(parm_name='EMER_SURGICAL_PTS_RATIO'))
+         into EMER_SURGICAL_PTS_RATIO_CONSTRAINTS = [facility service_line sub_service]
+            emerSurgRatioip = parm_value;
+
+		for {<f,sl,ss> in EMER_SURGICAL_PTS_RATIO_CONSTRAINTS} do;
+			for {<f2,sl2,ss2> in FAC_SLINE_SSERV} do;
+				if( (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')) then
+					emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
+			end;
+		end;
+	
          
       /* Parameters */
 /*       read data &_worklib..input_opt_parameters_pp */
@@ -401,14 +417,16 @@
          
       /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
-         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I' and msf ne 'SURG'} NewPatients[f,sl,ss,iof,msf,d] 
-       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} ReschedulePatients[f,sl,ss,iof,msf,d]
-         <= totalDailyRapidTests[d];
+         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I' and msf ne 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] )
+       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] )
+	   + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : msf = 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
+       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : msf = 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
+       <= totalDailyRapidTests[d];
 
       /* Non-Rapid tests constraint - total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS : d+daysTestBeforeAdmSurg in DAYS}:
-         sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1=d+daysTestBeforeAdmSurg} NewPatients[f,sl,ss,iof,msf,d1]
-       + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1=d+daysTestBeforeAdmSurg} ReschedulePatients[f,sl,ss,iof,msf,d1]
+         sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1=d+daysTestBeforeAdmSurg} (NewPatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
+        + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1=d+daysTestBeforeAdmSurg} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
          <= totalDailyNonRapidTests[d];
 
       max Total_Revenue = 
