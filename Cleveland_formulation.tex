@@ -15,6 +15,7 @@
 \item[ ] $ io \in Inpatient/Outpatient$ : set of Inpatient/Outpatient indicator
 \item[ ] $ ms \in Medical/Surgical$ : set of Medical/Surgical indicator
 \item[ ] $ d \in Days$ : set of days
+\item[ ] $ w \in Weeks$ : set of weeks
 \end{itemize}
 
 \section*{Data Parameters: Model Coefficients}
@@ -29,12 +30,15 @@
 \item[ ] $maxday$ is the maximum day among the set $ d \in Days$, ${\max\limits_{d \in Days} d}$
 \item[ ] $dlyRapidTest_{d}$ is the total daily rapid tests available across all facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ 
 \item[ ] $dlyNonRapidTest_{d}$ is the total daily non-rapid tests for COVID-19 available across all facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ 
+\item[ ] $week_{d}$ is the week number of day $d$ in set $ d \in Days$
 
 \pagebreak
 
 \item[ ] $daysBeforeSurgAdm$ is the number of days before which a surgery patient should be tested for COVID-19 (using a non-rapid test kit) 
 \item[ ] $minDemRatio$ is the minimum proportion of demand that must be satisfied at a sub-service $ss$ if its is open at a facility $f$, service line $sl$ 
-\item[ ] $maxCapWoCovid_{f,sl,ss,io,ms,d}$ is the maximum capacity at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ on day $d$ \end{itemize}
+\item[ ] $newPntBfCovid_{f,sl,ss,io,ms,d}$ is the new patients admitted without COVID-19 test constraints at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ on day $d$ 
+\item[ ] $fixOpenFlag_{f,sl,ss}$ is a flag and is set to 1 if the facility $f$, service line $sl$, sub-service $ss$ is open, 0 otherwise. 
+\end{itemize}
 
 \section*{Decision Variables}
 \begin{itemize}
@@ -81,19 +85,22 @@ NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d
 
 \begin{align*}
 &\text{Minimum proportion of demand constraint: If a sub-service $ss$ is open at $f,sl$ then, we should at the least} \\
-&\text{satisfy a minimum proportion of demand of $f,sl,ss$.} 
+&\text{satisfy a minimum proportion of the weekly demand of $f,sl,ss$.} 
 \end{align*}
 \begin{equation} 
-\sum_{io,ms} NewPatients_{f,sl,ss,io,ms,d} \geq minDemRatio \ \sum_{io,ms} maxCapWoCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,d,r\
+\sum_{\substack{io,ms,d \ \text{and} \\
+week_{d} = w }} NewPatients_{f,sl,ss,io,ms,d} \geq minDemRatio \ \sum_{\substack{io,ms,d \ \text{and} \\
+week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,w\
 \end{equation}
 
 \begin{align*}
-&\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted for $f,sl,ss,ms$ in day $d$ should be } \\
-&\text{less than the total available non-rapid test for the day and daily rapid test available.} 
+&\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted (excluding surgical patients) for $f,sl,ss,ms$ } \\
+&\text{in day $d$ should be less than the total available non-rapid test for the day and daily rapid test available.} 
 \end{align*}
 \begin{equation} 
 \sum_{\substack{f,sl,ss,io,ms \\ 
-\text{and} \ io = 'I'}} NewPatients_{f,sl,ss,io,ms,d} \leq dlyRapidTest_{d}  \quad \forall d\
+\text{and} \ io = 'I' \\
+\text{and} \ ms != 'SURG'}} NewPatients_{f,sl,ss,io,ms,d} \leq dlyRapidTest_{d}  \quad \forall d\
 \end{equation}
 
 
@@ -115,5 +122,12 @@ NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d
 OpenFlg_{f,sl,ss,d+1} \geq OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,d \ \text{and} \ d1 \in d\
 \end{equation}
 
+\begin{align*}
+&\text{Sub-service already opened constraint: If a sub-service $ss$ is already opened at $f,sl$ then we set}\\
+&\text{$OpenFlg$ variable as 1 for the entire planning horizon.} 
+\end{align*}
+\begin{equation} 
+OpenFlg_{f,sl,ss,d} = 1 \quad \forall f,sl,ss,d \ \text{and} \ d = minday\ \text{and} \ fixOpenFlag_{f,sl,ss} =1\
+\end{equation}
 
 \end{document}
