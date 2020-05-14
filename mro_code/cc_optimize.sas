@@ -4,14 +4,10 @@
 | Description: 
 |
 *--------------------------------------------------------------------------------* ;
-%macro cc_med_res_opt(
+%macro cc_optimize(
     inlib=cc
    ,outlib=cc
-   ,input_utilization=input_utilization
-   ,input_capacity =input_capacity
-   ,input_financials=input_financials
-   ,input_service_attributes=input_service_attributes
-   ,input_opt_parameters=input_opt_parameters
+   ,input_demand_fcst=output_fd_demand_fcst
    ,output_opt_detail=output_opt_detail
    ,output_opt_detail_agg=output_opt_detail_agg
    ,output_opt_summary=output_opt_summary
@@ -33,8 +29,8 @@
    %put TRACE: Entering &sysmacroname. with SYSCC=&SYSCC.;
 
    /* Check missing inputs */
-   %if %sysfunc(exist(&outlib..output_fd_demand_fcst))=0 %then %do;
-      %put FATAL: Missing &outlib..output_fd_demand_fcst, exiting from &sysmacroname.;
+   %if %sysfunc(exist(&outlib..&input_demand_fcst.))=0 %then %do;
+      %put FATAL: Missing &outlib..&input_demand_fcst., exiting from &sysmacroname.;
       %goto EXIT;
    %end;     
 
@@ -167,7 +163,7 @@
    proc sql noprint;
       select min(predict_date), max(predict_date)
          into :min_date, :max_date
-         from &outlib..output_fd_demand_fcst
+         from &outlib..&input_demand_fcst.
          where predict_date > today();
    quit;
    
@@ -258,7 +254,7 @@
       /* Read data from CAS tables */ 
    
       /* Demand Forecast*/
-      read data &outlib..output_fd_demand_fcst (where=(predict_date > today()))
+      read data &outlib..&input_demand_fcst. (where=(predict_date > today()))
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
@@ -631,4 +627,4 @@
    %EXIT:
    %put TRACE: Leaving &sysmacroname. with SYSCC=&SYSCC.;
 
-%mend cc_med_res_opt;
+%mend cc_optimize;
