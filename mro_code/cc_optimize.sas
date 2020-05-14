@@ -109,6 +109,10 @@
    /***********************************/
 
    /* Read some opt parameters from input_opt_parameters_pp */
+/* Michelle: To-do:
+   1. Create a new table of global parameters (not specific to hierarchies), read them into optmodel per scenario 
+   2. Make sure we handle the case where these parameters might not be specified for every scenario - use defaults
+*/   
    %let parm_value_allow_opening = %str();
    %let parm_value_secondary_obj_tol = %str();
    proc sql noprint;
@@ -128,7 +132,7 @@
    
    /* Divide INPUT_OPT_PARAMETERS_PP into two tables: one for the date-specific phases and the 
       other for non-date-specific parameters */
-   data &_worklib..opt_parameters_date (keep=sequence parameter value)
+   data &_worklib..opt_parameters_date (keep=scenario_name sequence parameter value)
         &_worklib..opt_parameters_non_date (drop=start sequence parameter value);
       set &_worklib..input_opt_parameters_pp;
       parm_name = upcase(parm_name);
@@ -143,14 +147,18 @@
       end;
       else output &_worklib..opt_parameters_non_date;
    run;
-   
+
    proc transpose data=&_worklib..opt_parameters_date out=&_worklib..opt_parameters_date;
-      by sequence;
+      by scenario_name sequence;
       id parameter;
    run;
-   
+
    /* If &allow_opening_only_on_phase = 1, we want to save the phase dates into a macro variable list before 
       we fill in the rest of the dates for daily capacities. */
+/* MICHELLE: To-do
+   1. Convert this to a table of allowed opening dates, read that into optmodel per scenario, modify constraint
+      so that it uses the data that we read in, not the macro variable strings 
+*/      
    %let allowed_opening_dates = %str();
    %if &allow_opening_only_on_phase = 1 %then %do;
       proc sql noprint;
@@ -166,12 +174,12 @@
          from &outlib..&input_demand_fcst.
          where predict_date > today();
    quit;
-   
-   data &_worklib..opt_parameters_date / single=yes;
-      set &_worklib..opt_parameters_date end=eof;
+
+   data &_worklib..opt_parameters_date;
+      set &_worklib..opt_parameters_date;
       retain first_date prev_date prev_rapid prev_not_rapid;
-      by sequence;
-      if _n_ = 1 then do;
+      by scenario_name sequence;
+      if first.scenario_name then do;
          first_date = date;
          prev_date = date;
          prev_rapid = rapid_tests;
@@ -204,7 +212,7 @@
          prev_rapid = rapid_tests;
          prev_not_rapid = not_rapid_tests;
       end;
-      if eof then do date = prev_date + 1 to &max_date;
+      if last.scenario_name then do date = prev_date + 1 to &max_date;
          if &min_date <= date <= &max_date then output;
       end;
       drop sequence _name_ first_date prev_: this_:;
@@ -221,7 +229,7 @@
       set <str,str,str,str> FAC_SLINE_SSERV_RES;                 /* From capacity */
       set <str,str,str> ALREADY_OPEN_SERVICES;                   /* From opt_parameters */
       set <str,str,str> MIN_DEMAND_RATIO_CONSTRAINTS;            /* From opt_parameters */
-	  set <str,str,str> EMER_SURGICAL_PTS_RATIO_CONSTRAINTS;     /* From opt_parameters */
+      set <str,str,str> EMER_SURGICAL_PTS_RATIO_CONSTRAINTS;     /* From opt_parameters */
          
       /* Derived Sets */
       set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
@@ -240,9 +248,9 @@
       num newPatientsBeforeCovid{FAC_SLINE_SSERV_IO_MS_DAYS} init 0;
       
       str minDemandRatio{MIN_DEMAND_RATIO_CONSTRAINTS};
-	  str emerSurgRatioip{EMER_SURGICAL_PTS_RATIO_CONSTRAINTS};
- 	  num emerSurgRatio{FAC_SLINE_SSERV} init 0;
-      
+      str emerSurgRatioip{EMER_SURGICAL_PTS_RATIO_CONSTRAINTS};
+      num emerSurgRatio{FAC_SLINE_SSERV} init 0;
+
       num minDay=min {d in DAYS} d;
       num maxDay=max {d in DAYS} d;
       
@@ -254,28 +262,28 @@
       /* Read data from CAS tables */ 
    
       /* Demand Forecast*/
-      read data &outlib..&input_demand_fcst. (where=(predict_date > today()))
+      read data &outlib..&input_demand_fcst. (where=(predict_date > today())) nogroupby
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
       /* Capacity */
-      read data &_worklib..input_capacity_pp
+      read data &_worklib..input_capacity_pp nogroupby
          into FAC_SLINE_SSERV_RES = [facility service_line sub_service resource]
             capacity;
 
       /* Utilization */
-      read data &_worklib..input_utilization_pp
+      read data &_worklib..input_utilization_pp nogroupby
          into FAC_SLINE_SSERV_IO_MS_RES = [facility service_line sub_service ip_op_indicator med_surg_indicator resource]
             utilization=utilization_mean;
 
       /* Financials */
-      read data &_worklib..input_financials_pp
+      read data &_worklib..input_financials_pp nogroupby
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             revenue 
             margin;
       
       /* Service attributes */
-      read data &_worklib..input_service_attributes_pp
+      read data &_worklib..input_service_attributes_pp nogroupby
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             /* DEBUG: If you don't want to use cancellations, comment out the next line so we don't read num_cancelled */
             /*
@@ -288,28 +296,31 @@
          into [date] 
             totalDailyRapidTests=rapid_tests
             totalDailyNonRapidTests=not_rapid_tests;
-      
+
+/* Subbu: To-do:
+   1. Remove nogroupby (3 times) after we have scenario name populated in opt_parameters_non_date 
+*/
       /* Services that are already open */
-      read data &_worklib..opt_parameters_non_date (where=(parm_name='ALREADY_OPEN' and parm_value='YES'))
+      read data &_worklib..opt_parameters_non_date (where=(parm_name='ALREADY_OPEN' and parm_value='YES')) nogroupby
          into ALREADY_OPEN_SERVICES = [facility service_line sub_service];
          
       /* Min demand ratio constraints */
-      read data &_worklib..opt_parameters_non_date (where=(parm_name='MIN_DEMAND_RATIO'))
+      read data &_worklib..opt_parameters_non_date (where=(parm_name='MIN_DEMAND_RATIO')) nogroupby
          into MIN_DEMAND_RATIO_CONSTRAINTS = [facility service_line sub_service]
             minDemandRatio = parm_value;
 
-    /* emergency surgical ratio constraints */
-      read data &_worklib..opt_parameters_non_date (where=(parm_name='EMER_SURGICAL_PTS_RATIO'))
+      /* emergency surgical ratio constraints */
+      read data &_worklib..opt_parameters_non_date (where=(parm_name='EMER_SURGICAL_PTS_RATIO')) nogroupby
          into EMER_SURGICAL_PTS_RATIO_CONSTRAINTS = [facility service_line sub_service]
             emerSurgRatioip = parm_value;
 
-		for {<f,sl,ss> in EMER_SURGICAL_PTS_RATIO_CONSTRAINTS} do;
-			for {<f2,sl2,ss2> in FAC_SLINE_SSERV} do;
-				if( (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')) then
-					emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
-			end;
-		end;
-	
+      for {<f,sl,ss> in EMER_SURGICAL_PTS_RATIO_CONSTRAINTS} do;
+         for {<f2,sl2,ss2> in FAC_SLINE_SSERV} do;
+            if( (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')) then
+               emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
+            end;
+         end;
+         
          
       /* Parameters */
 /*       read data &_worklib..input_opt_parameters_pp */
@@ -413,17 +424,17 @@
          
       /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS}:
-         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I' and msf ne 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] )
-       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] )
-	   + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : msf = 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
+         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I' and msf ne 'SURG'} (NewPatients[f,sl,ss,iof,msf,d])
+       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d])
+       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : msf = 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : msf = 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
        <= totalDailyRapidTests[d];
 
       /* Non-Rapid tests constraint - total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS : d+daysTestBeforeAdmSurg in DAYS}:
          sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1=d+daysTestBeforeAdmSurg} (NewPatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
-        + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1=d+daysTestBeforeAdmSurg} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
-         <= totalDailyNonRapidTests[d];
+       + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1=d+daysTestBeforeAdmSurg} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
+       <= totalDailyNonRapidTests[d];
 
       max Total_Revenue = 
           sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND} NewPatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf]
@@ -551,7 +562,7 @@
             nonRapidTestsUsed=(if (d+daysTestBeforeAdmSurg in DAYS) then COVID19_Before_Admission_Testing[d].body else 0);
 
       endsource; 
-      runOptmodel /*result=runOptmodelResult*/ / code=pgm /*printlevel=0*/; 
+      runOptmodel /*result=runOptmodelResult*/ / code=pgm /*printlevel=0*/ groupBy='scenario_name' nGroupByThreads='ALL'; 
       run; 
    quit;
 
@@ -564,7 +575,7 @@
 
    proc cas;
       aggregation.aggregate / table={caslib="&_worklib.", name="_opt_detail_week",  
-         groupby={"facility","service_line","sub_service","week_start_date"}} 
+         groupby={"scenario_name","facility","service_line","sub_service","week_start_date"}} 
          saveGroupByFormat=false 
          varSpecs={{name="NewPatients", summarySubset="sum", columnNames="NewPatients"}
                    {name="ReschedulePatients", summarySubset="sum", columnNames="ReschedulePatients"}

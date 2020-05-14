@@ -14,7 +14,6 @@
                    ,input_opt_parameters=input_opt_parameters
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
-                   ,los_rounding_threshold=0.5
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
                    ,output_resource_mismatch=output_resource_mismatch
                    ,output_invalid_values=output_invalid_values
@@ -22,6 +21,11 @@
                    ,_worklib=casuser
                    ,_debug=1
                    );
+
+/* MICHELLE or SUBBU: To-do:
+1. Add validation to make sure that some of the parameters have the same value for all scenarios; stop with error if not.
+2. Add validation for duplicate values within hierarchies for things like emergency surgery ratio
+*/
 
    /*************************/
    /******HOUSEKEEPING*******/
@@ -203,18 +207,10 @@
          where type = 6;
    quit;
    
-   /* Initialize temp table names */   
-   %let input_utilization_table = &inlib..&input_utilization;
-   %let input_capacity_table = &inlib..&input_capacity;
-   %let input_financials_table = &inlib..&input_financials;
-   %let input_service_attributes_table = &inlib..&input_service_attributes;
-   %let input_demand_table = &inlib..&input_demand;
-   %let input_opt_parameters_table = &inlib..&input_opt_parameters;
- 
    /* Convert each varchar variable to char */
    %do i = 1 %to &num_tables_convert;
       %let tb = %scan(&memname_list, &i);
-      
+
       proc sql noprint;
          select name, count(*) 
             into :name_list separated by ' ',
@@ -228,7 +224,7 @@
          %end;
       quit;
       
-      data &_worklib..&tb._char;
+      data &_worklib..%substr(&tb,1,%sysfunc(min(27,%length(&tb))))_char;
          set &inlib..&tb (rename=(%do j = 1 %to &num_vars_convert;
                                      %scan(&name_list, &j) = tempvar&j
                                   %end;
@@ -241,15 +237,39 @@
          %end;
       run;
       
-      %let &tb._table = &_worklib..&tb._char;
-      
       /* Adjust column length macro variables if the new column has longer length */
       %do j = 1 %to &num_vars_convert;
          %let vv = %scan(&name_list, &j);
          %if %sysevalf(&&varlen&j > &&len_&vv) %then %let len_&vv = &&varlen&j;
       %end;
    %end;
+
+   /* Initialize temp table names */   
+   %if %sysfunc(exist(&_worklib..%substr(&input_capacity,1,%sysfunc(min(27,%length(&input_capacity))))_char)) 
+      %then %let input_capacity_table = &_worklib..%substr(&input_capacity,1,%sysfunc(min(27,%length(&input_capacity))))_char;
+   %else %let input_capacity_table = &inlib..&input_capacity;
    
+   %if %sysfunc(exist(&_worklib..%substr(&input_demand,1,%sysfunc(min(27,%length(&input_demand))))_char)) 
+      %then %let input_demand_table = &_worklib..%substr(&input_demand,1,%sysfunc(min(27,%length(&input_demand))))_char;
+   %else %let input_demand_table = &inlib..&input_demand;
+
+   %if %sysfunc(exist(&_worklib..%substr(&input_financials,1,%sysfunc(min(27,%length(&input_financials))))_char)) 
+      %then %let input_financials_table = &_worklib..%substr(&input_financials,1,%sysfunc(min(27,%length(&input_financials))))_char;
+   %else %let input_financials_table = &inlib..&input_financials;
+   
+   %if %sysfunc(exist(&_worklib..%substr(&input_opt_parameters,1,%sysfunc(min(27,%length(&input_opt_parameters))))_char)) 
+      %then %let input_opt_parameters_table = &_worklib..%substr(&input_opt_parameters,1,%sysfunc(min(27,%length(&input_opt_parameters))))_char;
+   %else %let input_opt_parameters_table = &inlib..&input_opt_parameters;
+
+   %if %sysfunc(exist(&_worklib..%substr(&input_service_attributes,1,%sysfunc(min(27,%length(&input_service_attributes))))_char)) 
+      %then %let input_service_attributes_table = &_worklib..%substr(&input_service_attributes,1,%sysfunc(min(27,%length(&input_service_attributes))))_char;
+   %else %let input_service_attributes_table = &inlib..&input_service_attributes;
+
+   %if %sysfunc(exist(&_worklib..%substr(&input_utilization,1,%sysfunc(min(27,%length(&input_utilization))))_char)) 
+      %then %let input_utilization_table = &_worklib..%substr(&input_utilization,1,%sysfunc(min(27,%length(&input_utilization))))_char;
+   %else %let input_utilization_table = &inlib..&input_utilization;
+
+
    /* Check each table for invalid values and duplicate rows. Write these to separate output tables 
       to be used for error handling. */
    data &_worklib..input_utilization_pp
@@ -344,6 +364,14 @@
       end;
       else output &_worklib.._duplicate_rows_financials;
    run;
+   
+   %let los_rounding_threshold = %str();
+   proc sql noprint;
+      select parm_value into :los_rounding_threshold
+      from &input_opt_parameters_table 
+      where upcase(parm_name) = 'LOS_ROUNDING_THRESHOLD';
+   quit;
+   %if &los_rounding_threshold = %str() %then %let los_rounding_threshold = 0.5;
       
    data &_worklib..input_service_attributes_pp
         &_worklib.._invalid_values_service_attrs
@@ -411,6 +439,7 @@
       else output &_worklib.._duplicate_rows_demand;
    run;
 
+/* Michelle: Add scenario_name column if it doesn't exist */
    data &_worklib..input_opt_parameters_pp
         &_worklib.._invalid_values_opt_parameters
         &_worklib.._duplicate_rows_opt_parameters
@@ -422,7 +451,7 @@
       length med_surg_indicator $&len_med_surg_indicator;
 
       set &input_opt_parameters_table (where=((&include_str) and not (&exclude_str)));
-      by facility service_line sub_service ip_op_indicator med_surg_indicator parm_name;
+      by scenario_name facility service_line sub_service ip_op_indicator med_surg_indicator parm_name;
       if upcase(facility) = 'ALL' then facility = 'ALL';
       if upcase(service_line) = 'ALL' then service_line = 'ALL';
       if upcase(sub_service) = 'ALL' then sub_service = 'ALL';
@@ -760,6 +789,9 @@
       quit;
    %end;
 
+/* Subbu: To-do:
+1. Move this data step into a separate utility macro that also creates multiple scenarios from INPUT_OPT_PARAMETERS 
+*/
 /* For testing: Add new parameters to input_opt_parameters */
 data casuser.append_to_opt_parameters;
    set casuser.input_opt_parameters_pp (obs=1 keep=facility service_line sub_service parm_name parm_value);

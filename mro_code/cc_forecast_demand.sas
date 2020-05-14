@@ -9,8 +9,6 @@
 	,outlib=cc
 	,input_demand=input_demand_pp
 	,output_fd_demand_fcst=output_fd_demand_fcst
-	,lead_weeks=4
-	,forecast_model = tsmdl
 	,_worklib=casuser
 	,_debug=1
 	);
@@ -86,6 +84,19 @@
 	/************ANALYTICS *************/
 	/***********************************/
 	
+   %let lead_weeks = %str();
+   %let forecast_model = %str();
+   proc sql noprint;
+      select parm_value into :lead_weeks
+         from &_worklib..input_opt_parameters_pp 
+         where upcase(parm_name) = 'PLANNING_HORIZON';
+      select lowcase(parm_value) into :forecast_model
+         from &_worklib..input_opt_parameters_pp
+         where upcase(parm_name) = 'FORECAST_MODEL';
+   quit;
+   %if &lead_weeks = %str() %then %let lead_weeks = 12;
+   %if &forecast_model = %str() %then %let forecast_model = tsmdl;
+   
 	/* For debugging purposes */
  		/*%let _worklib=casuser; */
 	
