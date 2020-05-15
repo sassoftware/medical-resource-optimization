@@ -62,7 +62,10 @@
    /* List work tables */
    %let _work_tables=%str( 
         &_worklib..opt_parameters_date
-        &_worklib..opt_parameters_non_date
+        &_worklib..opt_parameters_global
+        &_worklib..opt_parameters_hierarchy
+        &_worklib..opt_allowed_opening_dates
+        &_worklib..opt_distinct_scenarios
         &_worklib.._opt_detail
         &_worklib.._opt_summary
         &_worklib.._opt_resource_usage
@@ -107,36 +110,52 @@
    /************************************/
    /************ANALYTICS *************/
    /***********************************/
-
-   /* Read some opt parameters from input_opt_parameters_pp */
-/* Michelle: To-do:
-   1. Create a new table of global parameters (not specific to hierarchies), read them into optmodel per scenario 
-   2. Make sure we handle the case where these parameters might not be specified for every scenario - use defaults
-*/   
-   %let parm_value_allow_opening = %str();
-   %let parm_value_secondary_obj_tol = %str();
+ 
+   /* Count the number of distinct scenario names that are not blank. If it's 0, we're going to set the 
+      scenario name to Scenario_1 so it doesn't look as strange in the output with a blank scenario name. */
    proc sql noprint;
-      select parm_value into :parm_value_allow_opening 
-         from &_worklib..input_opt_parameters_pp
-         where parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE';
-      select parm_value into :parm_value_secondary_obj_tol
-         from &_worklib..input_opt_parameters_pp
-         where parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE';
+      select count(*) into :any_nonblank_scenarios
+      from &_worklib..input_opt_parameters_pp
+      where scenario_name ne '';
    quit;
    
-   %if &parm_value_allow_opening = YES %then %let allow_opening_only_on_phase = 1;
-   %else %let allow_opening_only_on_phase = 0;
-   
-   %if &parm_value_secondary_obj_tol ne %str() %then %let secondary_objective_tolerance = %sysevalf(&parm_value_secondary_obj_tol/100);
-   %else %let secondary_objective_tolerance = 0.99;
-   
-   /* Divide INPUT_OPT_PARAMETERS_PP into two tables: one for the date-specific phases and the 
-      other for non-date-specific parameters */
+   %if &any_nonblank_scenarios = 0 %then %do;
+      data &_worklib..input_opt_parameters_pp;
+         set &_worklib..input_opt_parameters_pp (drop=scenario_name);
+         scenario_name = 'Scenario_1';
+      run;
+   %end;
+ 
+   /* Divide INPUT_OPT_PARAMETERS_PP into three tables: one for the date-specific phases, one for "global" parameters that don't
+      depend on any levels of the hierarchy, and one for the parameters that do depend on levels of the hierarchy */
    data &_worklib..opt_parameters_date (keep=scenario_name sequence parameter value)
-        &_worklib..opt_parameters_non_date (drop=start sequence parameter value);
+        &_worklib..opt_parameters_global (keep=scenario_name 
+                                               allow_opening_only_on_phase 
+                                               secondary_objective_tolerance
+                                               test_days_ba
+                                               rapid_test_da)
+        &_worklib..opt_parameters_hierarchy (drop=start sequence parameter value 
+                                                  allow_opening_only_on_phase 
+                                                  secondary_objective_tolerance
+                                                  test_days_ba
+                                                  rapid_test_da);
       set &_worklib..input_opt_parameters_pp;
+      by scenario_name;
       parm_name = upcase(parm_name);
       parm_value = upcase(parm_value);
+
+      retain secondary_objective_tolerance 
+             allow_opening_only_on_phase
+             test_days_ba
+             rapid_test_da;
+      if first.scenario_name then do;
+         /* Set default values for "global" parameters */
+         secondary_objective_tolerance = 0.99;
+         allow_opening_only_on_phase = 0;
+         test_days_ba = 0;
+         rapid_test_da = 0;
+      end;
+         
       if index(parm_name, 'PHASE_') > 0 then do;
          start = index(parm_name, 'PHASE_');
          parameter = substr(parm_name, 1, start-2);
@@ -145,7 +164,17 @@
          else value = parm_value + 0;
          output &_worklib..opt_parameters_date;
       end;
-      else output &_worklib..opt_parameters_non_date;
+      else do;
+         if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA') then do;
+            if parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE' and parm_value='YES' then allow_opening_only_on_phase = 1;
+            else if parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE' then secondary_objective_tolerance = input(parm_value, best.) / 100; 
+            else if parm_name = 'TEST_DAYS_BA' then test_days_ba = input(parm_value, best.);
+            else if parm_name = 'RAPID_TEST_DA' then rapid_test_da = input(parm_value, best.) / 100;
+         end;
+         else output &_worklib..opt_parameters_hierarchy;
+      end;
+      
+      if last.scenario_name then output &_worklib..opt_parameters_global;
    run;
 
    proc transpose data=&_worklib..opt_parameters_date out=&_worklib..opt_parameters_date;
@@ -153,20 +182,13 @@
       id parameter;
    run;
 
-   /* If &allow_opening_only_on_phase = 1, we want to save the phase dates into a macro variable list before 
-      we fill in the rest of the dates for daily capacities. */
-/* MICHELLE: To-do
-   1. Convert this to a table of allowed opening dates, read that into optmodel per scenario, modify constraint
-      so that it uses the data that we read in, not the macro variable strings 
-*/      
-   %let allowed_opening_dates = %str();
-   %if &allow_opening_only_on_phase = 1 %then %do;
-      proc sql noprint;
-         select date into :allowed_opening_dates separated by ','
-         from &_worklib..opt_parameters_date;
-      quit;
-   %end;
-
+   /* If allow_opening_only_on_phase = 1 for any scenario, we need to know the phase dates because these are the only allowed opening 
+      dates. So before we fill in the rest of the dates for the daily capacities, save a copy of opt_parameters_date with a different 
+      name. */
+   data &_worklib..opt_allowed_opening_dates;
+      set &_worklib..opt_parameters_date (keep=scenario_name date);
+   run;
+   
    /* Fill in daily capacities of covid tests for the entire planning horizon */
    proc sql noprint;
       select min(predict_date), max(predict_date)
@@ -218,10 +240,23 @@
       drop sequence _name_ first_date prev_: this_:;
    run;
    
+   /* Create a table of distinct scenario names, which is used only to read the scenario name into a string
+      and print it to the log, so that we know which scenario each section of the log corresponds to */
+   data &_worklib..opt_distinct_scenarios;
+      set &_worklib..input_opt_parameters_pp (keep=scenario_name);
+      by scenario_name;
+      scenario_name_copy = scenario_name;
+      if first.scenario_name then output;
+   run;
+   
    proc cas; 
       loadactionset 'optimization'; 
       run; 
       source pgm;
+
+      num startTime;
+      num endTime;
+      startTime = time();      
    
       /* Master sets read from data */
       set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES;   /* From utilization */ 
@@ -230,6 +265,7 @@
       set <str,str,str> ALREADY_OPEN_SERVICES;                   /* From opt_parameters */
       set <str,str,str> MIN_DEMAND_RATIO_CONSTRAINTS;            /* From opt_parameters */
       set <str,str,str> EMER_SURGICAL_PTS_RATIO_CONSTRAINTS;     /* From opt_parameters */
+      set <num> ALLOWED_OPENING_DATES;                           /* From opt_allowed_opening_dates */
          
       /* Derived Sets */
       set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
@@ -256,11 +292,26 @@
       
       num totalDailyRapidTests{DAYS};
       num totalDailyNonRapidTests{DAYS};
+      
+      num allowOpeningOnlyOnPhase init 0;
+      num secondaryObjectiveTolerance init 0.99;
+      num testDaysBA init 0;
+      num rapidTestDA init 0;
 
-      num daysTestBeforeAdmSurg=2;
+      str scenarioNameCopy;
   
       /* Read data from CAS tables */ 
-   
+      
+      /* Scenario Names */
+      read data &_worklib..opt_distinct_scenarios
+         into scenarioNameCopy = scenario_name_copy;
+        
+      put '    *********************************************************';
+      put '     Scenario = ' scenarioNameCopy;
+      put ;
+      put '      Start Time: ' startTime time.;
+      put ;
+      
       /* Demand Forecast*/
       read data &outlib..&input_demand_fcst. (where=(predict_date > today())) nogroupby
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
@@ -297,20 +348,28 @@
             totalDailyRapidTests=rapid_tests
             totalDailyNonRapidTests=not_rapid_tests;
 
-/* Subbu: To-do:
-   1. Remove nogroupby (3 times) after we have scenario name populated in opt_parameters_non_date 
-*/
+      /* Global parameters */
+      read data &_worklib..opt_parameters_global into
+         allowOpeningOnlyOnPhase = allow_opening_only_on_phase
+         secondaryObjectiveTolerance = secondary_objective_tolerance
+         testDaysBA = test_days_ba
+         rapidTestDA = rapid_test_da;
+         
+      /* Allowed opening dates */
+      read data &_worklib..opt_allowed_opening_dates into
+         ALLOWED_OPENING_DATES = [date];
+         
       /* Services that are already open */
-      read data &_worklib..opt_parameters_non_date (where=(parm_name='ALREADY_OPEN' and parm_value='YES')) nogroupby
+      read data &_worklib..opt_parameters_hierarchy (where=(parm_name='ALREADY_OPEN' and parm_value='YES'))
          into ALREADY_OPEN_SERVICES = [facility service_line sub_service];
          
       /* Min demand ratio constraints */
-      read data &_worklib..opt_parameters_non_date (where=(parm_name='MIN_DEMAND_RATIO')) nogroupby
+      read data &_worklib..opt_parameters_hierarchy (where=(parm_name='MIN_DEMAND_RATIO'))
          into MIN_DEMAND_RATIO_CONSTRAINTS = [facility service_line sub_service]
             minDemandRatio = parm_value;
 
       /* emergency surgical ratio constraints */
-      read data &_worklib..opt_parameters_non_date (where=(parm_name='EMER_SURGICAL_PTS_RATIO')) nogroupby
+      read data &_worklib..opt_parameters_hierarchy (where=(parm_name='EMER_SURGICAL_PTS_RATIO'))
          into EMER_SURGICAL_PTS_RATIO_CONSTRAINTS = [facility service_line sub_service]
             emerSurgRatioip = parm_value;
 
@@ -321,12 +380,6 @@
             end;
          end;
          
-         
-      /* Parameters */
-/*       read data &_worklib..input_opt_parameters_pp */
-/*          into PARAMS_SET = [facility service_line sub_service ip_op_indicator med_surg_indicator parm_name] */
-/*             paramValue=parm_value; */
-/*     */
 
       /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
       num week{d in DAYS} = week(d);
@@ -404,9 +457,9 @@
                    suffixes=(block=block_id[f]);
 
       /* Only allow openings on the phase dates or on the first day */
-      con Allowed_Opening_Dates{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: &allow_opening_only_on_phase = 1 
+      con Open_on_Allowed_Dates{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS: allowOpeningOnlyOnPhase = 1 
                                                                          and d - 1 in DAYS 
-                                                                         and d not in {&allowed_opening_dates}} : 
+                                                                         and d not in ALLOWED_OPENING_DATES} : 
          OpenFlg[f,sl,ss,d] = OpenFlg[f,sl,ss,d-1]
                    suffixes=(block=block_id[f]);
                
@@ -423,17 +476,17 @@
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] <= capacity[f,sl,ss,r];
          
       /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
-      con COVID19_Day_Of_Admission_Testing{d in DAYS}:
+      con COVID19_Day_Of_Admission_Testing{d in DAYS : rapidTestDA > 0}:
          sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I' and msf ne 'SURG'} (NewPatients[f,sl,ss,iof,msf,d])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : msf = 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : msf = 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
-       <= totalDailyRapidTests[d];
+       <= totalDailyRapidTests[d] / rapidTestDA;
 
       /* Non-Rapid tests constraint - total available non-rapid test */
-      con COVID19_Before_Admission_Testing{d in DAYS : d+daysTestBeforeAdmSurg in DAYS}:
-         sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1=d+daysTestBeforeAdmSurg} (NewPatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
-       + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1=d+daysTestBeforeAdmSurg} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
+      con COVID19_Before_Admission_Testing{d in DAYS : testDaysBA > 0 and d + testDaysBA in DAYS}:
+         sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1 = d + testDaysBA} (NewPatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
+       + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1 = d + testDaysBA} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
        <= totalDailyNonRapidTests[d];
 
       max Total_Revenue = 
@@ -456,7 +509,7 @@
            Minimum_Demand
            Minimum_Demand_ALL
            Service_Stay_Open
-           Allowed_Opening_Dates;
+           Open_on_Allowed_Dates;
            
       fix OpenFlg = 1;
       fix ReschedulePatients = 0;
@@ -476,8 +529,8 @@
               Minimum_Demand
               Minimum_Demand_ALL
               Service_Stay_Open
-              Allowed_Opening_Dates;
-           
+              Open_on_Allowed_Dates;
+
       unfix OpenFlg;
       unfix ReschedulePatients; 
       
@@ -490,7 +543,7 @@
       con Primary_Objective_Constraint: 
           sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND} NewPatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf]
         + sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL} ReschedulePatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf]
-        >= &secondary_objective_tolerance * primary_objective_value;
+        >= secondaryObjectiveTolerance * primary_objective_value;
       
       if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
 
@@ -557,9 +610,12 @@
       create data &_worklib.._opt_covid_test_usage
          from [day]={d in DAYS}
             rapidTestsAvailable=totalDailyRapidTests[d]
-            rapidTestsUsed=COVID19_Day_Of_Admission_Testing[d].body
+            rapidTestsUsed=(if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].body else 0)
             nonRapidTestsAvailable=totalDailyNonRapidTests[d]
-            nonRapidTestsUsed=(if (d+daysTestBeforeAdmSurg in DAYS) then COVID19_Before_Admission_Testing[d].body else 0);
+            nonRapidTestsUsed=(if (testDaysBA > 0 and d + testDaysBA in DAYS) then COVID19_Before_Admission_Testing[d].body else 0);
+
+      endTime = time();
+      put '      End Time: ' endTime time.;
 
       endsource; 
       runOptmodel /*result=runOptmodelResult*/ / code=pgm /*printlevel=0*/ groupBy='scenario_name' nGroupByThreads='ALL'; 
