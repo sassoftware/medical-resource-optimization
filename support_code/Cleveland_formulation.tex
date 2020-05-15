@@ -1,4 +1,5 @@
 \documentclass[10pt, letterpaper]{article}
+\usepackage{mathtools}
 \usepackage{amsmath}
 \usepackage[margin=0.5in]{geometry}
 \linespread{1}
@@ -10,12 +11,13 @@
 \begin{itemize}
 \item[ ] $ r \in Resources$ : set of resources
 \item[ ] $ f \in Facilities$ : set of facilities
-\item[ ] $ sl \in Service lines$ : set of service lines
+\item[ ] $ sl \in Service \ lines$ : set of service lines
 \item[ ] $ ss \in Sub-services$ : set of sub-services
 \item[ ] $ io \in Inpatient/Outpatient$ : set of Inpatient/Outpatient indicator
 \item[ ] $ ms \in Medical/Surgical$ : set of Medical/Surgical indicator
 \item[ ] $ d \in Days$ : set of days
 \item[ ] $ w \in Weeks$ : set of weeks
+\item[ ] $ q \in Phase \ start \ dates$ : set of phase start dates
 \end{itemize}
 
 \section*{Data Parameters: Model Coefficients}
@@ -30,36 +32,43 @@
 \item[ ] $maxday$ is the maximum day among the set $ d \in Days$, ${\max\limits_{d \in Days} d}$
 \item[ ] $dlyRapidTest_{d}$ is the total daily rapid tests available across all facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ 
 \item[ ] $dlyNonRapidTest_{d}$ is the total daily non-rapid tests for COVID-19 available across all facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ 
-\item[ ] $week_{d}$ is the week number of day $d$ in set $ d \in Days$
 
 \pagebreak
 
+\item[ ] $week_{d}$ is the week number of day $d$ in set $ d \in Days$
 \item[ ] $daysBeforeSurgAdm$ is the number of days before which a surgery patient should be tested for COVID-19 (using a non-rapid test kit) 
 \item[ ] $minDemRatio$ is the minimum proportion of demand that must be satisfied at a sub-service $ss$ if its is open at a facility $f$, service line $sl$ 
 \item[ ] $newPntBfCovid_{f,sl,ss,io,ms,d}$ is the new patients admitted without COVID-19 test constraints at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ on day $d$ 
 \item[ ] $fixOpenFlag_{f,sl,ss}$ is a flag and is set to 1 if the facility $f$, service line $sl$, sub-service $ss$ is open, 0 otherwise. 
+\item[ ] $emerSurRatio_{f,sl,ss}$ is a proportion of emergency surgical patients at the facility $f$, service line $sl$, sub-service $ss$. 
+\item[ ] $numCancel_{f,sl,ss,io,ms}$ is the maximum number of patients cancelled at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
 \end{itemize}
 
 \section*{Decision Variables}
 \begin{itemize}
 \item [ ] $NewPatients_{f,sl,ss,io,ms,d}$ $\geq$ {0} is the number of patients accepted in facility $f$, service line $sl$, sub-service $ss$, on day $d$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$.
+\item [ ] $ReschedulePatients_{f,sl,ss,io,ms,d}$ $\geq$ {0} is the number of patients rescheduled in facility $f$, service line $sl$, sub-service $ss$, on day $d$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$.
 \item [ ] $OpenFlg_{f,sl,ss,d}$ $\in$ \{0,1\} is the binary variable indicating if facility $f$, service line $sl$, sub-service $ss$ is open on day $d$.
 \end{itemize}
 
 \section*{Variables}
 \begin{align*}
-&TotalPatients_{f,sl,ss,io,ms,d} \ \text{is the total number of patients accepted in facility $f$,service line $sl$, subservice $ss$,} \\
-&\text{cumulative for day $d$ , for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ where,} \\
-&TotalPatients_{f,sl,ss,io,ms,d} =
-\sum_{\substack{d1 \in d \ \text{and} \\
-\max \{[d - losMean_{f,sl,ss,io,ms} + 1], \\ minday \} \leq d1 \leq d}}  NewPatients_{f,sl,ss,io,ms,d1} \quad \forall f,sl,ss,io,ms,d\ \\
+&TotalPatients_{f,sl,ss,io,ms,d} \ \text{is the total number of patients accepted and rescheduled in facility $f$,service line $sl$,} \\
+&\text{ sub-service $ss$, cumulative for day $d$ , for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ where,} \\
 \end{align*}
-
+\begin{equation*}
+\begin{multlined}
+TotalPatients_{f,sl,ss,io,ms,d} =
+\sum_{\substack{d1 \in d \ \text{and} \\
+\max \{[d - losMean_{f,sl,ss,io,ms} + 1], \\ minday \} \leq d1 \leq d}}  (NewPatients_{f,sl,ss,io,ms,d1} + ReschedulePatients_{f,sl,ss,io,ms,d1})
+\\ \quad \forall f,sl,ss,io,ms,d\ 
+\end{multlined}
+\end{equation*}
 
 \section*{Objective Functions}
 \begin{itemize}
-\item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,io,ms,d} NewPatients_{f,sl,ss,io,ms,d} \ revenue_{f,sl,ss,io,ms}$
-\item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,io,ms,d} NewPatients_{f,sl,ss,io,ms,d} \ margin_{f,sl,ss,io,ms}$
+\item [ ] $max \quad TotalRevenue=\sum_{f,sl,ss,io,ms,d} (NewPatients_{f,sl,ss,io,ms,d} + ReschedulePatients_{f,sl,ss,io,ms,d}) \ revenue_{f,sl,ss,io,ms}$
+\item [ ] $max \quad TotalMargin=\sum_{f,sl,ss,io,ms,d} (NewPatients_{f,sl,ss,io,ms,d} + ReschedulePatients_{f,sl,ss,io,ms,d}) \ margin_{f,sl,ss,io,ms}$
 \end{itemize}
 
 
@@ -73,36 +82,59 @@
 NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,io,ms,d\
 \end{equation}
 
+\pagebreak
+
 \begin{align*}
-&\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than } \\
-&\text{equal to available capacity of resource $r$ for $f,sl,ss$.} 
+&\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than } \\ &\text{equal to available capacity of resource $r$ for $f,sl,ss$.} 
 \end{align*}
 \begin{equation} 
 \sum_{io,ms} utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
 \end{equation}
 
-\pagebreak
+\begin{align*}
+&\text{Rescheduling constraint: Rescheduling patients for $f,sl,ss,io,ms$ on day $d$ is not allowed if the sub-service is not open} \\
+\end{align*}
+\begin{equation} 
+ReschedulePatients_{f,sl,ss,io,ms,d} \leq numCancel_{f,sl,ss,io,ms} \  OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,io,ms,d\
+\end{equation}
+
+\begin{align*}
+&\text{Maximum rescheduling constraint: Total number of rescheduled patients across all days for $f,sl,ss,io,ms$ should be } \\
+&\text{less than the maximum number of rescheduled patients.} 
+\end{align*}
+\begin{equation} 
+\sum_{d} ReschedulePatients_{f,sl,ss,io,ms,d} \leq numCancel_{f,sl,ss,io,ms} \  OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,io,ms\
+\end{equation}
 
 \begin{align*}
 &\text{Minimum proportion of demand constraint: If a sub-service $ss$ is open at $f,sl$ then, we should at the least} \\
 &\text{satisfy a minimum proportion of the weekly demand of $f,sl,ss$.} 
 \end{align*}
 \begin{equation} 
+\begin{multlined}
 \sum_{\substack{io,ms,d \ \text{and} \\
-week_{d} = w }} NewPatients_{f,sl,ss,io,ms,d} \geq minDemRatio \ \sum_{\substack{io,ms,d \ \text{and} \\
+week_{d} = w }} (NewPatients_{f,sl,ss,io,ms,d} + ReschedulePatients_{f,sl,ss,io,ms,d})
+\geq  minDemRatio \\ \ \sum_{\substack{io,ms,d \ \text{and} \\
 week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,w\
+\end{multlined}
 \end{equation}
 
 \begin{align*}
-&\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted (excluding surgical patients) for $f,sl,ss,ms$ } \\
-&\text{in day $d$ should be less than the total available non-rapid test for the day and daily rapid test available.} 
+&\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted (excluding surgical patients) and the } \\
+&\text{emergency surgical patients admitted for $f,sl,ss,ms$ on day $d$ should be less than the total rapid test available } \\
+&\text{daily rapid test available.} 
 \end{align*}
 \begin{equation} 
+\begin{multlined}
 \sum_{\substack{f,sl,ss,io,ms \\ 
 \text{and} \ io = 'I' \\
-\text{and} \ ms != 'SURG'}} NewPatients_{f,sl,ss,io,ms,d} \leq dlyRapidTest_{d}  \quad \forall d\
+\text{and} \\ ms != 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d}  + ReschedulePatients_{f,sl,ss,io,ms,d})  + 
+\sum_{\substack{f,sl,ss,io,ms \\  
+\text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d} \\ + ReschedulePatients_{f,sl,ss,io,ms,d}) \ emerSurRatio_{f,sl,ss} \leq dlyRapidTest_{d}  \quad \forall d\
+\end{multlined}
 \end{equation}
 
+\pagebreak
 
 \begin{align*}
 &\text{COVID-19 surgery patient tests constraint: Total number of surgery patients who will be admitted for surgery } \\
@@ -110,8 +142,10 @@ week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \for
 &\text{available for the day $d$.} 
 \end{align*}
 \begin{equation} 
-\sum_{\substack{f,sl,ss,io,ms \ \text{and} \\ d1 = [d+ daysBeforeSurgAdm] \ \text{and} \ d1 \in d  \\
-\text{and} \ ms = 'SURG'}} NewPatients_{f,sl,ss,io,ms,d1} \leq dlyNonRapidTest_{d}  \quad \forall d\
+\begin{multlined}
+\sum_{\substack{f,sl,ss,io,ms \ \text{and} \\ d1 = [d+ daysBeforeSurgAdm] \ \\ \text{and} \ d1 \in d  \\
+\text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d1} + ReschedulePatients_{f,sl,ss,io,ms,d1}) \\ (1- emerSurRatio_{f,sl,ss})) \leq dlyNonRapidTest_{d}  \quad \forall d\
+\end{multlined}
 \end{equation}
 
 \begin{align*}
@@ -123,11 +157,19 @@ OpenFlg_{f,sl,ss,d+1} \geq OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,d \ \text{a
 \end{equation}
 
 \begin{align*}
-&\text{Sub-service already opened constraint: If a sub-service $ss$ is already opened at $f,sl$ then we set}\\
-&\text{$OpenFlg$ variable as 1 for the entire planning horizon.} 
+&\text{Sub-service already opened constraint: If a sub-service $ss$ is already opened at $f,sl$ then we set $OpenFlg$ }\\
+&\text{variable as 1 for the entire planning horizon.} 
 \end{align*}
 \begin{equation} 
 OpenFlg_{f,sl,ss,d} = 1 \quad \forall f,sl,ss,d \ \text{and} \ d = minday\ \text{and} \ fixOpenFlag_{f,sl,ss} =1\
+\end{equation}
+
+\begin{align*}
+&\text{Sub-service open on phase date constraint: The sub-service $ss$ allowed to open only on the phase dates or on }\\
+&\text{the first day of the planning horizon.} 
+\end{align*}
+\begin{equation} 
+OpenFlg_{f,sl,ss,d} = OpenFlg_{f,sl,ss,d-1} \quad \forall f,sl,ss,d \ \text{and} \ (d-1) \in d \ \text{and} \ d \notin q
 \end{equation}
 
 \end{document}
