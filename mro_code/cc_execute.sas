@@ -14,6 +14,16 @@
         ,run_opt=1
         ,_debug=0);
 
+/* temporary - to generate input_opt_param for different scenarios - Can remove this after we get data from cc*/
+	%cc_create_input_opt_param(inlib=cc
+                   ,outlib=cc
+                   ,input_opt_parameters=input_opt_parameters
+				   ,input_opt_parameters_multi=input_opt_parameters_multi
+				   ,_numsce = 2
+				   ,_test_adj = 100 
+                   ,_worklib=casuser
+                   ,_debug=&_debug
+                   );
 
    %if %sysevalf(&run_dp.=1) %then %do;
 

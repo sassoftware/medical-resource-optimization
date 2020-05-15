@@ -8,10 +8,12 @@ caslib _all_ assign;
 
 /* Point to the code */
 %let my_code_path=/r/sanyo.unx.sas.com/vol/vol920/u92/navikt/casuser/covid/code/MRO/orclus08_git/mro_code;
+%let my_code_path_sup=/r/sanyo.unx.sas.com/vol/vol920/u92/navikt/casuser/covid/code/MRO/orclus08_git/support_code;
 %include "&my_code_path./cc_execute.sas";
 %include "&my_code_path./cc_data_prep.sas";
 %include "&my_code_path./cc_forecast_demand.sas";
 %include "&my_code_path./cc_optimize.sas";
+%include "&my_code_path_sup./cc_create_input_opt_param.sas";
 
       %cc_execute(
          inlib=cc

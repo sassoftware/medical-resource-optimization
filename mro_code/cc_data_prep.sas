@@ -789,49 +789,6 @@
       quit;
    %end;
 
-/* Subbu: To-do:
-1. Move this data step into a separate utility macro that also creates multiple scenarios from INPUT_OPT_PARAMETERS 
-*/
-/* For testing: Add new parameters to input_opt_parameters */
-data casuser.append_to_opt_parameters;
-   set casuser.input_opt_parameters_pp (obs=1 keep=facility service_line sub_service parm_name parm_value);
-
-   /* Force some services to be already open */
-   parm_name='ALREADY_OPEN';
-   parm_value='YES';
-
-   facility='Akron'; service_line='ENT'; sub_service='ALL'; output;
-   facility='Avon'; service_line='ALL'; sub_service='ALL'; output;
-   facility='Cleveland Clinic'; service_line='Cosmetic Procedures'; sub_service='Fat Removal'; output;
-   facility='ALL'; service_line='Lab'; sub_service='ALL'; output;
-
-   /* Change ALLOW_OPENING_ONLY_ON_PHASE and SECONDARY_OBJECTIVE_TOLERANCE */
-   facility='ALL'; service_line='ALL'; sub_service='ALL'; 
-   /*parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE'; parm_value='YES'; output;*/
-   parm_name='SECONDARY_OBJECTIVE_TOLERANCE'; parm_value='90'; output;
-
-   /* Specify minimum demand for some hierarchy combinations */
-   parm_name='MIN_DEMAND_RATIO';
-
-   facility='ALL'; service_line='Cardiac Services'; sub_service='ALL'; parm_value='30'; output;
-   facility='Cleveland Clinic'; service_line='Gastroenterology'; sub_service='Other GI Diagnostic Testing'; parm_value=10; output;
-   facility='Cleveland Clinic'; service_line='Cardiac Services'; sub_service='ALL'; parm_value='40'; output;
-   facility='Cleveland Clinic'; service_line='Cardiac_Services'; sub_service='Cardiac Cath'; parm_value='50'; output;
-
- /* Specify percentage of emergency surgical procedures {by service line} for some service lines */
-   parm_name='EMER_SURGICAL_PTS_RATIO';
-   facility='ALL'; service_line='Cardiac Services'; sub_service='ALL'; parm_value='30'; output;
-   facility='Cleveland Clinic'; service_line='Gynecology'; sub_service='ALL'; parm_value='10'; output;
-   facility='ALL'; service_line='Gynecology'; sub_service='ALL'; parm_value='20'; output;
-   facility='ALL'; service_line='Cardiology'; sub_service='ALL'; parm_value='40'; output;
-
-run;
-
-data casuser.input_opt_parameters_pp;
-   set casuser.input_opt_parameters_pp    
-       casuser.append_to_opt_parameters;
-run;
-
    /*************************/
    /******HOUSEKEEPING*******/
    /*************************/
