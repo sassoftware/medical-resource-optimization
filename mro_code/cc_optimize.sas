@@ -14,7 +14,7 @@
    ,output_resource_usage=output_opt_resource_usage
    ,output_covid_test_usage=output_opt_covid_test_usage
    ,_worklib=casuser
-   ,_debug=1
+   ,_debug=0
    );
 
    /*************************/
@@ -254,6 +254,11 @@
       run; 
       source pgm;
 
+        
+      /***************/
+      /* Define sets */
+      /***************/
+
       num startTime;
       num endTime;
       startTime = time();      
@@ -271,6 +276,10 @@
       set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
       set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss,iof,msf>;
       set <num> DAYS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <d>;
+
+      /*****************/
+      /* Define inputs */
+      /*****************/
 
       num capacity{FAC_SLINE_SSERV_RES};
       num utilization{FAC_SLINE_SSERV_IO_MS_RES};
@@ -300,7 +309,9 @@
 
       str scenarioNameCopy;
   
-      /* Read data from CAS tables */ 
+      /***************/
+      /* Read data   */
+      /***************/
       
       /* Scenario Names */
       read data &_worklib..opt_distinct_scenarios
@@ -336,10 +347,7 @@
       /* Service attributes */
       read data &_worklib..input_service_attributes_pp nogroupby
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
-            /* DEBUG: If you don't want to use cancellations, comment out the next line so we don't read num_cancelled */
-            /*
-            numCancel=num_cancelled
-            */
+/*             numCancel=num_cancelled */
             losMean=length_stay_mean;
 
       /* Covid test capacity */
@@ -374,28 +382,30 @@
             emerSurgRatioip = parm_value;
 
       for {<f,sl,ss> in EMER_SURGICAL_PTS_RATIO_CONSTRAINTS} do;
+
          for {<f2,sl2,ss2> in FAC_SLINE_SSERV} do;
             if( (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')) then
                emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
             end;
-         end;
+         end;        
+   
+         /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
+         num week{d in DAYS} = week(d);
+         set <num> WEEKS = setof{d in DAYS} week[d];
          
-
-      /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
-      num week{d in DAYS} = week(d);
-      set <num> WEEKS = setof{d in DAYS} week[d];
-      
-      /* Create decomp blocks to decompose the problem by facility */
-      set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
-      num block_id{f in FACILITIES};
-      num id init 0;
-      for {f in FACILITIES} do;
-         block_id[f] = id;
-         id = id + 1;
+         /* Create decomp blocks to decompose the problem by facility */
+         set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
+         num block_id{f in FACILITIES};
+         num id init 0;
+         for {f in FACILITIES} do;
+            block_id[f] = id;
+            id = id + 1;
       end;
 
 
-      /******************Model variables, constraints, objective function*******************************/
+      /**********************/
+      /* Decision Variables */
+      /**********************/
    
       /* Decide to open or not a sub service */
       var OpenFlg{FAC_SLINE_SSERV, DAYS} BINARY;
@@ -415,6 +425,11 @@
          sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} 
             ((if <f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d1] else 0)
            + (if <f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl,ss,iof,msf,d1] else 0));
+
+
+      /***************/
+      /* Constraints */
+      /***************/
       
       /* New patients cannot exceed demand if the sub service is open */
       con Maximum_Demand{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND}:
@@ -489,6 +504,11 @@
        + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1 = d + testDaysBA} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
        <= totalDailyNonRapidTests[d];
 
+
+      /***********************/
+      /* Objective Functions */
+      /***********************/
+
       max Total_Revenue = 
           sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND} NewPatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf]
         + sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL} ReschedulePatients[f,sl,ss,iof,msf,d] * revenue[f,sl,ss,iof,msf];
@@ -497,7 +517,9 @@
           sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND} NewPatients[f,sl,ss,iof,msf,d] * margin[f,sl,ss,iof,msf]
         + sum{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL} ReschedulePatients[f,sl,ss,iof,msf,d] * margin[f,sl,ss,iof,msf];
 
-      /******************Solve*******************************/
+      /***********************/
+      /* Solve               */
+      /***********************/
 
       /* First we want to find out what is the maximum demand we can handle without the covid-19 tests. 
          We drop the COVID constraints and the minimum demand constraints. We're also going to fix OpenFlg to 1 
@@ -565,7 +587,9 @@
          end;
       end; 
 
-      /******************Create output data*******************************/
+      /***********************/
+      /* Create output data  */
+      /***********************/
 
       num OptNewPatients {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} = 
          if <f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl,ss,iof,msf,d].sol else 0;
@@ -621,6 +645,9 @@
       runOptmodel /*result=runOptmodelResult*/ / code=pgm /*printlevel=0*/ groupBy='scenario_name' nGroupByThreads='ALL'; 
       run; 
    quit;
+
+
+   /* Process and aggregate output data for reporting */
 
    data &_worklib.._opt_detail_week;
       format date date9.;
