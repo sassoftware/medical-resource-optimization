@@ -23,7 +23,7 @@ caslib _all_ assign;
      ,input_service_attributes=input_service_attributes
      ,input_demand=input_demand
      ,input_opt_parameters=input_opt_parameters_multi
-     ,run_dp=0
-     ,run_fcst=0
+     ,run_dp=1
+     ,run_fcst=1
      ,run_opt=1);
    
