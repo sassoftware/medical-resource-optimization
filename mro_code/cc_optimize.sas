@@ -382,24 +382,23 @@
             emerSurgRatioip = parm_value;
 
       for {<f,sl,ss> in EMER_SURGICAL_PTS_RATIO_CONSTRAINTS} do;
-
          for {<f2,sl2,ss2> in FAC_SLINE_SSERV} do;
             if( (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')) then
                emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
-            end;
-         end;        
+         end;
+      end;        
    
-         /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
-         num week{d in DAYS} = week(d);
-         set <num> WEEKS = setof{d in DAYS} week[d];
+      /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
+      num week{d in DAYS} = week(d);
+      set <num> WEEKS = setof{d in DAYS} week[d];
          
-         /* Create decomp blocks to decompose the problem by facility */
-         set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
-         num block_id{f in FACILITIES};
-         num id init 0;
-         for {f in FACILITIES} do;
-            block_id[f] = id;
-            id = id + 1;
+      /* Create decomp blocks to decompose the problem by facility */
+      set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
+      num block_id{f in FACILITIES};
+      num id init 0;
+      for {f in FACILITIES} do;
+         block_id[f] = id;
+         id = id + 1;
       end;
 
 
