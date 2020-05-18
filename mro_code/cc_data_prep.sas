@@ -73,13 +73,14 @@
 
    /* List work tables */
    %let _work_tables=%str(  
-              &_worklib..input_utilization_char
-              &_worklib..input_capacity_char
-              &_worklib..input_financials_char
-              &_worklib..input_service_attributes_char
-              &_worklib..input_demand_char
-              &_worklib..input_opt_parameters_char
-              &_worklib.._invalid_values_utilization
+              &_worklib.._input_utilization_char
+              &_worklib.._input_capacity_char
+              &_worklib.._input_financials_char
+              &_worklib.._input_service_attributes_char
+              &_worklib.._input_demand_char
+              &_worklib.._input_opt_parameters_char
+			  
+			  &_worklib.._invalid_values_utilization
               &_worklib.._invalid_values_capacity
               &_worklib.._invalid_values_financials
               &_worklib.._invalid_values_service_attrs
@@ -104,18 +105,21 @@
               &_worklib.._hierarchy_demand
               &_worklib.._hierarchy_opt_parameters
               &_worklib.._hierarchies_not_in_util
-              &_worklib..master_sets_union
-              &_worklib..distinct_fac_sl_ss
-              &_worklib..resources_in_utilization
-              &_worklib..util_resources_fac_sl_ss_r
-              &_worklib..util_resources_fac_r
-              &_worklib..util_resources_sl_r
-              &_worklib..util_resources_ss_r
-              &_worklib..util_resources_fac_sl_r
-              &_worklib..util_resources_fac_ss_r
-              &_worklib..util_resources_sl_ss_r
-              &_worklib..util_resources_r
-              work.inlib_contents
+              &_worklib.._master_sets_union
+              &_worklib.._distinct_fac_sl_ss
+              &_worklib.._resources_in_utilization
+			  
+			  &_worklib.._util_resources_fac_sl_ss_r
+              &_worklib.._util_resources_fac_r
+              &_worklib.._util_resources_sl_r
+              &_worklib.._util_resources_ss_r
+              &_worklib.._util_resources_fac_sl_r
+              &_worklib.._util_resources_fac_ss_r
+              &_worklib.._util_resources_sl_ss_r
+              &_worklib.._util_resources_r
+
+			  
+              work._inlib_contents
               );
 
    /* List output tables */
@@ -187,17 +191,17 @@
         /* Do a dummy data step that will force syscc > 4. We know that work.inlib_contents doesn't exist because
            we've just deleted it in a previous step, so we're going to try to use it. */
         data dummy_table;
-           set work.inlib_contents;
+           set work._inlib_contents;
         run;
       %end;
    %end;
    %if &syscc. > 4 %then %goto EXIT;
    
-   proc contents data=&inlib.._all_ out=work.inlib_contents noprint;
+   proc contents data=&inlib.._all_ out=work._inlib_contents noprint;
    run;
    
-   data work.inlib_contents;
-      set work.inlib_contents;
+   data work._inlib_contents;
+      set work._inlib_contents;
       where upcase(memname) in ("%upcase(&input_utilization)", 
                                 "%upcase(&input_capacity)", 
                                 "%upcase(&input_financials)", 
@@ -211,21 +215,21 @@
    /* For variables that already exist as character type in at least one table, 
       find the longest length */
    proc sql noprint;
-      select max(length) into :len_scenario_name from work.inlib_contents
+      select max(length) into :len_scenario_name from work._inlib_contents
          where upcase(name) = 'SCENARIO_NAME' and type = 2;
-      select max(length) into :len_facility from work.inlib_contents
+      select max(length) into :len_facility from work._inlib_contents
          where upcase(name) = 'FACILITY' and type = 2;
-      select max(length) into :len_service_line from work.inlib_contents
+      select max(length) into :len_service_line from work._inlib_contents
          where upcase(name) = 'SERVICE_LINE' and type = 2;
-      select max(length) into :len_sub_service from work.inlib_contents
+      select max(length) into :len_sub_service from work._inlib_contents
          where upcase(name) = 'SUB_SERVICE' and type = 2;
-      select max(length) into :len_ip_op_indicator from work.inlib_contents
+      select max(length) into :len_ip_op_indicator from work._inlib_contents
          where upcase(name) = 'IP_OP_INDICATOR' and type = 2;
-      select max(length) into :len_med_surg_indicator from work.inlib_contents
+      select max(length) into :len_med_surg_indicator from work._inlib_contents
          where upcase(name) = 'MED_SURG_INDICATOR' and type = 2;
-      select max(length) into :len_resource from work.inlib_contents
+      select max(length) into :len_resource from work._inlib_contents
          where upcase(name) = 'RESOURCE' and type = 2;
-      select max(length) into :len_parm_name from work.inlib_contents
+      select max(length) into :len_parm_name from work._inlib_contents
          where upcase(name) = 'PARM_NAME' and type = 2;
    quit;
    
@@ -234,7 +238,7 @@
       select distinct memname, count(distinct memname) 
          into :memname_list separated by ' ',
               :num_tables_convert
-         from work.inlib_contents
+         from work._inlib_contents
          where type = 6;
    quit;
    
@@ -246,7 +250,7 @@
          select name, count(*) 
             into :name_list separated by ' ',
                  :num_vars_convert
-            from work.inlib_contents
+            from work._inlib_contents
             where memname = "&tb" and type = 6;
          %do j = 1 %to &num_vars_convert;
             select max(length(%scan(&name_list, &j))) 
@@ -255,7 +259,7 @@
          %end;
       quit;
       
-      data &_worklib..%substr(&tb,1,%sysfunc(min(27,%length(&tb))))_char;
+      data &_worklib..%substr(%sysfunc(catx(,_,&tb)),1,%sysfunc(min(27,%length(&tb))))_char;
          set &inlib..&tb (rename=(%do j = 1 %to &num_vars_convert;
                                      %scan(&name_list, &j) = tempvar&j
                                   %end;
@@ -276,28 +280,28 @@
    %end;
 
    /* Initialize temp table names */   
-   %if %sysfunc(exist(&_worklib..%substr(&input_capacity,1,%sysfunc(min(27,%length(&input_capacity))))_char)) 
-      %then %let input_capacity_table = &_worklib..%substr(&input_capacity,1,%sysfunc(min(27,%length(&input_capacity))))_char;
+   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_capacity)),1,%sysfunc(min(27,%length(&input_capacity))))_char)) 
+      %then %let input_capacity_table = &_worklib.. %substr(%sysfunc(catx(,_,&input_capacity)),1,%sysfunc(min(27,%length(&input_capacity))))_char;
    %else %let input_capacity_table = &inlib..&input_capacity;
    
-   %if %sysfunc(exist(&_worklib..%substr(&input_demand,1,%sysfunc(min(27,%length(&input_demand))))_char)) 
-      %then %let input_demand_table = &_worklib..%substr(&input_demand,1,%sysfunc(min(27,%length(&input_demand))))_char;
+   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_demand)),1,%sysfunc(min(27,%length(&input_demand))))_char)) 
+      %then %let input_demand_table = &_worklib..%substr(%sysfunc(catx(,_,&input_demand)),1,%sysfunc(min(27,%length(&input_demand))))_char;
    %else %let input_demand_table = &inlib..&input_demand;
 
-   %if %sysfunc(exist(&_worklib..%substr(&input_financials,1,%sysfunc(min(27,%length(&input_financials))))_char)) 
-      %then %let input_financials_table = &_worklib..%substr(&input_financials,1,%sysfunc(min(27,%length(&input_financials))))_char;
+   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_financials)),1,%sysfunc(min(27,%length(&input_financials))))_char)) 
+      %then %let input_financials_table = &_worklib..%substr(%sysfunc(catx(,_,&input_financials)),1,%sysfunc(min(27,%length(&input_financials))))_char;
    %else %let input_financials_table = &inlib..&input_financials;
    
-   %if %sysfunc(exist(&_worklib..%substr(&input_opt_parameters,1,%sysfunc(min(27,%length(&input_opt_parameters))))_char)) 
-      %then %let input_opt_parameters_table = &_worklib..%substr(&input_opt_parameters,1,%sysfunc(min(27,%length(&input_opt_parameters))))_char;
+   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_opt_parameters)),1,%sysfunc(min(27,%length(&input_opt_parameters))))_char)) 
+      %then %let input_opt_parameters_table = &_worklib..%substr(%sysfunc(catx(,_,&input_opt_parameters)),1,%sysfunc(min(27,%length(&input_opt_parameters))))_char;
    %else %let input_opt_parameters_table = &inlib..&input_opt_parameters;
 
-   %if %sysfunc(exist(&_worklib..%substr(&input_service_attributes,1,%sysfunc(min(27,%length(&input_service_attributes))))_char)) 
-      %then %let input_service_attributes_table = &_worklib..%substr(&input_service_attributes,1,%sysfunc(min(27,%length(&input_service_attributes))))_char;
+   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_service_attributes)),1,%sysfunc(min(27,%length(&input_service_attributes))))_char)) 
+      %then %let input_service_attributes_table = &_worklib..%substr(%sysfunc(catx(,_,&input_service_attributes)),1,%sysfunc(min(27,%length(&input_service_attributes))))_char;
    %else %let input_service_attributes_table = &inlib..&input_service_attributes;
 
-   %if %sysfunc(exist(&_worklib..%substr(&input_utilization,1,%sysfunc(min(27,%length(&input_utilization))))_char)) 
-      %then %let input_utilization_table = &_worklib..%substr(&input_utilization,1,%sysfunc(min(27,%length(&input_utilization))))_char;
+   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_utilization)),1,%sysfunc(min(27,%length(&input_utilization))))_char)) 
+      %then %let input_utilization_table = &_worklib..%substr(%sysfunc(catx(,_,&input_utilization)),1,%sysfunc(min(27,%length(&input_utilization))))_char;
    %else %let input_utilization_table = &inlib..&input_utilization;
 
 
@@ -599,7 +603,7 @@
       combinations that don't use any resources, but we still want to include them in the optimization 
       problem because they might use COVID-19 tests, which are NOT included in the utilization or 
       capacity tables.*/
-   data &_worklib..master_sets_union;
+   data &_worklib.._master_sets_union;
       merge &_worklib.._hierarchy_financials (in=in_financials)
             &_worklib.._hierarchy_service_attributes (in=in_service_attributes)
             &_worklib.._hierarchy_demand (in=in_demand)
@@ -621,7 +625,7 @@
         &_worklib.._dropped_rows_utilization;
       set &_worklib..input_utilization_pp;
       if _n_ = 1 then do;
-         declare hash h0(dataset:"&_worklib..master_sets_union");
+         declare hash h0(dataset:"&_worklib.._master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
@@ -635,7 +639,7 @@
         &_worklib.._dropped_rows_financials;
       set &_worklib..input_financials_pp;
       if _n_ = 1 then do;
-         declare hash h0(dataset:"&_worklib..master_sets_union");
+         declare hash h0(dataset:"&_worklib.._master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
@@ -649,7 +653,7 @@
         &_worklib.._dropped_rows_service_attributes;
       set &_worklib..input_service_attributes_pp;
       if _n_ = 1 then do;
-         declare hash h0(dataset:"&_worklib..master_sets_union");
+         declare hash h0(dataset:"&_worklib.._master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
@@ -663,7 +667,7 @@
         &_worklib.._dropped_rows_demand;
       set &_worklib..input_demand_pp;
       if _n_ = 1 then do;
-         declare hash h0(dataset:"&_worklib..master_sets_union");
+         declare hash h0(dataset:"&_worklib.._master_sets_union");
          h0.defineKey('facility','service_line','sub_service','ip_op_indicator','med_surg_indicator');
          h0.defineDone();
       end;
@@ -690,13 +694,13 @@
       
    data &_worklib.._hierarchies_not_in_util;
       merge &_worklib..input_utilization_pp (in=in_util)
-            &_worklib..master_sets_union (in=in_master);
+            &_worklib.._master_sets_union (in=in_master);
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
       if in_master and not in_util;
       keep facility service_line sub_service ip_op_indicator med_surg_indicator;
    run;
    
-   data &_worklib..resources_in_utilization;
+   data &_worklib.._resources_in_utilization;
       set &_worklib..input_utilization_pp (keep=facility service_line sub_service resource);
       by facility service_line sub_service resource;
       if first.resource;
@@ -705,8 +709,8 @@
       sub_service_bak = sub_service;
    run;
    
-   data &_worklib..resources_in_utilization;
-      set &_worklib..resources_in_utilization;
+   data &_worklib.._resources_in_utilization;
+      set &_worklib.._resources_in_utilization;
       if _n_ = 1 then do;
          declare hash h0(dataset:"&_worklib..input_capacity_pp");
          h0.defineKey('facility','service_line','sub_service','resource');
@@ -760,7 +764,7 @@
       %if %index(&suffix, ss) > 0 %then %let by_string = &by_string sub_service;
       %let by_string = &by_string resource;
    
-      data &_worklib..util_resources_&suffix;
+      data &_worklib.._util_resources_&suffix;
          set &_worklib..input_utilization_pp (keep=&by_string);
          by &by_string;
          if first.resource;
@@ -773,7 +777,7 @@
       if _n_ = 1 then do;
          %do i = 1 %to 8;
             %let suffix = %scan(&combinations, &i, ' ');
-            declare hash h&i(dataset:"&_worklib..util_resources_&suffix");
+            declare hash h&i(dataset:"&_worklib.._util_resources_&suffix");
             h&i..defineKey(ALL:'YES');
             h&i..defineDone();
          %end;
@@ -799,7 +803,7 @@
    run;
    
    data &outlib..&output_resource_mismatch;
-      merge &_worklib..resources_in_utilization (in=in_util)
+      merge &_worklib.._resources_in_utilization (in=in_util)
             &_worklib.._dropped_rows_capacity (drop=capacity in=in_cap);
       by facility service_line sub_service resource;
       in_utilization = in_util;
@@ -808,8 +812,8 @@
 
    /* Remove the rows from &input_opt_parameters that do not correspond to any hierarchy
       remaining in master_sets_union, but keep the rows that have ALL for any of the fields */
-   data &_worklib..distinct_fac_sl_ss;
-      set &_worklib..master_sets_union (keep=facility service_line sub_service);
+   data &_worklib.._distinct_fac_sl_ss;
+      set &_worklib.._master_sets_union (keep=facility service_line sub_service);
       by facility service_line sub_service;
       if first.sub_service;
    run;
@@ -818,7 +822,7 @@
         &_worklib.._dropped_rows_opt_parameters;
       set &_worklib..input_opt_parameters_pp;
       if _n_ = 1 then do;
-         declare hash h0(dataset:"&_worklib..distinct_fac_sl_ss");
+         declare hash h0(dataset:"&_worklib.._distinct_fac_sl_ss");
          h0.defineKey('facility','service_line','sub_service');
          h0.defineDone();
       end;

@@ -61,12 +61,12 @@
 
    /* List work tables */
    %let _work_tables=%str( 
-        &_worklib..opt_parameters_date
-        &_worklib..opt_parameters_date_1
-        &_worklib..opt_parameters_global
-        &_worklib..opt_parameters_hierarchy
-        &_worklib..opt_allowed_opening_dates
-        &_worklib..opt_distinct_scenarios
+        &_worklib.._opt_parameters_date
+        &_worklib.._opt_parameters_date_1
+        &_worklib.._opt_parameters_global
+        &_worklib.._opt_parameters_hierarchy
+        &_worklib.._opt_allowed_opening_dates
+        &_worklib.._opt_distinct_scenarios
         &_worklib.._opt_detail
         &_worklib.._opt_summary
         &_worklib.._opt_resource_usage
@@ -129,19 +129,24 @@
  
    /* Divide INPUT_OPT_PARAMETERS_PP into three tables: one for the date-specific phases, one for "global" parameters that don't
       depend on any levels of the hierarchy, and one for the parameters that do depend on levels of the hierarchy */
-   data &_worklib..opt_parameters_date (keep=scenario_name sequence parameter value)
-        &_worklib..opt_parameters_global (keep=scenario_name 
+   data &_worklib.._opt_parameters_date (keep=scenario_name sequence parameter value)
+        &_worklib.._opt_parameters_global (keep=scenario_name 
                                                allow_opening_only_on_phase 
                                                secondary_objective_tolerance
                                                test_days_ba
                                                rapid_test_da
-                                               remove_demand_constraints)
-        &_worklib..opt_parameters_hierarchy (drop=start sequence parameter value 
+                                               remove_demand_constraints
+											   hold_not_rapid_covid_tests
+											   hold_rapid_covid_tests)
+        &_worklib.._opt_parameters_hierarchy (drop=start sequence parameter value 
                                                   allow_opening_only_on_phase 
                                                   secondary_objective_tolerance
                                                   test_days_ba
                                                   rapid_test_da
-                                                  remove_demand_constraints);
+                                                  remove_demand_constraints
+												  hold_not_rapid_covid_tests
+												  hold_rapid_covid_tests
+												  );
       set &_worklib..input_opt_parameters_pp;
       by scenario_name;
       parm_name = upcase(parm_name);
@@ -151,7 +156,9 @@
              allow_opening_only_on_phase
              test_days_ba
              rapid_test_da
-             remove_demand_constraints;
+             remove_demand_constraints
+			 hold_not_rapid_covid_tests
+			 hold_rapid_covid_tests;
       if first.scenario_name then do;
          /* Set default values for "global" parameters */
          secondary_objective_tolerance = 0.99;
@@ -159,6 +166,8 @@
          test_days_ba = 0;
          rapid_test_da = 0;
          remove_demand_constraints = 0;
+		 hold_not_rapid_covid_tests = 0;
+		 hold_rapid_covid_tests = 0;		 
       end;
          
       if index(parm_name, 'PHASE_') > 0 then do;
@@ -167,24 +176,26 @@
          sequence = scan(substr(parm_name, start),2,'_') + 0;
          if parameter = 'DATE' then value = input(parm_value, mmddyy10.);
          else value = parm_value + 0;
-         output &_worklib..opt_parameters_date;
+         output &_worklib.._opt_parameters_date;
       end;
       else do;
          if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA',
-                          'REMOVE_DEMAND_CONSTRAINTS') then do;
+                          'REMOVE_DEMAND_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS') then do;
             if parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE' and parm_value='YES' then allow_opening_only_on_phase = 1;
             else if parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE' then secondary_objective_tolerance = input(parm_value, best.) / 100; 
             else if parm_name = 'TEST_DAYS_BA' then test_days_ba = input(parm_value, best.);
             else if parm_name = 'RAPID_TEST_DA' then rapid_test_da = input(parm_value, best.) / 100;
             else if parm_name = 'REMOVE_DEMAND_CONSTRAINTS' and parm_value='YES' then remove_demand_constraints = 1;
+			else if parm_name = 'HOLD_NOT_RAPID_COVID_TESTS' then hold_not_rapid_covid_tests = input(parm_value, best.) / 100;
+			else if parm_name = 'HOLD_RAPID_COVID_TESTS' then hold_rapid_covid_tests = input(parm_value, best.) / 100;
          end;
-         else output &_worklib..opt_parameters_hierarchy;
+         else output &_worklib.._opt_parameters_hierarchy;
       end;
       
-      if last.scenario_name then output &_worklib..opt_parameters_global;
+      if last.scenario_name then output &_worklib.._opt_parameters_global;
    run;
 
-   proc transpose data=&_worklib..opt_parameters_date out=&_worklib..opt_parameters_date;
+   proc transpose data=&_worklib.._opt_parameters_date out=&_worklib.._opt_parameters_date;
       by scenario_name sequence;
       id parameter;
    run;
@@ -192,8 +203,8 @@
    /* If allow_opening_only_on_phase = 1 for any scenario, we need to know the phase dates because these are the only allowed opening 
       dates. So before we fill in the rest of the dates for the daily capacities, save a copy of opt_parameters_date with a different 
       name. */
-   data &_worklib..opt_allowed_opening_dates;
-      set &_worklib..opt_parameters_date (keep=scenario_name date);
+   data &_worklib.._opt_allowed_opening_dates;
+      set &_worklib.._opt_parameters_date (keep=scenario_name date);
    run;
    
    /* Fill in daily capacities of covid tests for the entire planning horizon */
@@ -207,8 +218,8 @@
          where predict_date >= &start_date.;
    quit;
 
-   data &_worklib..opt_parameters_date_1;
-      set &_worklib..opt_parameters_date;
+   data &_worklib.._opt_parameters_date_1;
+      set &_worklib.._opt_parameters_date;
       retain first_date prev_date prev_rapid prev_not_rapid;
       by scenario_name sequence;
       if first.scenario_name then do;
@@ -317,6 +328,8 @@
       num testDaysBA init 0;
       num rapidTestDA init 0;
       num removeDemandConstraints init 0;
+	  num holdNotRapidCovidTests init 0;
+      num holdRapidCovidTests init 0;
 
       str scenarioNameCopy;
   
@@ -362,34 +375,37 @@
             losMean=length_stay_mean;
 
       /* Covid test capacity */
-      read data &_worklib..opt_parameters_date_1
+      read data &_worklib.._opt_parameters_date_1
          into [date] 
             totalDailyRapidTests=rapid_tests
             totalDailyNonRapidTests=not_rapid_tests;
 
       /* Global parameters */
-      read data &_worklib..opt_parameters_global into
+      read data &_worklib.._opt_parameters_global into
          allowOpeningOnlyOnPhase = allow_opening_only_on_phase
          secondaryObjectiveTolerance = secondary_objective_tolerance
          testDaysBA = test_days_ba
          rapidTestDA = rapid_test_da
-         removeDemandConstraints = remove_demand_constraints;
+         removeDemandConstraints = remove_demand_constraints
+		 holdNotRapidCovidTests = hold_not_rapid_covid_tests
+		 holdRapidCovidTests = hold_rapid_covid_tests		 
+		 ;
          
       /* Allowed opening dates */
-      read data &_worklib..opt_allowed_opening_dates into
+      read data &_worklib.._opt_allowed_opening_dates into
          ALLOWED_OPENING_DATES = [date];
          
       /* Services that are already open */
-      read data &_worklib..opt_parameters_hierarchy (where=(parm_name='ALREADY_OPEN' and parm_value='YES'))
+      read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='ALREADY_OPEN' and parm_value='YES'))
          into ALREADY_OPEN_SERVICES = [facility service_line sub_service];
          
       /* Min demand ratio constraints */
-      read data &_worklib..opt_parameters_hierarchy (where=(parm_name='MIN_DEMAND_RATIO'))
+      read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='MIN_DEMAND_RATIO'))
          into MIN_DEMAND_RATIO_CONSTRAINTS = [facility service_line sub_service]
             minDemandRatio = parm_value;
 
       /* emergency surgical ratio constraints */
-      read data &_worklib..opt_parameters_hierarchy (where=(parm_name='EMER_SURGICAL_PTS_RATIO'))
+      read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='EMER_SURGICAL_PTS_RATIO'))
          into EMER_SURGICAL_PTS_RATIO_CONSTRAINTS = [facility service_line sub_service]
             emerSurgRatioip = parm_value;
 
@@ -508,13 +524,13 @@
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : msf = 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : msf = 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
-       <= totalDailyRapidTests[d] / rapidTestDA;
+       <= (totalDailyRapidTests[d] - holdRapidCovidTests)  / rapidTestDA;
 
       /* Non-Rapid tests constraint - total available non-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS : testDaysBA > 0 and d + testDaysBA in DAYS}:
          sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1 = d + testDaysBA} (NewPatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
        + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1 = d + testDaysBA} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
-       <= totalDailyNonRapidTests[d];
+       <= (totalDailyNonRapidTests[d]- holdNotRapidCovidTests);
 
 
       /***********************/
@@ -645,9 +661,9 @@
 
       create data &_worklib.._opt_covid_test_usage
          from [day]={d in DAYS}
-            rapidTestsAvailable=totalDailyRapidTests[d]
+            rapidTestsAvailable=(totalDailyRapidTests[d] - holdRapidCovidTests) /* Subtracting the hold test quantities from available rapid test quantities*/
             rapidTestsUsed=(if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].body else 0)
-            nonRapidTestsAvailable=totalDailyNonRapidTests[d]
+            nonRapidTestsAvailable=(totalDailyNonRapidTests[d] - holdNotRapidCovidTests) /* Subtracting the hold test quantities from available not-rapid test quantities*/
             nonRapidTestsUsed=(if (testDaysBA > 0 and d + testDaysBA in DAYS) then COVID19_Before_Admission_Testing[d].body else 0);
 
       endTime = time();
