@@ -82,28 +82,34 @@
    /************************************/
    /************ANALYTICS *************/
    /***********************************/
-
-   %let lead_weeks = %str();
+   %let planning_horizon = %str();
    %let forecast_model = %str();
+   %let optimization_start_date = %str();
    proc sql noprint;
-      select parm_value into :lead_weeks
+      select parm_value into :planning_horizon
          from &_worklib..input_opt_parameters_pp 
          where upcase(parm_name) = 'PLANNING_HORIZON';
       select lowcase(parm_value) into :forecast_model
          from &_worklib..input_opt_parameters_pp
          where upcase(parm_name) = 'FORECAST_MODEL';
-      select lowcase(parm_value) into :DATE_PHASE_1
+      select input(parm_value,mmddyy10.) into :date_phase_1
          from &_worklib..input_opt_parameters_pp
          where upcase(parm_name) = 'DATE_PHASE_1';
+      select upcase(parm_value) into :optimization_start_date
+         from &_worklib..input_opt_parameters_pp
+         where upcase(parm_name) = 'OPTIMIZATION_START_DATE';
+      select max(date) + 1 into :history_plus_1
+         from &_worklib..&input_demand;
    quit;
-   %if &lead_weeks = %str() %then %let lead_weeks = 12;
+   %if &planning_horizon = %str() %then %let planning_horizon = 12;
    %if &forecast_model = %str() %then %let forecast_model = tsmdl;
+   %if &optimization_start_date = %str() %then %let optimization_start_date = PHASE_1_DATE;
 
-   data _null_;
-	   DATE_PHASE_1_NUM=input("&DATE_PHASE_1.",mmddyy10.);
-      call symputx('DATE_PHASE_1_NUM', DATE_PHASE_1_NUM);
-   run;
-   
+   %global start_date;   
+   %if &optimization_start_date = PHASE_1_DATE %then %let start_date = &date_phase_1;
+   %else %if &optimization_start_date = TODAY_PLUS_1 %then %let start_date = %eval(%sysfunc(today()) + 1);
+   %else %if &optimization_start_date = HISTORY_PLUS_1 %then %let start_date = &history_plus_1;
+   %else %let start_date = &date_phase_1; /* Invalid value, default to PHASE_1_DATE */
    
    /* Add day of week */
    data &_worklib.._tmp_input_demand;
@@ -134,22 +140,14 @@
         casOut={caslib="&_worklib.",name="_tmpstats",replace=true}; run; 
    quit;
 
-   /* Save relevant statistics in macro variables */
-/*    data _null_; */
-/*       set &_worklib.._tmpstats; */
-/*       call symputx('tEnd', Date); */
-/*        */
-/*       if Date < today() then gap_weeks = intck('week',Date,today()) + 1; */
-/*       else gap_weeks = 0; */
-/*       call symputx('gap_weeks', gap_weeks); */
-/*    run; */
-
-	/* Calculate gap weeks as weeks in between last date of demand history and &DATE_PHASE_1_NUM. */
+   /* Calculate gap weeks as weeks in between last date of demand history and &start_date. */
    data _null_;
       set &_worklib.._tmpstats;
       call symputx('tEnd', Date);
       
-      if Date < (&DATE_PHASE_1_NUM.) then gap_weeks = intck('week',Date,&DATE_PHASE_1_NUM.) ;
+      /* Add 1 in case we have partial weeks, which will result in intck=0. We can overshoot the forecasting horizon and then 
+         restrict it later when we create the final output. */
+      if Date < (&start_date.) then gap_weeks = intck('week',Date,&start_date.) + 1;
       else gap_weeks = 0;
       call symputx('gap_weeks', gap_weeks);
    run;
@@ -172,7 +170,7 @@
       run;
    quit;
    
-   %let forecast_weeks = %eval(&lead_weeks. + &gap_weeks.-1);
+   %let forecast_weeks = %eval(&planning_horizon. + &gap_weeks.);
 
    %if &forecast_model. = tsmdl %then %do;
 
@@ -358,16 +356,17 @@
       do rc0 = h0.find() by 0 while (rc0 = 0);
          predict_date = intnx('day',date, (dow-1));
          daily_predict = (predict * demand_proportion);
-         if /*today() <*/ predict_date <= today() + 7 * &lead_weeks then output;
+         /* Keep prediction dates that happen before the &start_date because we need them for the 
+            forecast accuracy macro. We will drop them in cc_optimize. */
+         if /*&start_date. <= */ predict_date <= &start_date. + 7 * &planning_horizon - 1 then output;
          rc0 = h0.find_next();
       end;
 
       drop rc0;
    run;
-
+   
    data &outlib..&output_fd_demand_fcst (promote=yes);
       set &_worklib.._tmp_output_fd_demand_fcst_dly;
-		if predict_date >= &DATE_PHASE_1_NUM.;
    run;
 
    /*************************/
