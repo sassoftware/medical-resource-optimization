@@ -3,7 +3,11 @@
 |
 | Description: 
 |
+|Example: include_str=%str(facility in ('Hillcrest','ALL') ) 
+|
+|
 *------------------------------------------------------------------------------* ;
+
 %macro cc_data_prep(inlib=cc
                    ,outlib=cc
                    ,input_utilization=input_utilization
@@ -12,6 +16,7 @@
                    ,input_service_attributes=input_service_attributes
                    ,input_demand=input_demand
                    ,input_opt_parameters=input_opt_parameters
+                   ,unique_param_list =%str(PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
@@ -120,10 +125,10 @@
              &_worklib..input_service_attributes_pp
              &_worklib..input_demand_pp
              &_worklib..input_opt_parameters_pp
-             &outlib..&output_hierarchy_mismatch
-             &outlib..&output_resource_mismatch
-             &outlib..&output_invalid_values
-             &outlib..&output_duplicate_rows
+             &outlib..&output_hierarchy_mismatch.
+             &outlib..&output_resource_mismatch.
+             &outlib..&output_invalid_values.
+             &outlib..&output_duplicate_rows.
              );
 
    /*Delete output data if already exists */
@@ -166,27 +171,26 @@
       we'll stop with an error. Note that we don't consider scenarios where the parameter has not been specified, and therefore
       might have a different default value. If a single value has been specified for ANY scenario, we'll use that value for 
       ALL scenarios. */
-   %let param_list = PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL;
-   %do i = 1 %to 3;
-      %let param = %scan(&param_list, &i, ' ');
+
+   %do i = 1 %to %SYSFUNC(countw(&unique_param_list.,' '));
+      %let param = %scan(&unique_param_list., &i., ' ');
       %let num_distinct_values = 0;
       proc sql noprint;
          select count(distinct lowcase(parm_value)) into :num_distinct_values
-         from &inlib..&input_opt_parameters
-         where upcase(parm_name) = "&param";
+         from &inlib..&input_opt_parameters.
+         where upcase(parm_name) = "&param.";
       quit;
       
-      %if &num_distinct_values > 1 %then %do;
-         %put ERROR: The parameter &param has more than one distinct value in &inlib..&input_opt_parameters..;
-         
-         /* Do a dummy data step that will force syscc > 4. We know that work.inlib_contents doesn't exist because
-            we've just deleted it in a previous step, so we're going to try to use it. */
-         data dummy_table;
-            set work.inlib_contents;
-         run;
+      %if &num_distinct_values. > 1 %then %do;
+         %put ERROR: The parameter &param. has more than one distinct value in &inlib..&input_opt_parameters..;
+        /* Do a dummy data step that will force syscc > 4. We know that work.inlib_contents doesn't exist because
+           we've just deleted it in a previous step, so we're going to try to use it. */
+        data dummy_table;
+           set work.inlib_contents;
+        run;
       %end;
    %end;
-   %if &syscc > 4 %then %goto EXIT;
+   %if &syscc. > 4 %then %goto EXIT;
    
    proc contents data=&inlib.._all_ out=work.inlib_contents noprint;
    run;

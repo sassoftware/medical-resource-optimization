@@ -26,11 +26,9 @@
           ,input_service_attributes=&input_service_attributes.
           ,input_demand=&input_demand.
           ,input_opt_parameters=&input_opt_parameters.
-          /* ,include_str=%str(facility in ('Hillcrest','ALL') ) */
           ,exclude_str=%str(facility in ('Florida','CCCHR') or service_line='Evaluation and Management')
           ,_worklib=&_worklib.
-          ,_debug=&_debug
-          );
+          ,_debug=&_debug.);
    
    %end;
 
@@ -42,8 +40,7 @@
           ,input_demand=input_demand_pp
           ,output_fd_demand_fcst=output_fd_demand_fcst
           ,_worklib=&_worklib.
-          ,_debug=&_debug
-          );
+          ,_debug=&_debug.);
 
    %end;
 
