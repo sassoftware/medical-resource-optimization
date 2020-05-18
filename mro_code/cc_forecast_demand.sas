@@ -82,7 +82,7 @@
    /************************************/
    /************ANALYTICS *************/
    /***********************************/
-   
+
    %let lead_weeks = %str();
    %let forecast_model = %str();
    proc sql noprint;
@@ -92,9 +92,17 @@
       select lowcase(parm_value) into :forecast_model
          from &_worklib..input_opt_parameters_pp
          where upcase(parm_name) = 'FORECAST_MODEL';
+      select lowcase(parm_value) into :DATE_PHASE_1
+         from &_worklib..input_opt_parameters_pp
+         where upcase(parm_name) = 'DATE_PHASE_1';
    quit;
    %if &lead_weeks = %str() %then %let lead_weeks = 12;
    %if &forecast_model = %str() %then %let forecast_model = tsmdl;
+
+   data _null_;
+	   DATE_PHASE_1_NUM=input("&DATE_PHASE_1.",mmddyy10.);
+      call symputx('DATE_PHASE_1_NUM', DATE_PHASE_1_NUM);
+   run;
    
    
    /* Add day of week */
@@ -127,11 +135,21 @@
    quit;
 
    /* Save relevant statistics in macro variables */
+/*    data _null_; */
+/*       set &_worklib.._tmpstats; */
+/*       call symputx('tEnd', Date); */
+/*        */
+/*       if Date < today() then gap_weeks = intck('week',Date,today()) + 1; */
+/*       else gap_weeks = 0; */
+/*       call symputx('gap_weeks', gap_weeks); */
+/*    run; */
+
+	/* Calculate gap weeks as weeks in between last date of demand history and &DATE_PHASE_1_NUM. */
    data _null_;
       set &_worklib.._tmpstats;
       call symputx('tEnd', Date);
       
-      if Date < today() then gap_weeks = intck('week',Date,today()) + 1;
+      if Date < (&DATE_PHASE_1_NUM.) then gap_weeks = intck('week',Date,&DATE_PHASE_1_NUM.) ;
       else gap_weeks = 0;
       call symputx('gap_weeks', gap_weeks);
    run;
@@ -154,7 +172,7 @@
       run;
    quit;
    
-   %let forecast_weeks = %eval(&lead_weeks. + &gap_weeks.);
+   %let forecast_weeks = %eval(&lead_weeks. + &gap_weeks.-1);
 
    %if &forecast_model. = tsmdl %then %do;
 
@@ -349,6 +367,7 @@
 
    data &outlib..&output_fd_demand_fcst (promote=yes);
       set &_worklib.._tmp_output_fd_demand_fcst_dly;
+		if predict_date >= &DATE_PHASE_1_NUM.;
    run;
 
    /*************************/
