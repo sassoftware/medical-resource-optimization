@@ -16,7 +16,8 @@
                    ,input_service_attributes=input_service_attributes
                    ,input_demand=input_demand
                    ,input_opt_parameters=input_opt_parameters
-                   ,unique_param_list =%str(PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL)
+                   ,unique_param_list =%str(PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL 
+                                            FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
@@ -541,19 +542,77 @@
       else if in_opt then table = 'INPUT_OPT_PARAMETERS';
       keep table facility service_line sub_service ip_op_indicator med_surg_indicator resource parm_name;
    run;
+   
+   proc sql noprint; 
+      select min(count(*),1) into :filter_serv_not_using_resources
+      from &_worklib..input_opt_parameters_pp
+      where parm_name = 'FILTER_SERV_NOT_USING_RESOURCES' and parm_value = 'YES';
+   quit;
+   
+   %if &filter_serv_not_using_resources %then %do;
+
+      /* Recreate _hierarchy_utilization by removing records from utilization that have 
+         no corresponding row in capacity */
+      data &_worklib.._hierarchy_utilization;
+         set &_worklib.._hierarchy_utilization;
+         if _n_ = 1 then do;
+            declare hash h0(dataset:"&_worklib..input_capacity_pp");
+            h0.defineKey('facility','service_line','sub_service','resource');
+            h0.defineDone();
+         end;
+
+         /* Utilization is defined at the granular facility/service_line/sub_service level, 
+            but capacity may have been aggregated to ALL at any of these levels. So we need
+            to search every combination until we find one that matches, and we output the 
+            row only if we have found a match. */
+         rc0 = .;
+         facility_bak = facility;
+         service_line_bak = service_line;
+         sub_service_bak = sub_service;
+         
+         do i = 1 to 2 while (rc0 ne 0);
+            if i = 1 then facility = facility_bak;
+            else facility = 'ALL';
+            do j = 1 to 2 while (rc0 ne 0);
+               if j = 1 then service_line = service_line_bak;
+               else service_line = 'ALL';
+               do k = 1 to 2 while (rc0 ne 0);
+                  if k = 1 then sub_service = sub_service_bak;
+                  else sub_service = 'ALL';
+                  rc0 = h0.find();
+               end;
+            end;
+         end;
+         facility = facility_bak;
+         service_line = service_line_bak;
+         sub_service = sub_service_bak;
+         if rc0 = 0 then output;
+         drop i j k facility_bak service_line_bak sub_service_bak rc0;
+      run;
+      
+   %end;
       
    /* Now that we have removed invalid values from all the tables, we need to get a complete set of
       facility/service_line/sub_service/ip_op_indicator/med_surg_indicator that is common across all the 
-      tables that use this granularity. Note that I am not including _hierarchy_utilization, because there
-      might be some facility/service/subservice combinations that don't use any resources, but we 
-      still want to include them in the optimization problem because they might use COVID-19 tests, which 
-      are NOT included in the utilization or capacity tables.*/
+      tables that use this granularity. Note that I am not including _hierarchy_utilization unless 
+      &filter_serv_not_using_resources = 1, because there might be some facility/service/subservice 
+      combinations that don't use any resources, but we still want to include them in the optimization 
+      problem because they might use COVID-19 tests, which are NOT included in the utilization or 
+      capacity tables.*/
    data &_worklib..master_sets_union;
       merge &_worklib.._hierarchy_financials (in=in_financials)
             &_worklib.._hierarchy_service_attributes (in=in_service_attributes)
-            &_worklib.._hierarchy_demand (in=in_demand);
+            &_worklib.._hierarchy_demand (in=in_demand)
+            %if &filter_serv_not_using_resources %then %do;
+               &_worklib.._hierarchy_utilization (in=in_utilization)
+            %end;
+            ;
       by facility service_line sub_service ip_op_indicator med_surg_indicator;
-      if in_financials and in_service_attributes and in_demand then output;
+      if in_financials and in_service_attributes and in_demand 
+         %if &filter_serv_not_using_resources %then %do;
+            and in_utilization
+         %end;
+         then output;
       keep facility service_line sub_service ip_op_indicator med_surg_indicator; 
    run;
 
@@ -649,7 +708,7 @@
    data &_worklib..resources_in_utilization;
       set &_worklib..resources_in_utilization;
       if _n_ = 1 then do;
-         declare hash h0(dataset:'casuser.input_capacity_pp');
+         declare hash h0(dataset:"&_worklib..input_capacity_pp");
          h0.defineKey('facility','service_line','sub_service','resource');
          h0.defineDone();
       end;

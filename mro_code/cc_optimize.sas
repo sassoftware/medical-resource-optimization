@@ -62,7 +62,7 @@
    /* List work tables */
    %let _work_tables=%str( 
         &_worklib..opt_parameters_date
-		  &_worklib..opt_parameters_date_1
+        &_worklib..opt_parameters_date_1
         &_worklib..opt_parameters_global
         &_worklib..opt_parameters_hierarchy
         &_worklib..opt_allowed_opening_dates
@@ -134,12 +134,14 @@
                                                allow_opening_only_on_phase 
                                                secondary_objective_tolerance
                                                test_days_ba
-                                               rapid_test_da)
+                                               rapid_test_da
+                                               remove_demand_constraints)
         &_worklib..opt_parameters_hierarchy (drop=start sequence parameter value 
                                                   allow_opening_only_on_phase 
                                                   secondary_objective_tolerance
                                                   test_days_ba
-                                                  rapid_test_da);
+                                                  rapid_test_da
+                                                  remove_demand_constraints);
       set &_worklib..input_opt_parameters_pp;
       by scenario_name;
       parm_name = upcase(parm_name);
@@ -148,13 +150,15 @@
       retain secondary_objective_tolerance 
              allow_opening_only_on_phase
              test_days_ba
-             rapid_test_da;
+             rapid_test_da
+             remove_demand_constraints;
       if first.scenario_name then do;
          /* Set default values for "global" parameters */
          secondary_objective_tolerance = 0.99;
          allow_opening_only_on_phase = 0;
          test_days_ba = 0;
          rapid_test_da = 0;
+         remove_demand_constraints = 0;
       end;
          
       if index(parm_name, 'PHASE_') > 0 then do;
@@ -166,11 +170,13 @@
          output &_worklib..opt_parameters_date;
       end;
       else do;
-         if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA') then do;
+         if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA',
+                          'REMOVE_DEMAND_CONSTRAINTS') then do;
             if parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE' and parm_value='YES' then allow_opening_only_on_phase = 1;
             else if parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE' then secondary_objective_tolerance = input(parm_value, best.) / 100; 
             else if parm_name = 'TEST_DAYS_BA' then test_days_ba = input(parm_value, best.);
             else if parm_name = 'RAPID_TEST_DA' then rapid_test_da = input(parm_value, best.) / 100;
+            else if parm_name = 'REMOVE_DEMAND_CONSTRAINTS' and parm_value='YES' then remove_demand_constraints = 1;
          end;
          else output &_worklib..opt_parameters_hierarchy;
       end;
@@ -191,23 +197,14 @@
    run;
    
    /* Fill in daily capacities of covid tests for the entire planning horizon */
-
-   proc sql noprint;
-      select lowcase(parm_value) into :DATE_PHASE_1
-         from &_worklib..input_opt_parameters_pp
-         where upcase(parm_name) = 'DATE_PHASE_1';
-   quit;
-
-   data _null_;
-	   DATE_PHASE_1_NUM=input("&DATE_PHASE_1.",mmddyy10.);
-      call symputx('DATE_PHASE_1_NUM', DATE_PHASE_1_NUM);
-   run;
-
    proc sql noprint;
       select min(predict_date), max(predict_date)
          into :min_date, :max_date
-         from &outlib..&input_demand_fcst.;
-/*          where predict_date >= &DATE_PHASE_1_NUM.; */
+         from &outlib..&input_demand_fcst.
+         /* The demand forecast might have rows with predict_date < &start_date, because we need to keep these for the
+            forecast accuracy macro. Therefore, we need to restrict the rows only to predict_date >= &start_date, both 
+            here and when we read &outlib..&input_demand_fcst into optmodel. */
+         where predict_date >= &start_date.;
    quit;
 
    data &_worklib..opt_parameters_date_1;
@@ -319,6 +316,7 @@
       num secondaryObjectiveTolerance init 0.99;
       num testDaysBA init 0;
       num rapidTestDA init 0;
+      num removeDemandConstraints init 0;
 
       str scenarioNameCopy;
   
@@ -337,7 +335,7 @@
       put ;
       
       /* Demand Forecast*/
-      read data &outlib..&input_demand_fcst. /*(where=(predict_date > today()))*/ nogroupby
+      read data &outlib..&input_demand_fcst. (where=(predict_date >= &start_date.)) nogroupby
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
@@ -374,7 +372,8 @@
          allowOpeningOnlyOnPhase = allow_opening_only_on_phase
          secondaryObjectiveTolerance = secondary_objective_tolerance
          testDaysBA = test_days_ba
-         rapidTestDA = rapid_test_da;
+         rapidTestDA = rapid_test_da
+         removeDemandConstraints = remove_demand_constraints;
          
       /* Allowed opening dates */
       read data &_worklib..opt_allowed_opening_dates into
@@ -445,26 +444,26 @@
 
     
       /* New patients cannot exceed demand if the sub service is open */
-      con Maximum_Demand{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND}:
+      con Maximum_Demand{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND : removeDemandConstraints = 0}:
          NewPatients[f,sl,ss,iof,msf,d] <= demand[f,sl,ss,iof,msf,d]*OpenFlg[f,sl,ss,d]
                    suffixes=(block=block_id[f]);
    
       /* Rescheduled patients are not allowed if the sub service is not open. In this constraint, numCancel
          acts as a big-M coefficient. */
-      con Reschedule_Allowed{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL}:
+      con Reschedule_Allowed{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL : removeDemandConstraints = 0}:
          ReschedulePatients[f,sl,ss,iof,msf,d] <= numCancel[f,sl,ss,iof,msf]*OpenFlg[f,sl,ss,d]
                    suffixes=(block=block_id[f]);
       
       /* The total number of patients rescheduled across all the days cannot exceed the number of 
          cancelled patients. */
-      con Reschedule_Maximum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS : numCancel[f,sl,ss,iof,msf] > 0}:
+      con Reschedule_Maximum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS : numCancel[f,sl,ss,iof,msf] > 0 and removeDemandConstraints = 0}:
          sum{d in DAYS} ReschedulePatients[f,sl,ss,iof,msf,d] <= numCancel[f,sl,ss,iof,msf]
                    suffixes=(block=block_id[f]);
          
       /* If a sub-service is open, we must satisfy a minimum proportion of the weekly demand if minDemandRatio > 0. We are breaking these 
          into two sets of constraints -- one where facility is not equal to 'ALL' and one where facility is equal to 'ALL' -- so that we can 
          define decomp blocks for the ones that do not span all facilities. */
-      con Minimum_Demand{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : f ne 'ALL'}:
+      con Minimum_Demand{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : f ne 'ALL' and removeDemandConstraints = 0}:
          sum{<(f),sl2,ss2,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL') and week[d]=w}
                 ((if <f,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl2,ss2,iof,msf,d] else 0)
                + (if <f,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl2,ss2,iof,msf,d] else 0)
@@ -472,7 +471,7 @@
             >= 0
                   suffixes=(block=block_id[f]);
 
-      con Minimum_Demand_ALL{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : f='ALL'}:
+      con Minimum_Demand_ALL{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : f='ALL' and removeDemandConstraints = 0}:
          sum{<f2,sl2,ss2,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL') and week[d]=w}
                 ((if <f2,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f2,sl2,ss2,iof,msf,d] else 0)
                + (if <f2,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f2,sl2,ss2,iof,msf,d] else 0)
