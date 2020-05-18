@@ -79,8 +79,8 @@
               &_worklib.._input_service_attributes_char
               &_worklib.._input_demand_char
               &_worklib.._input_opt_parameters_char
-			  
-			  &_worklib.._invalid_values_utilization
+              &_worklib.._input_opt_parameters_multi_char
+              &_worklib.._invalid_values_utilization
               &_worklib.._invalid_values_capacity
               &_worklib.._invalid_values_financials
               &_worklib.._invalid_values_service_attrs
@@ -108,8 +108,7 @@
               &_worklib.._master_sets_union
               &_worklib.._distinct_fac_sl_ss
               &_worklib.._resources_in_utilization
-			  
-			  &_worklib.._util_resources_fac_sl_ss_r
+              &_worklib.._util_resources_fac_sl_ss_r
               &_worklib.._util_resources_fac_r
               &_worklib.._util_resources_sl_r
               &_worklib.._util_resources_ss_r
@@ -117,8 +116,6 @@
               &_worklib.._util_resources_fac_ss_r
               &_worklib.._util_resources_sl_ss_r
               &_worklib.._util_resources_r
-
-			  
               work._inlib_contents
               );
 
@@ -259,7 +256,7 @@
          %end;
       quit;
       
-      data &_worklib..%substr(%sysfunc(catx(,_,&tb)),1,%sysfunc(min(27,%length(&tb))))_char;
+      data &_worklib.._%substr(&tb,1,%sysfunc(min(26,%length(&tb))))_char;
          set &inlib..&tb (rename=(%do j = 1 %to &num_vars_convert;
                                      %scan(&name_list, &j) = tempvar&j
                                   %end;
@@ -280,28 +277,28 @@
    %end;
 
    /* Initialize temp table names */   
-   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_capacity)),1,%sysfunc(min(27,%length(&input_capacity))))_char)) 
-      %then %let input_capacity_table = &_worklib.. %substr(%sysfunc(catx(,_,&input_capacity)),1,%sysfunc(min(27,%length(&input_capacity))))_char;
+   %if %sysfunc(exist(&_worklib.._%substr(&input_capacity,1,%sysfunc(min(26,%length(&input_capacity))))_char)) 
+      %then %let input_capacity_table = &_worklib.._%substr(&input_capacity,1,%sysfunc(min(26,%length(&input_capacity))))_char;
    %else %let input_capacity_table = &inlib..&input_capacity;
    
-   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_demand)),1,%sysfunc(min(27,%length(&input_demand))))_char)) 
-      %then %let input_demand_table = &_worklib..%substr(%sysfunc(catx(,_,&input_demand)),1,%sysfunc(min(27,%length(&input_demand))))_char;
+   %if %sysfunc(exist(&_worklib.._%substr(&input_demand,1,%sysfunc(min(26,%length(&input_demand))))_char)) 
+      %then %let input_demand_table = &_worklib.._%substr(&input_demand,1,%sysfunc(min(26,%length(&input_demand))))_char;
    %else %let input_demand_table = &inlib..&input_demand;
 
-   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_financials)),1,%sysfunc(min(27,%length(&input_financials))))_char)) 
-      %then %let input_financials_table = &_worklib..%substr(%sysfunc(catx(,_,&input_financials)),1,%sysfunc(min(27,%length(&input_financials))))_char;
+   %if %sysfunc(exist(&_worklib.._%substr(&input_financials,1,%sysfunc(min(26,%length(&input_financials))))_char)) 
+      %then %let input_financials_table = &_worklib.._%substr(&input_financials,1,%sysfunc(min(26,%length(&input_financials))))_char;
    %else %let input_financials_table = &inlib..&input_financials;
    
-   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_opt_parameters)),1,%sysfunc(min(27,%length(&input_opt_parameters))))_char)) 
-      %then %let input_opt_parameters_table = &_worklib..%substr(%sysfunc(catx(,_,&input_opt_parameters)),1,%sysfunc(min(27,%length(&input_opt_parameters))))_char;
+   %if %sysfunc(exist(&_worklib.._%substr(&input_opt_parameters,1,%sysfunc(min(26,%length(&input_opt_parameters))))_char)) 
+      %then %let input_opt_parameters_table = &_worklib.._%substr(&input_opt_parameters,1,%sysfunc(min(26,%length(&input_opt_parameters))))_char;
    %else %let input_opt_parameters_table = &inlib..&input_opt_parameters;
 
-   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_service_attributes)),1,%sysfunc(min(27,%length(&input_service_attributes))))_char)) 
-      %then %let input_service_attributes_table = &_worklib..%substr(%sysfunc(catx(,_,&input_service_attributes)),1,%sysfunc(min(27,%length(&input_service_attributes))))_char;
+   %if %sysfunc(exist(&_worklib.._%substr(&input_service_attributes,1,%sysfunc(min(26,%length(&input_service_attributes))))_char)) 
+      %then %let input_service_attributes_table = &_worklib.._%substr(&input_service_attributes,1,%sysfunc(min(26,%length(&input_service_attributes))))_char;
    %else %let input_service_attributes_table = &inlib..&input_service_attributes;
 
-   %if %sysfunc(exist(&_worklib..%substr(%sysfunc(catx(,_,&input_utilization)),1,%sysfunc(min(27,%length(&input_utilization))))_char)) 
-      %then %let input_utilization_table = &_worklib..%substr(%sysfunc(catx(,_,&input_utilization)),1,%sysfunc(min(27,%length(&input_utilization))))_char;
+   %if %sysfunc(exist(&_worklib.._%substr(&input_utilization,1,%sysfunc(min(26,%length(&input_utilization))))_char)) 
+      %then %let input_utilization_table = &_worklib.._%substr(&input_utilization,1,%sysfunc(min(26,%length(&input_utilization))))_char;
    %else %let input_utilization_table = &inlib..&input_utilization;
 
 

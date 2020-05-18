@@ -131,22 +131,22 @@
       depend on any levels of the hierarchy, and one for the parameters that do depend on levels of the hierarchy */
    data &_worklib.._opt_parameters_date (keep=scenario_name sequence parameter value)
         &_worklib.._opt_parameters_global (keep=scenario_name 
-                                               allow_opening_only_on_phase 
-                                               secondary_objective_tolerance
-                                               test_days_ba
-                                               rapid_test_da
-                                               remove_demand_constraints
-											   hold_not_rapid_covid_tests
-											   hold_rapid_covid_tests)
+                                                allow_opening_only_on_phase 
+                                                secondary_objective_tolerance
+                                                test_days_ba
+                                                rapid_test_da
+                                                remove_demand_constraints
+                                                hold_not_rapid_covid_tests
+                                                hold_rapid_covid_tests)
         &_worklib.._opt_parameters_hierarchy (drop=start sequence parameter value 
-                                                  allow_opening_only_on_phase 
-                                                  secondary_objective_tolerance
-                                                  test_days_ba
-                                                  rapid_test_da
-                                                  remove_demand_constraints
-												  hold_not_rapid_covid_tests
-												  hold_rapid_covid_tests
-												  );
+                                                   allow_opening_only_on_phase 
+                                                   secondary_objective_tolerance
+                                                   test_days_ba
+                                                   rapid_test_da
+                                                   remove_demand_constraints
+                                                   hold_not_rapid_covid_tests
+                                                   hold_rapid_covid_tests
+                                             );
       set &_worklib..input_opt_parameters_pp;
       by scenario_name;
       parm_name = upcase(parm_name);
@@ -157,8 +157,8 @@
              test_days_ba
              rapid_test_da
              remove_demand_constraints
-			 hold_not_rapid_covid_tests
-			 hold_rapid_covid_tests;
+             hold_not_rapid_covid_tests
+             hold_rapid_covid_tests;
       if first.scenario_name then do;
          /* Set default values for "global" parameters */
          secondary_objective_tolerance = 0.99;
@@ -166,8 +166,8 @@
          test_days_ba = 0;
          rapid_test_da = 0;
          remove_demand_constraints = 0;
-		 hold_not_rapid_covid_tests = 0;
-		 hold_rapid_covid_tests = 0;		 
+         hold_not_rapid_covid_tests = 0;
+         hold_rapid_covid_tests = 0;
       end;
          
       if index(parm_name, 'PHASE_') > 0 then do;
@@ -179,15 +179,15 @@
          output &_worklib.._opt_parameters_date;
       end;
       else do;
-         if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA',
-                          'REMOVE_DEMAND_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS') then do;
+            if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA',
+                             'REMOVE_DEMAND_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS') then do;
             if parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE' and parm_value='YES' then allow_opening_only_on_phase = 1;
             else if parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE' then secondary_objective_tolerance = input(parm_value, best.) / 100; 
             else if parm_name = 'TEST_DAYS_BA' then test_days_ba = input(parm_value, best.);
             else if parm_name = 'RAPID_TEST_DA' then rapid_test_da = input(parm_value, best.) / 100;
             else if parm_name = 'REMOVE_DEMAND_CONSTRAINTS' and parm_value='YES' then remove_demand_constraints = 1;
-			else if parm_name = 'HOLD_NOT_RAPID_COVID_TESTS' then hold_not_rapid_covid_tests = input(parm_value, best.) / 100;
-			else if parm_name = 'HOLD_RAPID_COVID_TESTS' then hold_rapid_covid_tests = input(parm_value, best.) / 100;
+            else if parm_name = 'HOLD_NOT_RAPID_COVID_TESTS' then hold_not_rapid_covid_tests = input(parm_value, best.);
+            else if parm_name = 'HOLD_RAPID_COVID_TESTS' then hold_rapid_covid_tests = input(parm_value, best.);
          end;
          else output &_worklib.._opt_parameters_hierarchy;
       end;
@@ -328,7 +328,7 @@
       num testDaysBA init 0;
       num rapidTestDA init 0;
       num removeDemandConstraints init 0;
-	  num holdNotRapidCovidTests init 0;
+      num holdNotRapidCovidTests init 0;
       num holdRapidCovidTests init 0;
 
       str scenarioNameCopy;
@@ -387,9 +387,9 @@
          testDaysBA = test_days_ba
          rapidTestDA = rapid_test_da
          removeDemandConstraints = remove_demand_constraints
-		 holdNotRapidCovidTests = hold_not_rapid_covid_tests
-		 holdRapidCovidTests = hold_rapid_covid_tests		 
-		 ;
+         holdNotRapidCovidTests = hold_not_rapid_covid_tests
+         holdRapidCovidTests = hold_rapid_covid_tests
+         ;
          
       /* Allowed opening dates */
       read data &_worklib.._opt_allowed_opening_dates into
