@@ -62,6 +62,7 @@
    /* List work tables */
    %let _work_tables=%str( 
         &_worklib..opt_parameters_date
+		  &_worklib..opt_parameters_date_1
         &_worklib..opt_parameters_global
         &_worklib..opt_parameters_hierarchy
         &_worklib..opt_allowed_opening_dates
@@ -190,14 +191,26 @@
    run;
    
    /* Fill in daily capacities of covid tests for the entire planning horizon */
+
+   proc sql noprint;
+      select lowcase(parm_value) into :DATE_PHASE_1
+         from &_worklib..input_opt_parameters_pp
+         where upcase(parm_name) = 'DATE_PHASE_1';
+   quit;
+
+   data _null_;
+	   DATE_PHASE_1_NUM=input("&DATE_PHASE_1.",mmddyy10.);
+      call symputx('DATE_PHASE_1_NUM', DATE_PHASE_1_NUM);
+   run;
+
    proc sql noprint;
       select min(predict_date), max(predict_date)
          into :min_date, :max_date
-         from &outlib..&input_demand_fcst.
-         where predict_date > today();
+         from &outlib..&input_demand_fcst.;
+/*          where predict_date >= &DATE_PHASE_1_NUM.; */
    quit;
 
-   data &_worklib..opt_parameters_date;
+   data &_worklib..opt_parameters_date_1;
       set &_worklib..opt_parameters_date;
       retain first_date prev_date prev_rapid prev_not_rapid;
       by scenario_name sequence;
@@ -324,7 +337,7 @@
       put ;
       
       /* Demand Forecast*/
-      read data &outlib..&input_demand_fcst. (where=(predict_date > today())) nogroupby
+      read data &outlib..&input_demand_fcst. /*(where=(predict_date > today()))*/ nogroupby
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
             demand=daily_predict;
 
@@ -351,7 +364,7 @@
             losMean=length_stay_mean;
 
       /* Covid test capacity */
-      read data &_worklib..opt_parameters_date
+      read data &_worklib..opt_parameters_date_1
          into [date] 
             totalDailyRapidTests=rapid_tests
             totalDailyNonRapidTests=not_rapid_tests;
@@ -416,7 +429,7 @@
          have to come after the read data statements.) */
       set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_DEMAND = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : demand[f,sl,ss,iof,msf,d] > 0};
       set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_CANCEL = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : numCancel[f,sl,ss,iof,msf] > 0};
-      var NewPatients{VAR_HIERARCHY_POSITIVE_DEMAND} >= 0;
+      var NewPatients{VAR_HIERARCHY_POSITIVE_DEMAND} >= 0 INTEGER;
       var ReschedulePatients{VAR_HIERARCHY_POSITIVE_CANCEL} >= 0;
 
       /* Calculate total number of patients for day d */
@@ -429,7 +442,8 @@
       /***************/
       /* Constraints */
       /***************/
-      
+
+    
       /* New patients cannot exceed demand if the sub service is open */
       con Maximum_Demand{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND}:
          NewPatients[f,sl,ss,iof,msf,d] <= demand[f,sl,ss,iof,msf,d]*OpenFlg[f,sl,ss,d]
@@ -535,7 +549,7 @@
       fix OpenFlg = 1;
       fix ReschedulePatients = 0;
 
-      solve obj Total_Revenue with milp / maxtime=300 loglevel=3 /* decomp=(method=user) */;
+      solve obj Total_Revenue with milp / maxtime=300 loglevel=3 RELOBJGAP=0.05/* decomp=(method=user) */;
       
       /* The maximum demand without covid-19 tests is equal to the number of new patients that we saw, 
          subject to other resource capacity constraints */
@@ -569,7 +583,7 @@
       if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
 
          drop Primary_Objective_Constraint;
-         solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 /* decomp=(method=user) */;
+         solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 RELOBJGAP=0.05/* decomp=(method=user) */;
 
          if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
 
@@ -579,7 +593,7 @@
             primary_objective_value = Total_Revenue.sol;
             restore Primary_Objective_Constraint;
 
-            solve obj Total_Margin with milp / primalin maxtime=300 loglevel=3;
+            solve obj Total_Margin with milp / primalin maxtime=300 RELOBJGAP=0.05 loglevel=3;
 
             put Total_Revenue.sol=;
             put Total_Margin.sol=;
