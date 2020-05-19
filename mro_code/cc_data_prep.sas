@@ -73,13 +73,6 @@
 
    /* List work tables */
    %let _work_tables=%str(  
-              &_worklib.._input_utilization_char
-              &_worklib.._input_capacity_char
-              &_worklib.._input_financials_char
-              &_worklib.._input_service_attributes_char
-              &_worklib.._input_demand_char
-              &_worklib.._input_opt_parameters_char
-              &_worklib.._input_opt_parameters_multi_char
               &_worklib.._invalid_values_utilization
               &_worklib.._invalid_values_capacity
               &_worklib.._invalid_values_financials
@@ -156,6 +149,13 @@
       %let i = %eval(&i + 1);
       %let table = %scan(&_work_tables, &i, ' ');
    %end;
+
+   /* Delete all temp tables that start with _mrochar_, if they exist. These are not included in &_work_tables because 
+      the names are not fixed, they depend on the input parameters. */
+   proc datasets nolist lib=&_worklib.;
+      delete _mrochar_:;
+   quit;
+   
   
    /************************************/
    /************ANALYTICS *************/
@@ -255,8 +255,8 @@
                from &inlib..&tb;
          %end;
       quit;
-      
-      data &_worklib.._%substr(&tb,1,%sysfunc(min(26,%length(&tb))))_char;
+            
+      data &_worklib.._mrochar_%substr(&tb,1,%sysfunc(min(23,%length(&tb))));
          set &inlib..&tb (rename=(%do j = 1 %to &num_vars_convert;
                                      %scan(&name_list, &j) = tempvar&j
                                   %end;
@@ -277,28 +277,28 @@
    %end;
 
    /* Initialize temp table names */   
-   %if %sysfunc(exist(&_worklib.._%substr(&input_capacity,1,%sysfunc(min(26,%length(&input_capacity))))_char)) 
-      %then %let input_capacity_table = &_worklib.._%substr(&input_capacity,1,%sysfunc(min(26,%length(&input_capacity))))_char;
+   %if %sysfunc(exist(&_worklib.._mrochar_%substr(&input_capacity,1,%sysfunc(min(23,%length(&input_capacity)))))) 
+      %then %let input_capacity_table = &_worklib.._mrochar_%substr(&input_capacity,1,%sysfunc(min(23,%length(&input_capacity))));
    %else %let input_capacity_table = &inlib..&input_capacity;
    
-   %if %sysfunc(exist(&_worklib.._%substr(&input_demand,1,%sysfunc(min(26,%length(&input_demand))))_char)) 
-      %then %let input_demand_table = &_worklib.._%substr(&input_demand,1,%sysfunc(min(26,%length(&input_demand))))_char;
+   %if %sysfunc(exist(&_worklib.._mrochar_%substr(&input_demand,1,%sysfunc(min(23,%length(&input_demand)))))) 
+      %then %let input_demand_table = &_worklib.._mrochar_%substr(&input_demand,1,%sysfunc(min(23,%length(&input_demand))));
    %else %let input_demand_table = &inlib..&input_demand;
 
-   %if %sysfunc(exist(&_worklib.._%substr(&input_financials,1,%sysfunc(min(26,%length(&input_financials))))_char)) 
-      %then %let input_financials_table = &_worklib.._%substr(&input_financials,1,%sysfunc(min(26,%length(&input_financials))))_char;
+   %if %sysfunc(exist(&_worklib.._mrochar_%substr(&input_financials,1,%sysfunc(min(23,%length(&input_financials)))))) 
+      %then %let input_financials_table = &_worklib.._mrochar_%substr(&input_financials,1,%sysfunc(min(23,%length(&input_financials))));
    %else %let input_financials_table = &inlib..&input_financials;
    
-   %if %sysfunc(exist(&_worklib.._%substr(&input_opt_parameters,1,%sysfunc(min(26,%length(&input_opt_parameters))))_char)) 
-      %then %let input_opt_parameters_table = &_worklib.._%substr(&input_opt_parameters,1,%sysfunc(min(26,%length(&input_opt_parameters))))_char;
+   %if %sysfunc(exist(&_worklib.._mrochar_%substr(&input_opt_parameters,1,%sysfunc(min(23,%length(&input_opt_parameters)))))) 
+      %then %let input_opt_parameters_table = &_worklib.._mrochar_%substr(&input_opt_parameters,1,%sysfunc(min(23,%length(&input_opt_parameters))));
    %else %let input_opt_parameters_table = &inlib..&input_opt_parameters;
 
-   %if %sysfunc(exist(&_worklib.._%substr(&input_service_attributes,1,%sysfunc(min(26,%length(&input_service_attributes))))_char)) 
-      %then %let input_service_attributes_table = &_worklib.._%substr(&input_service_attributes,1,%sysfunc(min(26,%length(&input_service_attributes))))_char;
+   %if %sysfunc(exist(&_worklib.._mrochar_%substr(&input_service_attributes,1,%sysfunc(min(23,%length(&input_service_attributes)))))) 
+      %then %let input_service_attributes_table = &_worklib.._mrochar_%substr(&input_service_attributes,1,%sysfunc(min(23,%length(&input_service_attributes))));
    %else %let input_service_attributes_table = &inlib..&input_service_attributes;
 
-   %if %sysfunc(exist(&_worklib.._%substr(&input_utilization,1,%sysfunc(min(26,%length(&input_utilization))))_char)) 
-      %then %let input_utilization_table = &_worklib.._%substr(&input_utilization,1,%sysfunc(min(26,%length(&input_utilization))))_char;
+   %if %sysfunc(exist(&_worklib.._mrochar_%substr(&input_utilization,1,%sysfunc(min(23,%length(&input_utilization)))))) 
+      %then %let input_utilization_table = &_worklib.._mrochar_%substr(&input_utilization,1,%sysfunc(min(23,%length(&input_utilization))));
    %else %let input_utilization_table = &inlib..&input_utilization;
 
 
@@ -899,6 +899,12 @@
          %let i = %eval(&i + 1);
          %let table = %scan(&_work_tables, &i, ' ');
       %end;
+
+      /* Delete all temp tables that start with _mrochar_, if they exist. These are not included in &_work_tables because 
+         the names are not fixed, they depend on the input parameters. */
+      proc datasets nolist lib=&_worklib.;
+         delete _mrochar_:;
+      quit;
    %end;
 
    %EXIT:
