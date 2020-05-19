@@ -237,29 +237,35 @@
          prev_date = date;
          prev_rapid = rapid_tests;
          prev_not_rapid = not_rapid_tests;
+         prev_sequence = sequence;
 
          do date = &min_date to first_date - 1;
             rapid_tests = 0;
             not_rapid_tests = 0;
+            sequence = .;
             if &min_date <= date <= &max_date then output;
          end;
          date = first_date;
          rapid_tests = prev_rapid;
          not_rapid_tests = prev_not_rapid;
+         sequence = prev_sequence;
          if &min_date <= date <= &max_date then output;
       end;
       else do;
          this_date = date;
          this_rapid_tests = rapid_tests;
          this_not_rapid_tests = not_rapid_tests;
+         this_sequence = sequence;
          do date = prev_date + 1 to this_date - 1;
             rapid_tests = prev_rapid;
             not_rapid_tests = prev_not_rapid;
+            sequence = this_sequence - 1;
             if &min_date <= date <= &max_date then output;
          end;
          date = this_date;
          rapid_tests = this_rapid_tests;
          not_rapid_tests = this_not_rapid_tests;
+         sequence = this_sequence;
          if &min_date <= date <= &max_date then output;
          prev_date = date;
          prev_rapid = rapid_tests;
@@ -268,12 +274,12 @@
       if last.scenario_name then do date = prev_date + 1 to &max_date;
          if &min_date <= date <= &max_date then output;
       end;
-      drop sequence _name_ first_date prev_: this_:;
+      drop _name_ first_date prev_: this_:;
    run;
    
    /* Create a table of distinct scenario names, which is used only to read the scenario name into a string
       and print it to the log, so that we know which scenario each section of the log corresponds to */
-   data &_worklib..opt_distinct_scenarios;
+   data &_worklib.._opt_distinct_scenarios;
       set &_worklib..input_opt_parameters_pp (keep=scenario_name);
       by scenario_name;
       scenario_name_copy = scenario_name;
@@ -332,6 +338,7 @@
       
       num totalDailyRapidTests{DAYS};
       num totalDailyNotRapidTests{DAYS};
+      num phaseID{DAYS};
       
       num allowOpeningOnlyOnPhase init 0;
       num secondaryObjectiveTolerance init 0.99;
@@ -350,7 +357,7 @@
       /***************/
       
       /* Scenario Names */
-      read data &_worklib..opt_distinct_scenarios
+      read data &_worklib.._opt_distinct_scenarios
          into scenarioNameCopy = scenario_name_copy;
         
       put '    *********************************************************';
@@ -390,7 +397,8 @@
       read data &_worklib.._opt_parameters_date_1
          into [date] 
             totalDailyRapidTests=rapid_tests
-            totalDailyNotRapidTests=not_rapid_tests;
+            totalDailyNotRapidTests=not_rapid_tests
+            phaseID=sequence;
 
       /* Global parameters */
       read data &_worklib.._opt_parameters_global into
@@ -669,6 +677,7 @@
       create data &_worklib.._opt_detail
          from [facility service_line sub_service ip_op_indicator med_surg_indicator day]
                = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS}
+         Phase_ID=phaseID[d]
          NewPatients=(round(OptNewPatients[f,sl,ss,iof,msf,d],0.01))
          ReschedulePatients=(round(OptReschedulePatients[f,sl,ss,iof,msf,d],0.01))
          TotalPatients=(round(TotalPatients[f,sl,ss,iof,msf,d],0.01))
@@ -679,6 +688,7 @@
 
       create data &_worklib.._opt_summary
          from [facility service_line sub_service day]={<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}
+         Phase_ID=phaseID[d]
          OpenFlg=(round(OpenFlg[f,sl,ss,d],0.01));
 
       num OptResourceUsage{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS} = 
@@ -687,11 +697,13 @@
          
       create data &_worklib.._opt_resource_usage
          from [facility service_line sub_service resource day]={<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS}
+         Phase_ID=phaseID[d]
          capacity = capacity[f,sl,ss,r]
          usage = (round(OptResourceUsage[f,sl,ss,r,d],0.01));
 
       create data &_worklib.._opt_covid_test_usage
          from [day]={d in DAYS}
+            Phase_ID=phaseID[d]
             rapidTestsAvailable=(if (totalDailyRapidTests[d] - holdRapidCovidTests) < 0 then 0 else (totalDailyRapidTests[d] - holdRapidCovidTests)) /* Subtracting the hold test quantities from available rapid test quantities*/
             rapidTestsUsed=(if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].body else 0)
             notRapidTestsAvailable=(if (totalDailyNotRapidTests[d] - holdNotRapidCovidTests) < 0 then 0 else (totalDailyNotRapidTests[d] - holdNotRapidCovidTests))  /* Subtracting the hold test quantities from available not-rapid test quantities*/
@@ -746,6 +758,7 @@
    run;
     
    data &outlib..&output_opt_summary (promote=yes);
+      format day date9.;
       set &_worklib.._opt_summary;
    run;
    
