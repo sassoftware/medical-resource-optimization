@@ -313,6 +313,9 @@
       set <str,str,str> FAC_SLINE_SSERV = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss>;
       set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss,iof,msf>;
       set <num> DAYS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <d>;
+      set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
+      set <str> ICU_RESOURCES = setof{<f,sl,ss,r> in FAC_SLINE_SSERV_RES : 
+                                      index(upcase(r),'ICU BEDS') > 0 and index(upcase(r),'NICU') = 0 and index(upcase(r),'NEONATAL') = 0} <r>;
 
       /*****************/
       /* Define inputs */
@@ -348,7 +351,7 @@
       num removeCovidConstraints init 0;
       num holdNotRapidCovidTests init 0;
       num holdRapidCovidTests init 0;
-      num icuMaxUtilization init 0;
+      num icuMaxUtilization init 1;
 
       str scenarioNameCopy;
   
@@ -442,7 +445,6 @@
       set <num> WEEKS = setof{d in DAYS} week[d];
          
       /* Create decomp blocks to decompose the problem by facility */
-      set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
       num block_id{f in FACILITIES};
       num id init 0;
       for {f in FACILITIES} do;
@@ -533,14 +535,22 @@
       con Resources_Capacity{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS : f ne 'ALL'}:
          sum {<(f),sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f,sl2,ss2,iof,msf,r]*TotalPatients[f,sl2,ss2,iof,msf,d] 
-            <= capacity[f,sl,ss,r] * (if upcase(r) in {'ICU BEDS'} then icuMaxUtilization else 1)
+            <= capacity[f,sl,ss,r]
                    suffixes=(block=block_id[f]);
 
       con Resources_Capacity_ALL{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS : f = 'ALL'}:
          sum {<f2,sl2,ss2,iof,msf,(r)> in FAC_SLINE_SSERV_IO_MS_RES : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')} 
             utilization[f2,sl2,ss2,iof,msf,r]*TotalPatients[f2,sl2,ss2,iof,msf,d] 
-            <= capacity[f,sl,ss,r] * (if upcase(r) in {'ICU BEDS'} then icuMaxUtilization else 1);
-         
+            <= capacity[f,sl,ss,r];
+            
+      /* Max ICU utilization for each facility */
+      con Max_ICU_Utilization{f in FACILITIES, d in DAYS : icuMaxUtilization < 1}:
+         sum{<(f),sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES : r in ICU_RESOURCES}
+             utilization[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d]
+            <= icuMaxUtilization * sum{<(f),sl,ss,r> in FAC_SLINE_SSERV_RES : r in ICU_RESOURCES}
+                                       capacity[f,sl,ss,r]     
+                   suffixes=(block=block_id[f]);
+
       /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS : rapidTestDA > 0}:
          sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : iof='I' and msf ne 'SURG'} (NewPatients[f,sl,ss,iof,msf,d])
@@ -595,6 +605,7 @@
          because we only want to consider original demand (i.e., non-covid impacts) to calculate newPatientsBeforeCovid. */
       drop COVID19_Day_Of_Admission_Testing
            COVID19_Before_Admission_Testing
+           Max_ICU_Utilization
            Minimum_Demand
            Minimum_Demand_ALL
            Service_Stay_Open
@@ -615,6 +626,7 @@
          and unfix OpenFlg and ReschedulePatients, and then solve again. */
       restore COVID19_Day_Of_Admission_Testing
               COVID19_Before_Admission_Testing
+              Max_ICU_Utilization
               Minimum_Demand
               Minimum_Demand_ALL
               Service_Stay_Open
