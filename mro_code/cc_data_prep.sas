@@ -18,6 +18,8 @@
                    ,input_opt_parameters=input_opt_parameters
                    ,unique_param_list =%str(PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL 
                                             FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
+                   ,fractional_param_list =%str(SECONDARY_OBJECTIVE_TOLERANCE RAPID_TEST_DA MIN_DEMAND_RATIO 
+                                            EMER_SURGICAL_PTS_RATIO ICU_MAX_UTILIZATION)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
@@ -108,6 +110,8 @@
               &_worklib.._util_resources_fac_ss_r
               &_worklib.._util_resources_sl_ss_r
               &_worklib.._util_resources_r
+              &_worklib.._tmp_input_opt_parameters_pp
+              &_worklib.._tmp1_input_opt_parameters_pp
               work._inlib_contents
               );
 
@@ -522,6 +526,62 @@
       end;
       else output &_worklib.._duplicate_rows_opt_parameters;
    run;
+
+/* Subsetting the input_opt_parameters_pp table for non-fractional parameter list*/
+    data &_worklib.._tmp_input_opt_parameters_pp;
+       set &_worklib..input_opt_parameters_pp; 
+         %do i = 1 %to %SYSFUNC(countw(&fractional_param_list.,' '));
+             %let param = %scan(&fractional_param_list., &i., ' ');
+             if parm_name ne "&param."; 
+         %end;
+       drop i;
+    run;
+   
+/* Data check: Modifying the fractional parameter list - if the parm_value >0 and <1, set it to 0; if the parm_value >100 , set it to 100; */
+    data &_worklib.._tmp1_input_opt_parameters_pp;
+       set &_worklib..input_opt_parameters_pp; 
+         %do i = 1 %to %SYSFUNC(countw(&fractional_param_list.,' '));
+             %let param = %scan(&fractional_param_list., &i., ' ');
+             if index(parm_name, "&param") > 0 then do;
+                if (input(parm_value,best.) = 0 or (input(parm_value,best.) >= 1 and input(parm_value,best.) <= 100)) then do;
+                parm_value = put(parm_value,6.); output; end;
+                else if (input(parm_value,best.) > 0 and input(parm_value,best.) < 1) then do;
+                parm_value = '0'; output; end;               
+                else if (input(parm_value,best.) > 100 ) then do;
+                parm_value = '100'; output; end;
+            end;
+         %end;
+       drop i;
+    run; 
+
+    data &_worklib..input_opt_parameters_pp; 
+       set &_worklib.._tmp_input_opt_parameters_pp &_worklib.._tmp1_input_opt_parameters_pp;
+    run; 
+   
+   /*data &_worklib..input_opt_parameters_pp;
+      set &_worklib..input_opt_parameters_pp;
+	  %let param = %scan(&fractional_param_list., 1., ' ');
+        if parm_name = &param then do;
+            if (parm_value = 0 or (parm_value >= 1 and parm_value <= 100)) then do;
+               parm_value = parm_value; output; end;
+            else if (parm_value > 0 and parm_value < 1) then do;
+               parm_value = 0; output; end;               
+            else if (parm_value > 100 ) then do;
+               parm_value = 100; output; end;
+        end;
+		%do i = 1 %to %SYSFUNC(countw(&fractional_param_list.,' '));
+            %let param = %scan(&fractional_param_list., &i., ' ');
+            if parm_name = &param then do;
+               if (parm_value = 0 or (parm_value >= 1 and parm_value <= 100)) then do;
+                  parm_value = parm_value; output; end;
+               else if (parm_value > 0 and parm_value < 1) then do;
+                    parm_value = 0; output; end;               
+               else if (parm_value > 100 ) then do;
+                    parm_value = 100; output; end;
+            end;
+        %end;
+    run;*/
+   
    
    /* Create &output_invalid_values and &output_duplicate_rows */
    data &outlib..&output_invalid_values;
