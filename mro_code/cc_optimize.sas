@@ -547,13 +547,13 @@
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : iof='I' and msf ne 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : msf = 'SURG'} (NewPatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
        + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : msf = 'SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] * emerSurgRatio[f,sl,ss])
-       <= (totalDailyRapidTests[d] - holdRapidCovidTests)  / rapidTestDA;
+       <= (max(0,(totalDailyRapidTests[d] - holdRapidCovidTests))  / rapidTestDA);
 
       /* Not-Rapid tests constraint - total available not-rapid test */
       con COVID19_Before_Admission_Testing{d in DAYS : testDaysBA > 0 and d + testDaysBA in DAYS}:
          sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1 = d + testDaysBA} (NewPatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
        + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1 = d + testDaysBA} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
-       <= (totalDailyNotRapidTests[d]- holdNotRapidCovidTests);
+       <= max(0,(totalDailyNotRapidTests[d]- holdNotRapidCovidTests));
 
       if removeCovidConstraints = 1 then do;
          /* Reset UB of COVID constraints to a big-M constant. I am doing it this way instead of disabling the constraints because we still might want to 
@@ -704,9 +704,9 @@
       create data &_worklib.._opt_covid_test_usage
          from [day]={d in DAYS}
             Phase_ID=phaseID[d]
-            rapidTestsAvailable=(totalDailyRapidTests[d] - holdRapidCovidTests) /* Subtracting the hold test quantities from available rapid test quantities*/
+            rapidTestsAvailable=(if (totalDailyRapidTests[d] - holdRapidCovidTests) < 0 then 0 else (totalDailyRapidTests[d] - holdRapidCovidTests)) /* Subtracting the hold test quantities from available rapid test quantities*/
             rapidTestsUsed=(if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].body else 0)
-            notRapidTestsAvailable=(totalDailyNotRapidTests[d] - holdNotRapidCovidTests) /* Subtracting the hold test quantities from available not-rapid test quantities*/
+            notRapidTestsAvailable=(if (totalDailyNotRapidTests[d] - holdNotRapidCovidTests) < 0 then 0 else (totalDailyNotRapidTests[d] - holdNotRapidCovidTests))  /* Subtracting the hold test quantities from available not-rapid test quantities*/
             notRapidTestsUsed=(if (testDaysBA > 0 and d + testDaysBA in DAYS) then COVID19_Before_Admission_Testing[d].body else 0);
 
       endTime = time();
