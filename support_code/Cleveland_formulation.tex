@@ -37,11 +37,13 @@
 
 \item[ ] $week_{d}$ is the week number of day $d$ in set $ d \in Days$
 \item[ ] $daysBeforeSurgAdm$ is the number of days before which a surgery patient should be tested for COVID-19 (using a non-rapid test kit) 
+\item[ ] $fracInpTest$ is the fraction of inpatients tested for COVID-19 using the rapid test kit on the day of admission 
 \item[ ] $minDemRatio$ is the minimum proportion of demand that must be satisfied at a sub-service $ss$ if its is open at a facility $f$, service line $sl$ 
 \item[ ] $newPntBfCovid_{f,sl,ss,io,ms,d}$ is the new patients admitted without COVID-19 test constraints at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ on day $d$ 
 \item[ ] $fixOpenFlag_{f,sl,ss}$ is a flag and is set to 1 if the facility $f$, service line $sl$, sub-service $ss$ is open, 0 otherwise. 
 \item[ ] $emerSurRatio_{f,sl,ss}$ is a proportion of emergency surgical patients at the facility $f$, service line $sl$, sub-service $ss$. 
 \item[ ] $numCancel_{f,sl,ss,io,ms}$ is the maximum number of patients cancelled at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
+\item[ ] $maxUtil_{r}$ is the maximum proportion of utilization for the resource $r$ 
 \end{itemize}
 
 \section*{Decision Variables}
@@ -85,10 +87,11 @@ NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d
 \pagebreak
 
 \begin{align*}
-&\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than } \\ &\text{equal to available capacity of resource $r$ for $f,sl,ss$.} 
+&\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than } \\ &\text{equal to available capacity of resource $r$ times the max utilization allowed for the resource at $f,sl,ss$.} \\
+&\text{Currently, $maxUtil_{r}$ is defined only for $r$ = 'ICU BEDS'; $maxUtil_{r}$ = 1 for all other resources.}
 \end{align*}
 \begin{equation} 
-\sum_{io,ms} utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \quad \forall f,sl,ss,d,r\
+\sum_{io,ms} utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \ maxUtil_{r}  \quad \forall f,sl,ss,d,r\
 \end{equation}
 
 \begin{align*}
@@ -130,7 +133,7 @@ week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \for
 \text{and} \ io = 'I' \\
 \text{and} \\ ms != 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d}  + ReschedulePatients_{f,sl,ss,io,ms,d})  + 
 \sum_{\substack{f,sl,ss,io,ms \\  
-\text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d} \\ + ReschedulePatients_{f,sl,ss,io,ms,d}) \ emerSurRatio_{f,sl,ss} \leq dlyRapidTest_{d}  \quad \forall d\
+\text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d} \\ + ReschedulePatients_{f,sl,ss,io,ms,d}) \ emerSurRatio_{f,sl,ss} \leq (dlyRapidTest_{d} \ / fracInpTest) \quad \forall d\
 \end{multlined}
 \end{equation}
 
