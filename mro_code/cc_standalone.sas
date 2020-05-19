@@ -22,7 +22,12 @@ caslib _all_ assign;
      ,input_financials=input_financials
      ,input_service_attributes=input_service_attributes
      ,input_demand=input_demand
-     ,input_opt_parameters=input_opt_parameters_multi
+     ,input_opt_parameters=input_opt_parameters
+     ,output_opt_detail=output_opt_detail
+     ,output_opt_detail_agg=output_opt_detail_agg
+     ,output_opt_summary=output_opt_summary
+     ,output_resource_usage=output_resource_usage
+     ,output_covid_test_usage=output_covid_test_usage
      ,run_dp=1
      ,run_fcst=1
      ,run_opt=1);

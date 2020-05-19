@@ -9,6 +9,11 @@
         ,input_service_attributes=input_service_attributes
         ,input_demand=input_demand
         ,input_opt_parameters=input_opt_parameters
+        ,output_opt_detail=output_opt_detail
+        ,output_opt_detail_agg=output_opt_detail_agg
+        ,output_opt_summary=output_opt_summary
+        ,output_resource_usage=output_resource_usage
+        ,output_covid_test_usage=output_covid_test_usage
         ,run_dp=1
         ,run_fcst=1
         ,run_opt=1
@@ -50,11 +55,11 @@
           inlib=&inlib.
           ,outlib=&outlib.
           ,input_demand_fcst=output_fd_demand_fcst
-          ,output_opt_detail=output_opt_detail
-          ,output_opt_detail_agg=output_opt_detail_agg
-          ,output_opt_summary=output_opt_summary
-          ,output_resource_usage=output_opt_res_util
-          ,output_covid_test_usage=output_opt_test_util
+          ,output_opt_detail=&output_opt_detail.
+          ,output_opt_detail_agg=&output_opt_detail_agg.
+          ,output_opt_summary=&output_opt_summary.
+          ,output_resource_usage=&output_resource_usage.
+          ,output_covid_test_usage=&output_covid_test_usage.
           ,_worklib=&_worklib.
           ,_debug=&_debug);
 
