@@ -96,7 +96,6 @@
               &_worklib.._hierarchy_financials
               &_worklib.._hierarchy_service_attributes
               &_worklib.._hierarchy_demand
-              &_worklib.._hierarchy_opt_parameters
               &_worklib.._hierarchies_not_in_util
               &_worklib.._master_sets_union
               &_worklib.._distinct_fac_sl_ss
@@ -476,11 +475,31 @@
       set &input_opt_parameters_table;
       if scenario_name = '' then scenario_name = '';
    run;
+   
+   /* Create a list of distinct scenario names, so that we can output multiple rows (one per scenario)
+      for any parameters that have scenario_name='ALL' */
+   proc sql noprint;
+      select distinct(strip(scenario_name)) into :scenario_names separated by ','
+      from &_worklib..input_opt_parameters_pp
+      where upcase(scenario_name) ne 'ALL';
+   quit;
+   
+   /* Replace scenario_name = 'ALL' with individual scenario names. I'm doing this in a separate step 
+      so that we can more easily catch duplicates in the next data step. */
+   data &_worklib..input_opt_parameters_pp;
+      set &_worklib..input_opt_parameters_pp;
+      if upcase(scenario_name) = 'ALL' then do;
+         %do i = 1 %to %SYSFUNC(countw(%bquote(&scenario_names),','));
+            scenario_name = "%scan(%bquote(&scenario_names), &i, ',')";
+            output &_worklib..input_opt_parameters_pp;
+         %end;
+      end;
+      else output &_worklib..input_opt_parameters_pp;
+   run;
       
    data &_worklib..input_opt_parameters_pp
         &_worklib.._invalid_values_opt_parameters
-        &_worklib.._duplicate_rows_opt_parameters
-        &_worklib.._hierarchy_opt_parameters;
+        &_worklib.._duplicate_rows_opt_parameters;
       length facility $&len_facility;
       length service_line $&len_service_line;
       length sub_service $&len_sub_service;
@@ -499,10 +518,7 @@
          if facility = '' or service_line = '' or sub_service = '' 
             /*or ip_op_indicator = '' or med_surg_indicator = '' */ or parm_name = ''
             then output &_worklib.._invalid_values_opt_parameters;
-         else do;
-            output &_worklib..input_opt_parameters_pp;
-            if first.med_surg_indicator then output &_worklib.._hierarchy_opt_parameters;
-         end;
+         else output &_worklib..input_opt_parameters_pp;
       end;
       else output &_worklib.._duplicate_rows_opt_parameters;
    run;
