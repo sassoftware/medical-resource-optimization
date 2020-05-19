@@ -457,7 +457,7 @@
          have to come after the read data statements.) */
       set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_DEMAND = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : demand[f,sl,ss,iof,msf,d] > 0};
       set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_CANCEL = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : numCancel[f,sl,ss,iof,msf] > 0};
-      var NewPatients{VAR_HIERARCHY_POSITIVE_DEMAND} >= 0 INTEGER;
+      var NewPatients{VAR_HIERARCHY_POSITIVE_DEMAND} >= 0;
       var ReschedulePatients{VAR_HIERARCHY_POSITIVE_CANCEL} >= 0;
 
       /* Calculate total number of patients for day d */
