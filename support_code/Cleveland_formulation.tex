@@ -18,6 +18,7 @@
 \item[ ] $ d \in Days$ : set of days
 \item[ ] $ w \in Weeks$ : set of weeks
 \item[ ] $ q \in Phase \ start \ dates$ : set of phase start dates
+\item[ ] $ icu \in ICU \ Resources$ : set of ICU resources
 \end{itemize}
 
 \section*{Data Parameters: Model Coefficients}
@@ -43,7 +44,7 @@
 \item[ ] $fixOpenFlag_{f,sl,ss}$ is a flag and is set to 1 if the facility $f$, service line $sl$, sub-service $ss$ is open, 0 otherwise. 
 \item[ ] $emerSurRatio_{f,sl,ss}$ is a proportion of emergency surgical patients at the facility $f$, service line $sl$, sub-service $ss$. 
 \item[ ] $numCancel_{f,sl,ss,io,ms}$ is the maximum number of patients cancelled at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
-\item[ ] $maxUtil_{r}$ is the maximum proportion of utilization for the resource $r$ 
+\item[ ] $maxUtil_{f}$ is the maximum utilization allowed for ICU resource at the facility $f$ 
 \end{itemize}
 
 \section*{Decision Variables}
@@ -87,11 +88,19 @@ NewPatients_{f,sl,ss,io,ms,d} \leq demand_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d
 \pagebreak
 
 \begin{align*}
-&\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than } \\ &\text{equal to available capacity of resource $r$ times the max utilization allowed for the resource at $f,sl,ss$.} \\
-&\text{Currently, $maxUtil_{r}$ is defined only for $r$ = 'ICU BEDS'; $maxUtil_{r}$ = 1 for all other resources.}
+&\text{Capacity constraint: Resources used for the total number of patients for $f,sl,ss$ on day $d$ should be less than or } 
+\\ &\text{equal to available capacity of resource $r$.} \\
 \end{align*}
 \begin{equation} 
-\sum_{io,ms} utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r} \ maxUtil_{r}  \quad \forall f,sl,ss,d,r\
+\sum_{io,ms} utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq capacity_{f,sl,ss,r}  \quad \forall f,sl,ss,d,r\
+\end{equation}
+
+\begin{align*}
+&\text{Max. ICU resource utilization constraint: The utilization of ICU resources at $f$ on day $d$ should be less than or equal to} \\ 
+&\text{the available capacity of resource $r$ times the max utilization allowed for these resource at $f$.} \\
+\end{align*}
+\begin{equation} 
+\sum_{\substack{sl,ss,io,ms,r \\ \text{and} \ r \in icu}}  utilization_{f,sl,ss,io,ms,r} \ TotalPatients_{f,sl,ss,d} \leq \sum_{\substack{sl,ss,r \\ \text{and} \ r \in icu}} capacity_{f,sl,ss,r} \ maxUtil_{f}  \quad \forall f,d\
 \end{equation}
 
 \begin{align*}
