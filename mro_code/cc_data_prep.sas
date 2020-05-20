@@ -22,11 +22,11 @@
                                             EMER_SURGICAL_PTS_RATIO ICU_MAX_UTILIZATION)
                    ,binary_param_list =%str(REMOVE_DEMAND_CONSTRAINTS REMOVE_COVID_CONSTRAINTS ALLOW_OPENING_ONLY_ON_PHASE ALREADY_OPEN 
                                             TEST_VISITORS FILTER_SERV_NOT_USING_RESOURCES)
-                   ,non_hierarchy_param_list =%str(TEST_DAYS_BA RAPID_TEST_DA DATE_PHASE_ RAPID_TEST_PHASE_ NOT_RAPID_TEST_PHASE_ 
-                                                   ALLOW_OPENING_ONLY_ON_PHASE SECONDARY_OBJECTIVE_TOLERANCE REMOVE_DEMAND_CONSTRAINTS
-                                                   REMOVE_COVID_CONSTRAINTS TEST_VISITORS TEST_FREQ_DAYS HOLD_RAPID_COVID_TESTS 
-                                                   HOLD_NOT_RAPID_COVID_TESTS PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL
-                                                   FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
+                   ,non_hier_param_list =%str(TEST_DAYS_BA RAPID_TEST_DA DATE_PHASE_ RAPID_TEST_PHASE_ NOT_RAPID_TEST_PHASE_ 
+                                              ALLOW_OPENING_ONLY_ON_PHASE SECONDARY_OBJECTIVE_TOLERANCE REMOVE_DEMAND_CONSTRAINTS
+                                              REMOVE_COVID_CONSTRAINTS TEST_VISITORS TEST_FREQ_DAYS HOLD_RAPID_COVID_TESTS 
+                                              HOLD_NOT_RAPID_COVID_TESTS PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL
+                                              FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
@@ -117,9 +117,7 @@
               &_worklib.._util_resources_fac_ss_r
               &_worklib.._util_resources_sl_ss_r
               &_worklib.._util_resources_r
-              &_worklib.._tmp_input_opt_parameters_pp
-              &_worklib.._tmp1_input_opt_parameters_pp
-              &_worklib.._tmp_invalid_val_opt_param
+              &_worklib.._tmp_inval_opt_parameters
               work._inlib_contents
               );
 
@@ -530,104 +528,48 @@
          if facility = '' or service_line = '' or sub_service = '' 
             /*or ip_op_indicator = '' or med_surg_indicator = '' */ or parm_name = ''
             then output &_worklib.._invalid_values_opt_parameters;
-         else output &_worklib..input_opt_parameters_pp;
+           /* Invalid values - fractional parameter list, Binary parameter list */
+         else if indexw("&fractional_param_list",upcase(parm_name)) > 0
+            and not((parm_value = '0') or (1 < parm_value <= 100)) then output &_worklib.._invalid_values_opt_parameters;
+         else if indexw("&binary_param_list",upcase(parm_name)) > 0
+            and upcase(parm_value) not in ('YES','NO','1','0') then output &_worklib.._invalid_values_opt_parameters;
+         else do;
+            /* Binary parameter list - change 0/1 values to NO/YES */
+            if indexw("&binary_param_list",upcase(parm_name)) > 0 then do;
+               if parm_value = '0' then parm_value = 'NO';
+               else if parm_value = '1' then parm_value = 'YES';
+            end;         
+            output &_worklib..input_opt_parameters_pp;
+         end;
       end;
       else output &_worklib.._duplicate_rows_opt_parameters;
    run;
 
-/* Input Opt Parameters - fractional parameter list */
-/* Subsetting the input_opt_parameters_pp table for non-fractional parameter list*/
-    data &_worklib.._tmp_input_opt_parameters_pp;
-       set &_worklib..input_opt_parameters_pp; 
-         %do i = 1 %to %SYSFUNC(countw(&fractional_param_list.,' '));
-             %let param = %scan(&fractional_param_list., &i., ' ');
-             if parm_name ne "&param."; 
-         %end;
-       drop i;
-    run;
-   
-/* Data check: fractional parameter list - if the parm_value >0 and <1 or parm_value >100 - output to invalid opt_parameters table; */
-    data &_worklib.._tmp1_input_opt_parameters_pp
-         &_worklib.._tmp_invalid_val_opt_param;
-       set &_worklib..input_opt_parameters_pp; 
-         %do i = 1 %to %SYSFUNC(countw(&fractional_param_list.,' '));
-             %let param = %scan(&fractional_param_list., &i., ' ');
-             if index(parm_name, "&param") > 0 then do;
-                if (input(parm_value,best.) = 0 or (input(parm_value,best.) >= 1 and input(parm_value,best.) <= 100)) then do;
-                  parm_value = put(parm_value,6.); 
-                  output &_worklib.._tmp1_input_opt_parameters_pp;
-                  end;
-                else if (input(parm_value,best.) > 0 and input(parm_value,best.) < 1) then do;
-                  output &_worklib.._tmp_invalid_val_opt_param; 
-                  end;
-                else if (input(parm_value,best.) > 100 ) then do;
-                  output &_worklib.._tmp_invalid_val_opt_param; 
-                  end;
-             end;
-         %end;
-       drop i;
-    run; 
+/*Validating for duplicate data in the non_hier_param_list */
+   data &_worklib..input_opt_parameters_pp
+        &_worklib.._tmp_inval_opt_parameters;
+      set &_worklib..input_opt_parameters_pp;
+      by scenario_name parm_name parm_value;
+      /*check if the parm_name is in non_hier_param_list*/
+      if index("&non_hier_param_list",upcase(parm_name)) > 0 then do;
+        if first.parm_name then do;      
+          start = index(parm_name, 'PHASE_');
+          parameter = substr(parm_name, 1, start-2);    
+          if index(parm_name, 'PHASE_') > 0 AND indexw("&non_hier_param_list",upcase(parameter)) > 0 
+                                    then output &_worklib..input_opt_parameters_pp;
+          else output &_worklib..input_opt_parameters_pp;
+        end; 
+        else output &_worklib.._tmp_inval_opt_parameters;
+      end;
+      
+      else output &_worklib..input_opt_parameters_pp;
+      drop parameter start;
+   run;
 
-    data &_worklib..input_opt_parameters_pp; 
-       set &_worklib.._tmp_input_opt_parameters_pp &_worklib.._tmp1_input_opt_parameters_pp;
-    run; 
-
-    data &_worklib.._invalid_values_opt_parameters; 
-       set &_worklib.._invalid_values_opt_parameters &_worklib.._tmp_invalid_val_opt_param;
-    run; 
-
-/* Input Opt Parameters - Binary parameter list */
-/* Subsetting the input_opt_parameters_pp table for non-fractional parameter list*/
-    data &_worklib.._tmp_input_opt_parameters_pp;
-       set &_worklib..input_opt_parameters_pp; 
-         %do i = 1 %to %SYSFUNC(countw(&binary_param_list.,' '));
-             %let param = %scan(&binary_param_list., &i., ' ');
-             if parm_name ne "&param."; 
-         %end;
-       drop i;
-    run;
-   
-/* Data check: Binary parameter list - if the parm_value 0 or 1 - convert it to YES / NO, convert if the parm value is like YES / NO; move any other values
- to invalid opt_parameters table;*/
-    data &_worklib.._tmp1_input_opt_parameters_pp
-         &_worklib.._tmp_invalid_val_opt_param;
-       set &_worklib..input_opt_parameters_pp; 
-         %do i = 1 %to %SYSFUNC(countw(&binary_param_list.,' '));
-             %let param = %scan(&binary_param_list., &i., ' ');
-             if index(parm_name, "&param") > 0 then do;
-                if input(parm_value,best.) = 0 then do;
-                  parm_value = 'NO'; 
-                  output &_worklib.._tmp1_input_opt_parameters_pp;
-                  end;
-                else if input(parm_value,best.) = 1 then do;
-                  parm_value = 'YES'; 
-                  output &_worklib.._tmp1_input_opt_parameters_pp;
-                  end;
-                else if index(upcase(parm_value),'YES') > 0 then do;
-                  parm_value = 'YES'; 
-                  output &_worklib.._tmp1_input_opt_parameters_pp;
-                  end;
-                else if index(upcase(parm_value),'NO') > 0 then do;
-                  parm_value = 'NO'; 
-                  output &_worklib.._tmp1_input_opt_parameters_pp;
-                  end;
-                else do;
-                  output &_worklib.._tmp_invalid_val_opt_param; 
-                  end;
-             end;
-         %end;
-       drop i;
-    run; 
-
-    data &_worklib..input_opt_parameters_pp; 
-       set &_worklib.._tmp_input_opt_parameters_pp &_worklib.._tmp1_input_opt_parameters_pp;
-    run; 
-
-
-    data &_worklib.._invalid_values_opt_parameters; 
-       set &_worklib.._invalid_values_opt_parameters &_worklib.._tmp_invalid_val_opt_param;
-    run; 
-
+/*appending to the invalid values table */
+   data &_worklib.._invalid_values_opt_parameters;
+      set &_worklib.._invalid_values_opt_parameters &_worklib.._tmp_inval_opt_parameters;
+   run;
 
    /* Create &output_invalid_values and &output_duplicate_rows */
    data &outlib..&output_invalid_values;
