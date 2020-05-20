@@ -530,7 +530,7 @@
             then output &_worklib.._invalid_values_opt_parameters;
            /* Invalid values - fractional parameter list, Binary parameter list */
          else if indexw("&fractional_param_list",upcase(parm_name)) > 0
-            and not((parm_value = '0') or (1 < parm_value <= 100)) then output &_worklib.._invalid_values_opt_parameters;
+            and not((parm_value = '0') or (1 < input(parm_value,best.) <= 100)) then output &_worklib.._invalid_values_opt_parameters;
          else if indexw("&binary_param_list",upcase(parm_name)) > 0
             and upcase(parm_value) not in ('YES','NO','1','0') then output &_worklib.._invalid_values_opt_parameters;
          else do;
@@ -553,8 +553,7 @@
       /*check if the parm_name is in non_hier_param_list*/
       if index("&non_hier_param_list",upcase(parm_name)) > 0 then do;
         if first.parm_name then do;      
-          start = index(parm_name, 'PHASE_');
-          parameter = substr(parm_name, 1, start-2);    
+          parameter = substr(parm_name, 1, length(parm_name)-1);    
           if index(parm_name, 'PHASE_') > 0 AND indexw("&non_hier_param_list",upcase(parameter)) > 0 
                                     then output &_worklib..input_opt_parameters_pp;
           else output &_worklib..input_opt_parameters_pp;
@@ -563,7 +562,7 @@
       end;
       
       else output &_worklib..input_opt_parameters_pp;
-      drop parameter start;
+      drop parameter;
    run;
 
 /*appending to the invalid values table */
