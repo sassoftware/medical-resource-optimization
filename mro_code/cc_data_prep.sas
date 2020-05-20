@@ -4,7 +4,7 @@
 | Description: 
 |
 |Example: include_str=%str(facility in ('Hillcrest','ALL') ) 
-|
+| 
 |
 *------------------------------------------------------------------------------* ;
 
@@ -20,6 +20,13 @@
                                             FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
                    ,fractional_param_list =%str(SECONDARY_OBJECTIVE_TOLERANCE RAPID_TEST_DA MIN_DEMAND_RATIO 
                                             EMER_SURGICAL_PTS_RATIO ICU_MAX_UTILIZATION)
+                   ,binary_param_list =%str(REMOVE_DEMAND_CONSTRAINTS REMOVE_COVID_CONSTRAINTS ALLOW_OPENING_ONLY_ON_PHASE ALREADY_OPEN 
+                                            TEST_VISITORS FILTER_SERV_NOT_USING_RESOURCES)
+                   ,non_hierarchy_param_list =%str(TEST_DAYS_BA RAPID_TEST_DA DATE_PHASE_ RAPID_TEST_PHASE_ NOT_RAPID_TEST_PHASE_ 
+                                                   ALLOW_OPENING_ONLY_ON_PHASE SECONDARY_OBJECTIVE_TOLERANCE REMOVE_DEMAND_CONSTRAINTS
+                                                   REMOVE_COVID_CONSTRAINTS TEST_VISITORS TEST_FREQ_DAYS HOLD_RAPID_COVID_TESTS 
+                                                   HOLD_NOT_RAPID_COVID_TESTS PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL
+                                                   FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
@@ -112,6 +119,7 @@
               &_worklib.._util_resources_r
               &_worklib.._tmp_input_opt_parameters_pp
               &_worklib.._tmp1_input_opt_parameters_pp
+              &_worklib.._tmp_invalid_val_opt_param
               work._inlib_contents
               );
 
@@ -527,6 +535,7 @@
       else output &_worklib.._duplicate_rows_opt_parameters;
    run;
 
+/* Input Opt Parameters - fractional parameter list */
 /* Subsetting the input_opt_parameters_pp table for non-fractional parameter list*/
     data &_worklib.._tmp_input_opt_parameters_pp;
        set &_worklib..input_opt_parameters_pp; 
@@ -537,19 +546,24 @@
        drop i;
     run;
    
-/* Data check: Modifying the fractional parameter list - if the parm_value >0 and <1, set it to 0; if the parm_value >100 , set it to 100; */
-    data &_worklib.._tmp1_input_opt_parameters_pp;
+/* Data check: fractional parameter list - if the parm_value >0 and <1 or parm_value >100 - output to invalid opt_parameters table; */
+    data &_worklib.._tmp1_input_opt_parameters_pp
+         &_worklib.._tmp_invalid_val_opt_param;
        set &_worklib..input_opt_parameters_pp; 
          %do i = 1 %to %SYSFUNC(countw(&fractional_param_list.,' '));
              %let param = %scan(&fractional_param_list., &i., ' ');
              if index(parm_name, "&param") > 0 then do;
                 if (input(parm_value,best.) = 0 or (input(parm_value,best.) >= 1 and input(parm_value,best.) <= 100)) then do;
-                parm_value = put(parm_value,6.); output; end;
+                  parm_value = put(parm_value,6.); 
+                  output &_worklib.._tmp1_input_opt_parameters_pp;
+                  end;
                 else if (input(parm_value,best.) > 0 and input(parm_value,best.) < 1) then do;
-                parm_value = '0'; output; end;               
+                  output &_worklib.._tmp_invalid_val_opt_param; 
+                  end;
                 else if (input(parm_value,best.) > 100 ) then do;
-                parm_value = '100'; output; end;
-            end;
+                  output &_worklib.._tmp_invalid_val_opt_param; 
+                  end;
+             end;
          %end;
        drop i;
     run; 
@@ -557,32 +571,64 @@
     data &_worklib..input_opt_parameters_pp; 
        set &_worklib.._tmp_input_opt_parameters_pp &_worklib.._tmp1_input_opt_parameters_pp;
     run; 
+
+    data &_worklib.._invalid_values_opt_parameters; 
+       set &_worklib.._invalid_values_opt_parameters &_worklib.._tmp_invalid_val_opt_param;
+    run; 
+
+/* Input Opt Parameters - Binary parameter list */
+/* Subsetting the input_opt_parameters_pp table for non-fractional parameter list*/
+    data &_worklib.._tmp_input_opt_parameters_pp;
+       set &_worklib..input_opt_parameters_pp; 
+         %do i = 1 %to %SYSFUNC(countw(&binary_param_list.,' '));
+             %let param = %scan(&binary_param_list., &i., ' ');
+             if parm_name ne "&param."; 
+         %end;
+       drop i;
+    run;
    
-   /*data &_worklib..input_opt_parameters_pp;
-      set &_worklib..input_opt_parameters_pp;
-	  %let param = %scan(&fractional_param_list., 1., ' ');
-        if parm_name = &param then do;
-            if (parm_value = 0 or (parm_value >= 1 and parm_value <= 100)) then do;
-               parm_value = parm_value; output; end;
-            else if (parm_value > 0 and parm_value < 1) then do;
-               parm_value = 0; output; end;               
-            else if (parm_value > 100 ) then do;
-               parm_value = 100; output; end;
-        end;
-		%do i = 1 %to %SYSFUNC(countw(&fractional_param_list.,' '));
-            %let param = %scan(&fractional_param_list., &i., ' ');
-            if parm_name = &param then do;
-               if (parm_value = 0 or (parm_value >= 1 and parm_value <= 100)) then do;
-                  parm_value = parm_value; output; end;
-               else if (parm_value > 0 and parm_value < 1) then do;
-                    parm_value = 0; output; end;               
-               else if (parm_value > 100 ) then do;
-                    parm_value = 100; output; end;
-            end;
-        %end;
-    run;*/
-   
-   
+/* Data check: Binary parameter list - if the parm_value 0 or 1 - convert it to YES / NO, convert if the parm value is like YES / NO; move any other values
+ to invalid opt_parameters table;*/
+    data &_worklib.._tmp1_input_opt_parameters_pp
+         &_worklib.._tmp_invalid_val_opt_param;
+       set &_worklib..input_opt_parameters_pp; 
+         %do i = 1 %to %SYSFUNC(countw(&binary_param_list.,' '));
+             %let param = %scan(&binary_param_list., &i., ' ');
+             if index(parm_name, "&param") > 0 then do;
+                if input(parm_value,best.) = 0 then do;
+                  parm_value = 'NO'; 
+                  output &_worklib.._tmp1_input_opt_parameters_pp;
+                  end;
+                else if input(parm_value,best.) = 1 then do;
+                  parm_value = 'YES'; 
+                  output &_worklib.._tmp1_input_opt_parameters_pp;
+                  end;
+                else if index(upcase(parm_value),'YES') > 0 then do;
+                  parm_value = 'YES'; 
+                  output &_worklib.._tmp1_input_opt_parameters_pp;
+                  end;
+                else if index(upcase(parm_value),'NO') > 0 then do;
+                  parm_value = 'NO'; 
+                  output &_worklib.._tmp1_input_opt_parameters_pp;
+                  end;
+                else do;
+                  output &_worklib.._tmp_invalid_val_opt_param; 
+                  end;
+             end;
+         %end;
+       drop i;
+    run; 
+
+    data &_worklib..input_opt_parameters_pp; 
+       set &_worklib.._tmp_input_opt_parameters_pp &_worklib.._tmp1_input_opt_parameters_pp;
+    run; 
+
+
+    data &_worklib.._invalid_values_opt_parameters; 
+       set &_worklib.._invalid_values_opt_parameters &_worklib.._tmp_invalid_val_opt_param;
+    run; 
+
+
    /* Create &output_invalid_values and &output_duplicate_rows */
    data &outlib..&output_invalid_values;
       length table $32;
