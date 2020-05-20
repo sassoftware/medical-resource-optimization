@@ -525,12 +525,15 @@
       if upcase(med_surg_indicator) = 'ALL' then med_surg_indicator = 'ALL';
       
       if first.parm_name then do;
+         if anyalpha(parm_value) > 0 or index(parm_value,'/') > 0 then parm_value_num = .;
+         else parm_value_num = input(parm_value, best.);
+
          if facility = '' or service_line = '' or sub_service = '' 
             /*or ip_op_indicator = '' or med_surg_indicator = '' */ or parm_name = ''
             then output &_worklib.._invalid_values_opt_parameters;
            /* Invalid values - fractional parameter list, Binary parameter list */
          else if indexw("&fractional_param_list",upcase(parm_name)) > 0
-            and not((parm_value = '0') or (1 < input(parm_value,best.) <= 100)) then output &_worklib.._invalid_values_opt_parameters;
+            and not((parm_value = '0') or (1 < parm_value_num <= 100)) then output &_worklib.._invalid_values_opt_parameters;
          else if indexw("&binary_param_list",upcase(parm_name)) > 0
             and upcase(parm_value) not in ('YES','NO','1','0') then output &_worklib.._invalid_values_opt_parameters;
          else do;
@@ -543,6 +546,7 @@
          end;
       end;
       else output &_worklib.._duplicate_rows_opt_parameters;
+      drop parm_value_num;
    run;
 
 /*Validating for duplicate data in the non_hier_param_list */
@@ -552,7 +556,8 @@
       by scenario_name parm_name parm_value;
       /*check if the parm_name is in non_hier_param_list*/
       if index("&non_hier_param_list",upcase(parm_name)) > 0 then do;
-        if first.parm_name then do;      
+        if first.parm_name then do;
+          /* Note: If we have more than 9 phases, we will need to adjust this. */
           parameter = substr(parm_name, 1, length(parm_name)-1);    
           if index(parm_name, 'PHASE_') > 0 AND indexw("&non_hier_param_list",upcase(parameter)) > 0 
                                     then output &_worklib..input_opt_parameters_pp;
