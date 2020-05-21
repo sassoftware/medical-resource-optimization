@@ -29,10 +29,10 @@
                                               FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
-                   ,output_hierarchy_mismatch=output_hierarchy_mismatch
-                   ,output_resource_mismatch=output_resource_mismatch
-                   ,output_invalid_values=output_invalid_values
-                   ,output_duplicate_rows=output_duplicate_rows
+                   ,output_hierarchy_mismatch=output_dp_hierarchy_mismatch
+                   ,output_resource_mismatch=output_dp_resource_mismatch
+                   ,output_invalid_values=output_dp_invalid_values
+                   ,output_duplicate_rows=output_dp_duplicate_rows
                    ,_worklib=casuser
                    ,_debug=1
                    );
