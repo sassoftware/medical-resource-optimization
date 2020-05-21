@@ -83,6 +83,7 @@
         &outlib..&output_opt_detail_agg
         &outlib..&output_opt_summary
         &outlib..&output_opt_resource_usage
+        &outlib..&output_opt_resource_usage_detail
         &outlib..&output_opt_covid_test_usage
          );
 
