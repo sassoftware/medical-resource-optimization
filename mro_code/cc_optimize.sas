@@ -797,7 +797,7 @@
    /* Aggregate _opt_resource_usage_detail to Facility/Service Line/Subservice level */
    proc cas; 
       aggregation.aggregate / table={caslib="&_worklib.", name="_opt_resource_usage_detail",  
-      groupby={"scenario_name","facility","service_line","sub_service","day","resource"}} 
+      groupby={"scenario_name","facility","service_line","sub_service","day","Phase_ID","resource"}} 
       saveGroupByFormat=false 
       varSpecs={{name="usage", summarySubset="sum", columnNames="sumUsage"},
                 {name="capacity", summarySubset="min", columnNames="minCapacity"}} 
