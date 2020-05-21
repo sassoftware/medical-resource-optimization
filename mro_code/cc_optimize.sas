@@ -138,8 +138,7 @@
                                                 remove_demand_constraints
                                                 remove_covid_constraints
                                                 hold_not_rapid_covid_tests
-                                                hold_rapid_covid_tests
-                                                icu_max_utilization)
+                                                hold_rapid_covid_tests)
         &_worklib.._opt_parameters_hierarchy (drop=start sequence parameter value 
                                                    allow_opening_only_on_phase 
                                                    secondary_objective_tolerance
@@ -148,8 +147,7 @@
                                                    remove_demand_constraints
                                                    remove_covid_constraints
                                                    hold_not_rapid_covid_tests
-                                                   hold_rapid_covid_tests
-                                                   icu_max_utilization);
+                                                   hold_rapid_covid_tests);
       set &_worklib..input_opt_parameters_pp;
       by scenario_name;
       parm_name = upcase(parm_name);
@@ -162,8 +160,7 @@
              remove_demand_constraints
              remove_covid_constraints
              hold_not_rapid_covid_tests
-             hold_rapid_covid_tests
-             icu_max_utilization;
+             hold_rapid_covid_tests;
       if first.scenario_name then do;
          /* Set default values for "global" parameters */
          secondary_objective_tolerance = 0.99;
@@ -174,7 +171,6 @@
          remove_covid_constraints = 0;
          hold_not_rapid_covid_tests = 0;
          hold_rapid_covid_tests = 0;
-         icu_max_utilization = 1;
       end;
          
       if index(parm_name, 'PHASE_') > 0 then do;
@@ -187,8 +183,7 @@
       end;
       else do;
          if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA',
-                          'REMOVE_DEMAND_CONSTRAINTS','REMOVE_COVID_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS'
-                          'ICU_MAX_UTILIZATION') then do;
+                          'REMOVE_DEMAND_CONSTRAINTS','REMOVE_COVID_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS') then do;
             if parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE' and parm_value='YES' then allow_opening_only_on_phase = 1;
             else if parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE' then secondary_objective_tolerance = input(parm_value, best.) / 100; 
             else if parm_name = 'TEST_DAYS_BA' then test_days_ba = input(parm_value, best.);
@@ -197,7 +192,6 @@
             else if parm_name = 'REMOVE_COVID_CONSTRAINTS' and parm_value='YES' then remove_covid_constraints = 1;
             else if parm_name = 'HOLD_NOT_RAPID_COVID_TESTS' then hold_not_rapid_covid_tests = input(parm_value, best.);
             else if parm_name = 'HOLD_RAPID_COVID_TESTS' then hold_rapid_covid_tests = input(parm_value, best.);
-            else if parm_name = 'ICU_MAX_UTILIZATION' then icu_max_utilization = input(parm_value, best.) / 100;
          end;
          else output &_worklib.._opt_parameters_hierarchy;
       end;
@@ -307,6 +301,7 @@
       set <str,str,str> ALREADY_OPEN_SERVICES;                   /* From opt_parameters */
       set <str,str,str> MIN_DEMAND_RATIO_CONSTRAINTS;            /* From opt_parameters */
       set <str,str,str> EMER_SURGICAL_PTS_RATIO_CONSTRAINTS;     /* From opt_parameters */
+      set <str> ICU_MAX_UTIL_FACILITIES;                         /* From opt_parameters */
       set <num> ALLOWED_OPENING_DATES;                           /* From opt_allowed_opening_dates */
          
       /* Derived Sets */
@@ -335,6 +330,7 @@
       str minDemandRatio{MIN_DEMAND_RATIO_CONSTRAINTS};
       str emerSurgRatioip{EMER_SURGICAL_PTS_RATIO_CONSTRAINTS};
       num emerSurgRatio{FAC_SLINE_SSERV} init 0;
+      str icuMaxUtilization{ICU_MAX_UTIL_FACILITIES};
 
       num minDay=min {d in DAYS} d;
       num maxDay=max {d in DAYS} d;
@@ -351,7 +347,6 @@
       num removeCovidConstraints init 0;
       num holdNotRapidCovidTests init 0;
       num holdRapidCovidTests init 0;
-      num icuMaxUtilization init 1;
 
       str scenarioNameCopy;
   
@@ -412,8 +407,7 @@
          removeDemandConstraints = remove_demand_constraints
          removeCovidConstraints = remove_covid_constraints
          holdNotRapidCovidTests = hold_not_rapid_covid_tests
-         holdRapidCovidTests = hold_rapid_covid_tests
-         icuMaxUtilization = icu_max_utilization;
+         holdRapidCovidTests = hold_rapid_covid_tests;
          
       /* Allowed opening dates */
       read data &_worklib.._opt_allowed_opening_dates into
@@ -439,6 +433,11 @@
                emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
          end;
       end;        
+      
+      /* ICU max utilization constraints */
+      read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='ICU_MAX_UTILIZATION'))
+         into ICU_MAX_UTIL_FACILITIES = [facility]
+            icuMaxUtilization = parm_value;
    
       /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
       num week{d in DAYS} = week(d);
@@ -544,12 +543,12 @@
             <= capacity[f,sl,ss,r];
             
       /* Max ICU utilization for each facility */
-      con Max_ICU_Utilization{f in FACILITIES, d in DAYS : icuMaxUtilization < 1}:
-         sum{<(f),sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES : r in ICU_RESOURCES}
-             utilization[f,sl,ss,iof,msf,r]*TotalPatients[f,sl,ss,iof,msf,d]
-            <= icuMaxUtilization * sum{<(f),sl,ss,r> in FAC_SLINE_SSERV_RES : r in ICU_RESOURCES}
-                                       capacity[f,sl,ss,r]     
-                   suffixes=(block=block_id[f]);
+      con Max_ICU_Utilization{f in ICU_MAX_UTIL_FACILITIES, f2 in FACILITIES, d in DAYS : (f='ALL') or (f2=f)}:
+         sum{<(f2),sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES : r in ICU_RESOURCES}
+             utilization[f2,sl,ss,iof,msf,r]*TotalPatients[f2,sl,ss,iof,msf,d]
+            <= (input(icuMaxUtilization[f],best.)/100) 
+                * sum{<(f2),sl,ss,r> in FAC_SLINE_SSERV_RES : r in ICU_RESOURCES} capacity[f2,sl,ss,r]     
+                   suffixes=(block=block_id[f2]);
 
       /* Tests constraint - Total inpatients admitted should be less than the daily rapid test available  */
       con COVID19_Day_Of_Admission_Testing{d in DAYS : rapidTestDA > 0}:
