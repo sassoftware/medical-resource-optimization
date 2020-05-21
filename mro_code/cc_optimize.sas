@@ -11,8 +11,9 @@
    ,output_opt_detail=output_opt_detail
    ,output_opt_detail_agg=output_opt_detail_agg
    ,output_opt_summary=output_opt_summary
-   ,output_resource_usage=output_opt_resource_usage
-   ,output_covid_test_usage=output_opt_covid_test_usage
+   ,output_opt_resource_usage=output_opt_resource_usage
+   ,output_opt_resource_usage_detail=output_opt_resource_usage_detail
+   ,output_opt_covid_test_usage=output_opt_covid_test_usage
    ,_worklib=casuser
    ,_debug=0
    );
@@ -70,6 +71,7 @@
         &_worklib.._opt_detail
         &_worklib.._opt_summary
         &_worklib.._opt_resource_usage
+        &_worklib.._opt_resource_usage_detail        
         &_worklib.._opt_covid_test_usage
         &_worklib.._opt_detail_week
         &_worklib.._opt_detail_agg
@@ -80,8 +82,8 @@
         &outlib..&output_opt_detail
         &outlib..&output_opt_detail_agg
         &outlib..&output_opt_summary
-        &outlib..&output_resource_usage
-        &outlib..&output_covid_test_usage
+        &outlib..&output_opt_resource_usage
+        &outlib..&output_opt_covid_test_usage
          );
 
    /*Delete output data if already exists */
@@ -712,6 +714,18 @@
          capacity = capacity[f,sl,ss,r]
          usage = (round(OptResourceUsage[f,sl,ss,r,d],0.01));
 
+      num OptResourceUsageDetail{<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES, d in DAYS} = 
+         utilization[f,sl,ss,iof,msf,r] * TotalPatients[f,sl,ss,iof,msf,d].sol;
+         
+      num OptResourceUsageCapacity{<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES, d in DAYS} = 
+         min{<f2,sl2,ss2,(r)> in FAC_SLINE_SSERV_RES : (f=f2 or f2='ALL') and (sl=sl2 or sl2='ALL') and (ss=ss2 or ss2='ALL')} capacity[f2,sl2,ss2,r];
+      
+      create data &_worklib.._opt_resource_usage_detail
+         from [facility service_line sub_service ip_op_indicator med_surg_indicator resource day]={<f,sl,ss,iof,msf,r> in FAC_SLINE_SSERV_IO_MS_RES, d in DAYS}
+         Phase_ID=phaseID[d]
+         usage = OptResourceUsageDetail[f,sl,ss,iof,msf,r,d]
+         capacity = OptResourceUsageCapacity[f,sl,ss,iof,msf,r,d];
+         
       create data &_worklib.._opt_covid_test_usage
          from [day]={d in DAYS}
             Phase_ID=phaseID[d]
@@ -740,7 +754,7 @@
 
    proc cas;
       aggregation.aggregate / table={caslib="&_worklib.", name="_opt_detail_week",  
-         groupby={"scenario_name","facility","service_line","sub_service","week_start_date"}} 
+         groupby={"scenario_name","facility","service_line","sub_service","ip_op_indicator","med_surg_indicator","week_start_date"}} 
          saveGroupByFormat=false 
          varSpecs={{name="NewPatients", summarySubset="sum", columnNames="NewPatients"}
                    {name="ReschedulePatients", summarySubset="sum", columnNames="ReschedulePatients"}
@@ -773,15 +787,43 @@
       set &_worklib.._opt_summary;
    run;
    
-   data &outlib..&output_resource_usage (promote=yes);
-      format date date9.;
-      set &_worklib.._opt_resource_usage (rename=(day=date));
+   data &outlib..&output_opt_resource_usage (promote=yes);
+      format day date9.;
+      set &_worklib.._opt_resource_usage;
       utilization = round(usage / capacity, 0.001);
    run;
+
+   /* Aggregate _opt_resource_usage_detail to Facility/Service Line/Subservice level */
+   proc cas; 
+      aggregation.aggregate / table={caslib="&_worklib.", name="_opt_resource_usage_detail",  
+      groupby={"scenario_name","facility","service_line","sub_service","day","resource"}} 
+      saveGroupByFormat=false 
+      varSpecs={{name="usage", summarySubset="sum", columnNames="sumUsage"},
+                {name="capacity", summarySubset="min", columnNames="minCapacity"}} 
+      casOut={caslib="&_worklib.",name="_opt_resource_usage_detail",replace=true}; run;   
+   quit;
    
-   data &outlib..&output_covid_test_usage (promote=yes);
-      format date date9.;
-      set &_worklib.._opt_covid_test_usage (rename=(day=date));
+   proc sql noprint;
+      select max(capacity) into :max_capacity 
+      from &_worklib..input_capacity_pp;
+   quit;
+
+   data &outlib..&output_opt_resource_usage_detail (promote=yes);
+      format day date9.;
+      set &_worklib.._opt_resource_usage_detail;
+      usage = round(sumUsage, 0.01);
+      capacity = minCapacity;
+      if capacity > &max_capacity then do;
+         capacity = .;
+         utilization = .;
+      end;
+      else utilization = round(usage / capacity, 0.01);
+      drop sumUsage minCapacity;
+   run;
+   
+   data &outlib..&output_opt_covid_test_usage (promote=yes);
+      format day date9.;
+      set &_worklib.._opt_covid_test_usage;
    run;
    
    /*************************/
