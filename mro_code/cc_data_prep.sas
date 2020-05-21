@@ -4,7 +4,7 @@
 | Description: 
 |
 |Example: include_str=%str(facility in ('Hillcrest','ALL') ) 
-|
+| 
 |
 *------------------------------------------------------------------------------* ;
 
@@ -18,6 +18,15 @@
                    ,input_opt_parameters=input_opt_parameters
                    ,unique_param_list =%str(PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL 
                                             FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
+                   ,fractional_param_list =%str(SECONDARY_OBJECTIVE_TOLERANCE RAPID_TEST_DA MIN_DEMAND_RATIO 
+                                            EMER_SURGICAL_PTS_RATIO ICU_MAX_UTILIZATION)
+                   ,binary_param_list =%str(REMOVE_DEMAND_CONSTRAINTS REMOVE_COVID_CONSTRAINTS ALLOW_OPENING_ONLY_ON_PHASE ALREADY_OPEN 
+                                            TEST_VISITORS FILTER_SERV_NOT_USING_RESOURCES)
+                   ,non_hier_param_list =%str(TEST_DAYS_BA RAPID_TEST_DA DATE_PHASE_ RAPID_TEST_PHASE_ NOT_RAPID_TEST_PHASE_ 
+                                              ALLOW_OPENING_ONLY_ON_PHASE SECONDARY_OBJECTIVE_TOLERANCE REMOVE_DEMAND_CONSTRAINTS
+                                              REMOVE_COVID_CONSTRAINTS TEST_VISITORS TEST_FREQ_DAYS HOLD_RAPID_COVID_TESTS 
+                                              HOLD_NOT_RAPID_COVID_TESTS PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL
+                                              FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_hierarchy_mismatch
@@ -108,6 +117,7 @@
               &_worklib.._util_resources_fac_ss_r
               &_worklib.._util_resources_sl_ss_r
               &_worklib.._util_resources_r
+              &_worklib.._tmp_inval_opt_parameters
               work._inlib_contents
               );
 
@@ -515,14 +525,56 @@
       if upcase(med_surg_indicator) = 'ALL' then med_surg_indicator = 'ALL';
       
       if first.parm_name then do;
+         if anyalpha(parm_value) > 0 or index(parm_value,'/') > 0 then parm_value_num = .;
+         else parm_value_num = input(parm_value, best.);
+
          if facility = '' or service_line = '' or sub_service = '' 
             /*or ip_op_indicator = '' or med_surg_indicator = '' */ or parm_name = ''
             then output &_worklib.._invalid_values_opt_parameters;
-         else output &_worklib..input_opt_parameters_pp;
+           /* Invalid values - fractional parameter list, Binary parameter list */
+         else if indexw("&fractional_param_list",upcase(parm_name)) > 0
+            and not((parm_value = '0') or (1 < parm_value_num <= 100)) then output &_worklib.._invalid_values_opt_parameters;
+         else if indexw("&binary_param_list",upcase(parm_name)) > 0
+            and upcase(parm_value) not in ('YES','NO','1','0') then output &_worklib.._invalid_values_opt_parameters;
+         else do;
+            /* Binary parameter list - change 0/1 values to NO/YES */
+            if indexw("&binary_param_list",upcase(parm_name)) > 0 then do;
+               if parm_value = '0' then parm_value = 'NO';
+               else if parm_value = '1' then parm_value = 'YES';
+            end;         
+            output &_worklib..input_opt_parameters_pp;
+         end;
       end;
       else output &_worklib.._duplicate_rows_opt_parameters;
+      drop parm_value_num;
    run;
-   
+
+/*Validating for duplicate data in the non_hier_param_list */
+   data &_worklib..input_opt_parameters_pp
+        &_worklib.._tmp_inval_opt_parameters;
+      set &_worklib..input_opt_parameters_pp;
+      by scenario_name parm_name parm_value;
+      /*check if the parm_name is in non_hier_param_list*/
+      if index("&non_hier_param_list",upcase(parm_name)) > 0 then do;
+        if first.parm_name then do;
+          /* Note: If we have more than 9 phases, we will need to adjust this. */
+          parameter = substr(parm_name, 1, length(parm_name)-1);    
+          if index(parm_name, 'PHASE_') > 0 AND indexw("&non_hier_param_list",upcase(parameter)) > 0 
+                                    then output &_worklib..input_opt_parameters_pp;
+          else output &_worklib..input_opt_parameters_pp;
+        end; 
+        else output &_worklib.._tmp_inval_opt_parameters;
+      end;
+      
+      else output &_worklib..input_opt_parameters_pp;
+      drop parameter;
+   run;
+
+/*appending to the invalid values table */
+   data &_worklib.._invalid_values_opt_parameters;
+      set &_worklib.._invalid_values_opt_parameters &_worklib.._tmp_inval_opt_parameters;
+   run;
+
    /* Create &output_invalid_values and &output_duplicate_rows */
    data &outlib..&output_invalid_values;
       length table $32;
