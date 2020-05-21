@@ -12,8 +12,9 @@
         ,output_opt_detail=output_opt_detail
         ,output_opt_detail_agg=output_opt_detail_agg
         ,output_opt_summary=output_opt_summary
-        ,output_resource_usage=output_resource_usage
-        ,output_covid_test_usage=output_covid_test_usage
+        ,output_opt_resource_usage=output_opt_resource_usage
+        ,output_opt_resource_usage_detail=output_opt_resource_usage_detail
+        ,output_opt_covid_test_usage=output_opt_covid_test_usage
         ,run_dp=1
         ,run_fcst=1
         ,run_opt=1
@@ -58,8 +59,9 @@
           ,output_opt_detail=&output_opt_detail.
           ,output_opt_detail_agg=&output_opt_detail_agg.
           ,output_opt_summary=&output_opt_summary.
-          ,output_resource_usage=&output_resource_usage.
-          ,output_covid_test_usage=&output_covid_test_usage.
+          ,output_opt_resource_usage=&output_opt_resource_usage.
+          ,output_opt_resource_usage_detail=&output_opt_resource_usage_detail.
+          ,output_opt_covid_test_usage=&output_opt_covid_test_usage.
           ,_worklib=&_worklib.
           ,_debug=&_debug);
 
