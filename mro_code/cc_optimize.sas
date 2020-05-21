@@ -754,7 +754,7 @@
 
    proc cas;
       aggregation.aggregate / table={caslib="&_worklib.", name="_opt_detail_week",  
-         groupby={"scenario_name","facility","service_line","sub_service","week_start_date"}} 
+         groupby={"scenario_name","facility","service_line","sub_service","ip_op_indicator","med_surg_indicator","week_start_date"}} 
          saveGroupByFormat=false 
          varSpecs={{name="NewPatients", summarySubset="sum", columnNames="NewPatients"}
                    {name="ReschedulePatients", summarySubset="sum", columnNames="ReschedulePatients"}
