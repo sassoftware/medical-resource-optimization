@@ -85,6 +85,7 @@
    %let planning_horizon = %str();
    %let forecast_model = %str();
    %let optimization_start_date = %str();
+   %let run_input_demand_fcst = %str();
    proc sql noprint;
       select parm_value into :planning_horizon
          from &_worklib..input_opt_parameters_pp 
@@ -100,10 +101,14 @@
          where upcase(parm_name) = 'OPTIMIZATION_START_DATE';
       select max(date) + 1 into :history_plus_1
          from &_worklib..&input_demand;
+      select upcase(parm_value) into :run_input_demand_fcst
+         from &_worklib..input_opt_parameters_pp
+         where upcase(parm_name) = 'RUN_INPUT_DEMAND_FCST';
    quit;
    %if &planning_horizon = %str() %then %let planning_horizon = 12;
    %if &forecast_model = %str() %then %let forecast_model = tsmdl;
    %if &optimization_start_date = %str() %then %let optimization_start_date = PHASE_1_DATE;
+   %if &run_input_demand_fcst = %str() %then %let run_input_demand_fcst = YES; /* default to FORECAST */
 
    %global start_date;   
    %if &optimization_start_date = PHASE_1_DATE %then %let start_date = &date_phase_1;
@@ -111,6 +116,9 @@
    %else %if &optimization_start_date = HISTORY_PLUS_1 %then %let start_date = &history_plus_1;
    %else %let start_date = &date_phase_1; /* Invalid value, default to PHASE_1_DATE */
    
+   
+/* Forecast Macro: if  input_demand_fcst = YES then we run the forecast macro to forecast the demand based on historical demand */   
+%if &run_input_demand_fcst = YES %then %do;   
    /* Add day of week */
    data &_worklib.._tmp_input_demand;
       set &_worklib..&input_demand.;
@@ -368,6 +376,18 @@
    data &outlib..&output_fd_demand_fcst (promote=yes);
       set &_worklib.._tmp_output_fd_demand_fcst_dly;
    run;
+
+%end;
+
+/* Use external demand file: if  run_input_demand_fcst != YES then we run the use an external demand file*/
+%else %do; 
+   %let forecast_tEnd = &start_date. + (&planning_horizon.*7);  
+
+   data &outlib..&output_fd_demand_fcst (promote=yes where = (predict_date<=&forecast_tEnd));
+      set &_worklib..&input_demand.;
+      rename demand = daily_predict date = predict_date;
+   run;
+%end; 
 
    /*************************/
    /******HOUSEKEEPING*******/
