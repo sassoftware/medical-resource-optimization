@@ -381,7 +381,7 @@
 
 /* Use external demand file: if  run_input_demand_fcst != YES then we run the use an external demand file*/
 %else %do; 
-   %let forecast_tEnd = &start_date. + (&planning_horizon.*7);  
+   %let forecast_tEnd = &start_date. + (&planning_horizon.*7) - 1;  
 
    data &outlib..&output_fd_demand_fcst (promote=yes where = (predict_date<=&forecast_tEnd));
       set &_worklib..&input_demand.;
