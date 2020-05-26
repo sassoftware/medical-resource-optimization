@@ -22,6 +22,7 @@ caslib _all_ assign;
      ,input_financials=input_financials
      ,input_service_attributes=input_service_attributes
      ,input_demand=input_demand
+     ,input_demand_forecast=input_demand_forecast
      ,input_opt_parameters=input_opt_parameters
      ,output_opt_detail=output_opt_detail
      ,output_opt_detail_agg=output_opt_detail_agg

@@ -15,6 +15,7 @@
                    ,input_financials=input_financials
                    ,input_service_attributes=input_service_attributes
                    ,input_demand=input_demand
+                   ,input_demand_forecast=input_demand_forecast
                    ,input_opt_parameters=input_opt_parameters
                    ,unique_param_list =%str(PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL 
                                             FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE RUN_INPUT_DEMAND_FCST)
@@ -70,15 +71,52 @@
       %goto EXIT;
    %end; 
 
-   %if %sysfunc(exist(&inlib..&input_demand.))=0 %then %do;
-      %put FATAL: Missing &inlib..&input_demand., from &sysmacroname.;
-      %goto EXIT;
-   %end; 
-
    %if %sysfunc(exist(&inlib..&input_opt_parameters.))=0 %then %do;
       %put FATAL: Missing &inlib..&input_opt_parameters., from &sysmacroname.;
       %goto EXIT;
    %end; 
+
+/***********************Demand file assignment**********************************************/
+
+/* Check if opt RUN_INPUT_DEMAND_FCST parameter is same for all scenarios - this is an unique parameter */
+      proc delete data= work._inlib_contents; /* deleting a temp table */
+      run;
+
+      proc sql noprint;
+         select count(distinct lowcase(parm_value)) into :num_distinct_values
+         from &inlib..&input_opt_parameters.
+         where upcase(parm_name) = 'RUN_INPUT_DEMAND_FCST';
+      quit;
+
+      %if &num_distinct_values. > 1 %then %do;
+         %put ERROR: The parameter &param. has more than one distinct value in &inlib..&input_opt_parameters..;
+        /* Do a dummy data step that will force syscc > 4. We know that work.inlib_contents doesn't exist because
+           we've just deleted it in a previous step, so we're going to try to use it. */
+        data dummy_table;
+           set work._inlib_contents;
+        run;
+      %end;
+      %if &syscc. > 4 %then %goto EXIT;
+
+   /* Check if an extrenal forecast file is set up to be used or not; Modify the &input_demand variable based on 'RUN_INPUT_DEMAND_FCST' variable in input_opt_parameter 
+   if RUN_INPUT_DEMAND_FCST is null or is set to 'YES' or '1' then use &input_demand file, else use &input_demand_forecast as your demand file input*/ 
+   %let run_input_demand_fcst = %str();
+   proc sql noprint;
+      select upcase(parm_value) into :run_input_demand_fcst
+        from &inlib..&input_opt_parameters.
+      where upcase(parm_name) = 'RUN_INPUT_DEMAND_FCST'
+      and upcase(parm_value) in ('YES','NO','1','0');
+   quit;
+   %if &run_input_demand_fcst = %str() %then %let input_demand = &input_demand;
+   %else %if &run_input_demand_fcst %in ('YES','1') %then %let input_demand = &input_demand;
+   %else %let input_demand = &input_demand_forecast;
+
+   %if %sysfunc(exist(&inlib..&input_demand.))=0 %then %do;
+      %put FATAL: Missing &inlib..&input_demand., from &sysmacroname.;
+      %goto EXIT;
+   %end;
+
+/****************************************************************************************************************************************************/
 
    /* List work tables */
    %let _work_tables=%str(  

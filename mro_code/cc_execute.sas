@@ -8,6 +8,7 @@
         ,input_financials=input_financials
         ,input_service_attributes=input_service_attributes
         ,input_demand=input_demand
+        ,input_demand_forecast=input_demand_forecast
         ,input_opt_parameters=input_opt_parameters
         ,output_opt_detail=output_opt_detail
         ,output_opt_detail_agg=output_opt_detail_agg
@@ -31,6 +32,7 @@
           ,input_financials=&input_financials.
           ,input_service_attributes=&input_service_attributes.
           ,input_demand=&input_demand.
+          ,input_demand_forecast=&input_demand_forecast
           ,input_opt_parameters=&input_opt_parameters.
           ,exclude_str=%str(facility in ('Florida','CCCHR') or service_line='Evaluation and Management')
           ,_worklib=&_worklib.
