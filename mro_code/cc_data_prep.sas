@@ -78,10 +78,7 @@
 
 /***********************Demand file assignment**********************************************/
 
-/* Check if opt RUN_INPUT_DEMAND_FCST parameter is same for all scenarios - this is an unique parameter */
-      proc delete data= work._inlib_contents; /* deleting a temp table */
-      run;
-
+/* Check if RUN_INPUT_DEMAND_FCST parameter is same for all scenarios - this is an unique parameter */
       proc sql noprint;
          select count(distinct lowcase(parm_value)) into :num_distinct_values
          from &inlib..&input_opt_parameters.
@@ -90,13 +87,8 @@
 
       %if &num_distinct_values. > 1 %then %do;
          %put ERROR: The parameter &param. has more than one distinct value in &inlib..&input_opt_parameters..;
-        /* Do a dummy data step that will force syscc > 4. We know that work.inlib_contents doesn't exist because
-           we've just deleted it in a previous step, so we're going to try to use it. */
-        data dummy_table;
-           set work._inlib_contents;
-        run;
+         %goto EXIT;
       %end;
-      %if &syscc. > 4 %then %goto EXIT;
 
    /* Check if an extrenal forecast file is set up to be used or not; Modify the &input_demand variable based on 'RUN_INPUT_DEMAND_FCST' variable in input_opt_parameter 
    if RUN_INPUT_DEMAND_FCST is null or is set to 'YES' or '1' then use &input_demand file, else use &input_demand_forecast as your demand file input*/ 
