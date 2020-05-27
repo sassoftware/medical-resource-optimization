@@ -92,16 +92,15 @@
 
    /* Check if an extrenal forecast file is set up to be used or not; Modify the &input_demand variable based on 'RUN_INPUT_DEMAND_FCST' variable in input_opt_parameter 
    if RUN_INPUT_DEMAND_FCST is null or is set to 'YES' or '1' then use &input_demand file, else use &input_demand_forecast as your demand file input*/ 
-   %let run_input_demand_fcst = %str();
+   %let run_input_demand_fcst = YES;
    proc sql noprint;
-      select upcase(parm_value) into :run_input_demand_fcst
+      select 'NO' into :run_input_demand_fcst
         from &inlib..&input_opt_parameters.
       where upcase(parm_name) = 'RUN_INPUT_DEMAND_FCST'
-      and upcase(parm_value) in ('YES','NO','1','0');
+      and upcase(parm_value) in ('NO','0');
    quit;
-   %if &run_input_demand_fcst = %str() %then %let input_demand = &input_demand;
-   %else %if &run_input_demand_fcst %in ('YES','1') %then %let input_demand = &input_demand;
-   %else %let input_demand = &input_demand_forecast;
+   %if &run_input_demand_fcst = YES %then %let input_demand = &input_demand;
+   %else %let input_demand = &input_demand_forecast; 
 
    %if %sysfunc(exist(&inlib..&input_demand.))=0 %then %do;
       %put FATAL: Missing &inlib..&input_demand., from &sysmacroname.;
