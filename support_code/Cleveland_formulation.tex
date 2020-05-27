@@ -39,12 +39,13 @@
 \item[ ] $week_{d}$ is the week number of day $d$ in set $ d \in Days$
 \item[ ] $daysBeforeSurgAdm$ is the number of days before which a surgery patient should be tested for COVID-19 (using a non-rapid test kit) 
 \item[ ] $fracInpTest$ is the fraction of inpatients tested for COVID-19 using the rapid test kit on the day of admission 
-\item[ ] $minDemRatio$ is the minimum proportion of demand that must be satisfied at a sub-service $ss$ if its is open at a facility $f$, service line $sl$ 
+\item[ ] $minDemRatio_{f,sl,ss}$ is the minimum proportion of demand that must be satisfied at a sub-service $ss$ if its is open at a facility $f$, service line $sl$ 
 \item[ ] $newPntBfCovid_{f,sl,ss,io,ms,d}$ is the new patients admitted without COVID-19 test constraints at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$ on day $d$ 
 \item[ ] $fixOpenFlag_{f,sl,ss}$ is a flag and is set to 1 if the facility $f$, service line $sl$, sub-service $ss$ is open, 0 otherwise. 
 \item[ ] $emerSurRatio_{f,sl,ss}$ is a proportion of emergency surgical patients at the facility $f$, service line $sl$, sub-service $ss$. 
 \item[ ] $numCancel_{f,sl,ss,io,ms}$ is the maximum number of patients cancelled at the facility $f$, service line $sl$, sub-service $ss$, for inpatient/outpatient indicator $io$, and medical/surgical indicator $ms$
-\item[ ] $maxUtil_{f}$ is the maximum utilization allowed for ICU resource at the facility $f$ 
+\item[ ] $maxUtil_{f}$ is the maximum utilization allowed for ICU resource at the facility $f$.
+\item[ ] $minDemAggFlag$ is a flag to denote if the min demand is aggregated or non-aggregated and $ \in (0,1) $
 \end{itemize}
 
 \section*{Decision Variables}
@@ -119,17 +120,34 @@ ReschedulePatients_{f,sl,ss,io,ms,d} \leq numCancel_{f,sl,ss,io,ms} \  OpenFlg_{
 \end{equation}
 
 \begin{align*}
-&\text{Minimum proportion of demand constraint: If a sub-service $ss$ is open at $f,sl$ then, we should at the least} \\
+&\text{Aggregated minimum proportion of demand constraint: If a sub-service $ss$ is open at $f,sl$ then, we should at the least} \\
+&\text{satisfy a minimum proportion of the aggregated weekly demand of $f,sl,ss$.} \\
+&\text{Note: Aggregation context is specified using $ALL$ in the indices of the $minDemRatio_f,sl,ss$.} 
+\end{align*}
+\begin{equation} 
+\begin{multlined}
+\sum_{\substack{f',sl',ss',io,ms,d \ \text{and} \\
+week_{d} = w }} (NewPatients_{f',sl',ss',io,ms,d} + ReschedulePatients_{f',sl',ss',io,ms,d})
+\geq  minDemRatio_{f,sl,ss} \\ \ \sum_{\substack{f',sl',ss',io,ms,d \ \text{and} \\
+week_{d} = w }} newPntBfCovid_{f',sl',ss',io,ms,d} \ OpenFlg_{f',sl',ss',d} \quad \forall f,sl,ss,w \ \text{and} \ minDemAggFlag = 1 \\
+f = f' \ \text{or} \ f = ALL \ \text{and} \ sl = sl' \text{or} sl = ALL \ \text{and} \ ss=ss' \ \text{or} \ sl = ALL
+\end{multlined}
+\end{equation}
+
+\begin{align*}
+&\text{Non-aggregated minimum proportion of demand constraint: If a sub-service $ss$ is open at $f,sl$ then, we should at the least} \\
 &\text{satisfy a minimum proportion of the weekly demand of $f,sl,ss$.} 
 \end{align*}
 \begin{equation} 
 \begin{multlined}
 \sum_{\substack{io,ms,d \ \text{and} \\
 week_{d} = w }} (NewPatients_{f,sl,ss,io,ms,d} + ReschedulePatients_{f,sl,ss,io,ms,d})
-\geq  minDemRatio \\ \ \sum_{\substack{io,ms,d \ \text{and} \\
-week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,w\
+\geq  minDemRatio_{f,sl,ss} \\ \ \sum_{\substack{io,ms,d \ \text{and} \\
+week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,w \ and \ minDemAggFlag = 0\
 \end{multlined}
 \end{equation}
+
+\pagebreak
 
 \begin{align*}
 &\text{COVID-19 inpatient tests constraint: Total number of inpatients accepted (excluding surgical patients) and the } \\
@@ -145,8 +163,6 @@ week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \for
 \text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d} \\ + ReschedulePatients_{f,sl,ss,io,ms,d}) \ emerSurRatio_{f,sl,ss} \leq (dlyRapidTest_{d} \ / fracInpTest) \quad \forall d\
 \end{multlined}
 \end{equation}
-
-\pagebreak
 
 \begin{align*}
 &\text{COVID-19 surgery patient tests constraint: Total number of surgery patients who will be admitted for surgery } \\
