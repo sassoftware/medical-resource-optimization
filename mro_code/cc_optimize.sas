@@ -141,7 +141,8 @@
                                                 remove_demand_constraints
                                                 remove_covid_constraints
                                                 hold_not_rapid_covid_tests
-                                                hold_rapid_covid_tests)
+                                                hold_rapid_covid_tests
+                                                treat_min_demand_as_aggregate)
         &_worklib.._opt_parameters_hierarchy (drop=start sequence parameter value 
                                                    allow_opening_only_on_phase 
                                                    secondary_objective_tolerance
@@ -150,7 +151,8 @@
                                                    remove_demand_constraints
                                                    remove_covid_constraints
                                                    hold_not_rapid_covid_tests
-                                                   hold_rapid_covid_tests);
+                                                   hold_rapid_covid_tests
+                                                   treat_min_demand_as_aggregate);
       set &_worklib..input_opt_parameters_pp;
       by scenario_name;
       parm_name = upcase(parm_name);
@@ -163,7 +165,8 @@
              remove_demand_constraints
              remove_covid_constraints
              hold_not_rapid_covid_tests
-             hold_rapid_covid_tests;
+             hold_rapid_covid_tests
+             treat_min_demand_as_aggregate;
       if first.scenario_name then do;
          /* Set default values for "global" parameters */
          secondary_objective_tolerance = 0.99;
@@ -174,6 +177,7 @@
          remove_covid_constraints = 0;
          hold_not_rapid_covid_tests = 0;
          hold_rapid_covid_tests = 0;
+         treat_min_demand_as_aggregate = 0;
       end;
          
       if index(parm_name, 'PHASE_') > 0 then do;
@@ -186,7 +190,8 @@
       end;
       else do;
          if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA',
-                          'REMOVE_DEMAND_CONSTRAINTS','REMOVE_COVID_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS') then do;
+                          'REMOVE_DEMAND_CONSTRAINTS','REMOVE_COVID_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS',
+                          'TREAT_MIN_DEMAND_AS_AGGREGATE') then do;
             if parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE' and parm_value='YES' then allow_opening_only_on_phase = 1;
             else if parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE' then secondary_objective_tolerance = input(parm_value, best.) / 100; 
             else if parm_name = 'TEST_DAYS_BA' then test_days_ba = input(parm_value, best.);
@@ -195,6 +200,7 @@
             else if parm_name = 'REMOVE_COVID_CONSTRAINTS' and parm_value='YES' then remove_covid_constraints = 1;
             else if parm_name = 'HOLD_NOT_RAPID_COVID_TESTS' then hold_not_rapid_covid_tests = input(parm_value, best.);
             else if parm_name = 'HOLD_RAPID_COVID_TESTS' then hold_rapid_covid_tests = input(parm_value, best.);
+            else if parm_name = 'TREAT_MIN_DEMAND_AS_AGGREGATE' and parm_value='YES' then treat_min_demand_as_aggregate = 1;
          end;
          else output &_worklib.._opt_parameters_hierarchy;
       end;
@@ -350,6 +356,7 @@
       num removeCovidConstraints init 0;
       num holdNotRapidCovidTests init 0;
       num holdRapidCovidTests init 0;
+      num treatMinDemandAsAggregate init 0;
 
       str scenarioNameCopy;
   
@@ -410,7 +417,8 @@
          removeDemandConstraints = remove_demand_constraints
          removeCovidConstraints = remove_covid_constraints
          holdNotRapidCovidTests = hold_not_rapid_covid_tests
-         holdRapidCovidTests = hold_rapid_covid_tests;
+         holdRapidCovidTests = hold_rapid_covid_tests
+         treatMinDemandAsAggregate = treat_min_demand_as_aggregate;
          
       /* Allowed opening dates */
       read data &_worklib.._opt_allowed_opening_dates into
@@ -499,11 +507,25 @@
       con Reschedule_Maximum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS : numCancel[f,sl,ss,iof,msf] > 0 and removeDemandConstraints = 0}:
          sum{d in DAYS} ReschedulePatients[f,sl,ss,iof,msf,d] <= numCancel[f,sl,ss,iof,msf]
                    suffixes=(block=block_id[f]);
-         
-      /* If a sub-service is open, we must satisfy a minimum proportion of the weekly demand if minDemandRatio > 0. We are breaking these 
+
+      /* If a sub-service is open, we must satisfy a minimum proportion of the weekly demand if minDemandRatio > 0. If treatMinDemandAsAggregate = 0, 
+         then we want to treat "ALL" as applying the min demand constraint separately to each subservice. */
+      con Minimum_Demand_NoAgg{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, <f2,sl2,ss2> in FAC_SLINE_SSERV, w in WEEKS : 
+                               treatMinDemandAsAggregate = 0 and removeDemandConstraints = 0
+                               and (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')}:
+         sum{<(f2),(sl2),(ss2),iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : week[d]=w}
+                ((if <f2,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f2,sl2,ss2,iof,msf,d] else 0)
+               + (if <f2,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f2,sl2,ss2,iof,msf,d] else 0)
+               - (input(minDemandRatio[f,sl,ss],best.)/100 * newPatientsBeforeCovid[f2,sl2,ss2,iof,msf,d] * OpenFlg[f2,sl2,ss2,d]))
+            >= 0
+                  suffixes=(block=block_id[f2]);
+
+      /* If a sub-service is open, we must satisfy a minimum proportion of the weekly demand if minDemandRatio > 0. If treatMinDemandAsAggregate = 1, 
+         then we want to treat "ALL" as aggregating the min demand constraint across facilities or services or subservices. We are breaking these 
          into two sets of constraints -- one where facility is not equal to 'ALL' and one where facility is equal to 'ALL' -- so that we can 
          define decomp blocks for the ones that do not span all facilities. */
-      con Minimum_Demand{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : f ne 'ALL' and removeDemandConstraints = 0}:
+      con Minimum_Demand_Agg{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : 
+                             treatMinDemandAsAggregate = 1 and removeDemandConstraints = 0 and f ne 'ALL'}:
          sum{<(f),sl2,ss2,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL') and week[d]=w}
                 ((if <f,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f,sl2,ss2,iof,msf,d] else 0)
                + (if <f,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f,sl2,ss2,iof,msf,d] else 0)
@@ -511,7 +533,8 @@
             >= 0
                   suffixes=(block=block_id[f]);
 
-      con Minimum_Demand_ALL{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : f='ALL' and removeDemandConstraints = 0}:
+      con Minimum_Demand_Agg_ALL{<f,sl,ss> in MIN_DEMAND_RATIO_CONSTRAINTS, w in WEEKS : 
+                                 treatMinDemandAsAggregate = 1 and removeDemandConstraints = 0 and f='ALL'}:
          sum{<f2,sl2,ss2,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL') and week[d]=w}
                 ((if <f2,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND then NewPatients[f2,sl2,ss2,iof,msf,d] else 0)
                + (if <f2,sl2,ss2,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL then ReschedulePatients[f2,sl2,ss2,iof,msf,d] else 0)
@@ -607,8 +630,9 @@
       drop COVID19_Day_Of_Admission_Testing
            COVID19_Before_Admission_Testing
            Max_ICU_Utilization
-           Minimum_Demand
-           Minimum_Demand_ALL
+           Minimum_Demand_NoAgg
+           Minimum_Demand_Agg
+           Minimum_Demand_Agg_ALL
            Service_Stay_Open
            Open_on_Allowed_Dates;
            
@@ -628,8 +652,9 @@
       restore COVID19_Day_Of_Admission_Testing
               COVID19_Before_Admission_Testing
               Max_ICU_Utilization
-              Minimum_Demand
-              Minimum_Demand_ALL
+              Minimum_Demand_NoAgg
+              Minimum_Demand_Agg
+              Minimum_Demand_Agg_ALL
               Service_Stay_Open
               Open_on_Allowed_Dates;
 
