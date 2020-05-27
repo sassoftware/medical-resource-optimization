@@ -1,0 +1,175 @@
+Issue ID,URL,Title,State,Description,Author,Author Username,Assignee,Assignee Username,Confidential,Locked,Due Date,Created At (UTC),Updated At (UTC),Closed At (UTC),Milestone,Weight,Labels,Time Estimate,Time Spent
+1,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/1,Add code standards to cc_opt_draft,Closed,"Please add the housekeeping code to cc_opt_draft as per: https://gitlab.sas.com/Natalia/or_coe_coding_quality_standards/tree/master
+
+Please pull from my latest branch, I just made some updates.",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-22 01:07:52,2020-04-24 01:49:50,2020-04-24 01:49:50,,,,0,0
+2,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/2,Update the formulation code,Closed,Please update the tex formulation code based on the latest code changes. Thank you!,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-22 01:08:27,2020-05-05 01:21:35,2020-05-05 01:21:35,,,,0,0
+3,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/3,Wrap the forecasting code,Closed,"Please update the forecasting code with the standards. There are only two active steps, but please keep the rest commented out.",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-24 01:50:46,2020-04-27 21:22:00,2020-04-27 21:22:00,,,,0,0
+4,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/4,Create exceptions table and remove mismatches in sets and missing values,Closed,The latest opt code needs debugging with regards to the sets. My guess is the sets do not match in all the input tables.,Natalia,Natalia,micopp,micopp,No,No,,2020-04-24 01:52:14,2020-05-13 01:58:29,2020-05-13 01:58:29,,,Functionality Stage 1,0,0
+5,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/5,Import input_capacity,Closed,"Please import input_capacity data provided by customer from this location into the caslib CC on clus08
+\\ordsrv3-2k16\e\OR_CENTER\FILES\Cleveland Clinic\customer_input",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-27 13:06:24,2020-04-28 01:04:00,2020-04-28 01:04:00,,,,0,0
+6,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/6,Missing values in revenue/margin and attributes tables,Closed,"If missing values encountered in revenue/margin data and service attributes, those records need to be removed.",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-27 13:28:01,2020-04-29 01:18:45,2020-04-29 00:46:40,,,,0,0
+7,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/7,Remove partial weeks history,Closed,"Please remove the hardcoding in the forecasting code in lines 71 and 72 and programatically find those days.
+
+```sas
+	
+/* Programatticaly obtain the first sunday and the last saturday in the input data */
+	
+	/* Hardcoded termporarily */
+	%let tStart=21247; /* March 4th, 2018 */
+	%let tEnd=21974; /* Feb 29, 2020 */
+```",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-28 00:42:10,2020-04-28 22:55:21,2020-04-28 22:55:21,,,,0,0
+8,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/8,Dissagregate weekly forecasts into daily,Closed,"1. Calculate a historical Day of week profile (DOW profile), by calculating the average proportion of demand per day of week. Use cas action aggregate.
+2. Apply this dow profile to the weekly forecasts (_tmp_output_fd_demand_fcst) to generate daily forecasts. Code line 139 in forecast code.",Natalia,Natalia,Natalia,Natalia,No,No,,2020-04-28 00:46:31,2020-05-06 04:23:52,2020-04-30 01:21:05,,,,0,0
+9,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/9,"Integrate ""ALL"" into the capacity constraint",Closed,Use ```if``` within ```con``` statement in optmodel.,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-29 01:14:06,2020-05-04 17:18:29,2020-04-30 01:20:42,,,,0,0
+10,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/10,Generate tiny instance data for testing,Closed,"Please generate a very tractable instance: 2 service lines, 2-3 subservices, 2-3 resources, 4-7 days of forecasts to test our code. Thank you!",Natalia,Natalia,micopp,micopp,No,No,,2020-04-29 01:17:27,2020-05-08 00:24:31,2020-05-02 00:41:33,,,Functionality Stage 1,0,0
+11,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/11,Length of Stay distribution,Open,Incorporate negative binomial (or other) distribution into length of stay estimation,Natalia,Natalia,"","",No,No,,2020-04-30 01:25:53,2020-04-30 01:26:03,,,,Functionality Stage 2,0,0
+12,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/12,Improve accuracy/granularity of resource utilization,Open,"",Natalia,Natalia,"","",No,No,,2020-04-30 01:26:27,2020-05-06 04:23:52,,,,Functionality Stage 2,0,0
+13,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/13,Missing values in day of the week profile which leads to missing values in output table.,Closed,"In the example below, Sunday is missing from day of the week profile (in table _tmp_input_demand_dow)
+
+| facility | service_line | sub_service                  | IP_OP_Indicator | Med_Surg_Indicator | dow |
+|----------|--------------|------------------------------|-----------------|--------------------|-----|
+| Akron    | Orthopedics  | General Surgical Orthopedics | O               | SURG               | 2   |
+| Akron    | Orthopedics  | General Surgical Orthopedics | O               | SURG               | 3   |
+| Akron    | Orthopedics  | General Surgical Orthopedics | O               | SURG               | 4   |
+| Akron    | Orthopedics  | General Surgical Orthopedics | O               | SURG               | 5   |
+| Akron    | Orthopedics  | General Surgical Orthopedics | O               | SURG               | 6   |
+| Akron    | Orthopedics  | General Surgical Orthopedics | O               | SURG               | 7   |
+
+This will cause missing values in _tmp_output_fd_demand_fcst_dly table.
+
+| facility | dow | demand_proportion | daily_predict |
+|----------|-----|-------------------|---------------|
+| Akron    | 2   | 0.166666667       | 0.164226023   |
+| Akron    | 3   | 0.121212121       | 0.119437107   |
+| Akron    | 4   | 0.257575758       | 0.253803853   |
+| Akron    | 5   | 0.143939394       | 0.141831565   |
+| Akron    | 6   | 0.242424242       | 0.238874215   |
+| Akron    | 7   | 0.068181818       | 0.067183373   |",Subramanian Pazhani,supazh,Subramanian Pazhani,supazh,No,No,,2020-04-30 15:19:56,2020-04-30 16:32:53,2020-04-30 16:32:53,,,,0,0
+14,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/14,Replace proc mean with aggregate action,Closed,"In the forecast code, please replace the proc means with aggregate. Thanks!",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-30 19:57:05,2020-05-01 21:08:48,2020-05-01 21:08:48,,,Functionality Stage 1,0,0
+15,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/15,Add covid tests contraint,Closed,"",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-30 19:57:46,2020-05-13 01:57:45,2020-05-13 01:57:45,,,Functionality Stage 1,0,0
+16,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/16,Make output tables names configurable,Closed,Please make the output tables (3 at this point) names an input to forecast and opt macros such that those output names are configurable.,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-04-30 20:34:20,2020-05-02 00:40:45,2020-05-02 00:40:45,,,,0,0
+17,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/17,Add number of phases as a dimention,Closed,Read from opt_parameters the number of phases. Allow re-opening sub-services by phase.,Natalia,Natalia,Natalia,Natalia,No,No,,2020-04-30 20:35:35,2020-05-13 10:45:31,2020-05-13 10:45:31,,,Functionality Stage 1,0,0
+18,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/18,Add revenue/margin to outputs,Closed,Add columns with revenue and margin to optimized outputs,Natalia,Natalia,"","",No,No,,2020-04-30 20:36:12,2020-05-02 01:49:18,2020-05-02 01:49:18,,,Functionality Stage 1,0,0
+19,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/19,Investigate underestimation of Friday spikes,Closed,"Hi Subbu. I/m looking into forecast accuracy. In most of the time series I'm seeing a strong underestimation of week demand. Could you please investigate a bit?
+
+Here is an example:
+![image](/uploads/37ef6821e40a05232286b83313a4bff9/image.png)
+
+Facility=Avon
+Service_line=Orthopedics
+
+If you run my cc_forecast_accuracy_standalone code, you can see how I am mapping the fcst with actuals to calculate MAPE (maybe I'm doing womething off here?)
+
+Here is the VA report:
+https://orclus08.unx.sas.com/links/resources/report?uri=%2Freports%2Freports%2Fe5cf00c3-827c-47f9-afdc-8f6808de5a96&page=vi6",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-05 01:10:08,2020-05-07 03:17:31,2020-05-07 03:17:31,,,"Functionality Stage 1,Urgent",0,0
+20,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/20,Demand utilization,Closed,"Hi Michelle, I'm having some flashbacks to LPO here. As you mentioned before, if we allow the engine to run wild, it will not respect the fact that by opening a service, we're supposed to use the full demand.
+
+Could you please take a look at adding the corresponding constraint? I do remember these constraints tend to be nasty since we need to add binary flags and big M type of formulation. Maybe I'm wrong.
+
+Let's create a flag, something like USE_ALL_DEMAND. And if flag=1, we'll attempt to use all available demand if a sub service is open. 
+
+Thank you!
+
+PS: Please pull my latest code.",Natalia,Natalia,Natalia,Natalia,No,No,,2020-05-05 01:19:30,2020-05-07 03:18:33,2020-05-07 03:18:33,,,Functionality Stage 1,0,0
+21,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/21,PPT deck,Closed,"Subbu, could you please help me to build 5-10 slides on this implementation? I would start from pulling requirements from FDD and add nice visualizations if you can think of some. 
+
+Thank you so much!",Natalia,Natalia,Natalia,Natalia,No,No,,2020-05-05 01:22:59,2020-05-13 01:56:44,2020-05-13 01:56:44,,,,0,0
+22,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/22,Data prep var length issue,Closed,"Michelle, could you please take a look at the data prep code? If you run it with the latest data in CC (all attributes tables are the latest), we get an error due to not reading the length of resource var, but I can't figure out why. Not familiar with that. Thanks! Please pull my latest code.",Natalia,Natalia,micopp,micopp,No,No,,2020-05-05 20:32:11,2020-05-07 18:27:03,2020-05-06 14:47:21,,,Functionality Stage 2,0,0
+23,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/23,Have input demand table as param to forecast macro,Closed,"",Natalia,Natalia,Natalia,Natalia,No,No,,2020-05-06 19:20:27,2020-05-13 01:57:32,2020-05-13 01:57:32,,,Functionality Stage 1,0,0
+24,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/24,Validate Results,Closed,"Hi Michelle, I have fixed a couple more thing in the opt code and getting what seems to be reasonable results. If you have chance tomorrow could you please also do a bit of validation? It does look like some capacity constraints are empty...
+
+Overall, we should only be looking at ""I""s (in-patients) since I'm realizing ""O""s (out-patients) are not limited by any capacity or covid19 constraint, so there is no optimization to be done, we're just taking the full demand. SO let's focus on the ""I""s.
+
+Also, they asked to remove today the service=""Evaluation and ..."" which I have removed by hardcoding in the opt code.
+
+Thanks!
+
+Please pull my latest code.",Natalia,Natalia,micopp,micopp,No,No,,2020-05-07 03:17:23,2020-05-18 01:29:40,2020-05-18 01:29:40,,,Functionality Stage 1,0,0
+25,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/25,Create YOY forecast,Closed,Use last years data to forecast.,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-07 14:43:40,2020-05-13 01:57:57,2020-05-13 01:57:57,,,Functionality Stage 1,0,0
+26,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/26,Add ip_op_indicator and med_surg_indicator to INPUT_OPT_PARAMETERS processing in data prep,Closed,"Earlier versions of the data model did not have ip_op_indicator and med_surg_indicator in the INPUT_OPT_PARAMETERS table, so in cc_data_prep I am filtering this table only on facility / service_line / sub_service to remove non-matches. I need to add ip_op_indicator and med_surg_indicator to these steps.",micopp,micopp,micopp,micopp,No,No,,2020-05-08 11:33:38,2020-05-13 10:45:53,2020-05-13 10:45:53,,,Functionality Stage 1,0,0
+27,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/27,Filter our all facility=X,Closed,"'@micopp, could we please also add a way to remove facilities (such as Florida and CCCHR)? Thanks!",Natalia,Natalia,micopp,micopp,No,No,,2020-05-08 13:30:53,2020-05-11 00:16:21,2020-05-11 00:16:21,,,Functionality Stage 1,0,0
+28,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/28,Add margin to output visualizations,Closed,"",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-08 13:31:12,2020-05-18 02:18:03,2020-05-18 02:18:03,,,Functionality Stage 1,0,0
+29,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/29,Convert fractional values of Length_Stay_Mean to integer in data prep,Closed,"I noticed yesterday that CC's data has fractional values for Length_Stay_Mean, e.g., 4.04, 5.39, etc. Since we are not doing any intra-day scheduling, and we're just counting the total number of customers on each day, we need Length_Stay_Mean to be integer. The optimization doesn't fail if it's fractional, but our TotalPatients impvar is essentially using floor(losMean). For example, if d=5 and losMean=3.8, we're taking sum{d1 in DAYS: 2.6 <= d1 <= 5}, which is equivalent to sum{d1 in DAYS: 3 <= d1 <= 5} since the days are integers, which means we're rounding losMean down to 3. 
+
+```
+      impvar TotalPatients{<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} =
+         sum{d1 in DAYS: (max((d - losMean[f,sl,ss,iof,msf] + 1), minDay)) <= d1 <= d} NewPatients[f,sl,ss,iof,msf,d1];
+```
+
+At first I thought we should take the ceiling instead of the floor, so that we round 3.8 up to 4. But we probably don't want to round 4.04 up to 5. So another option is to round to the nearest integer. 
+
+For maximum flexibility, I'll add a parameter to cc_data_prep to specify a threshold for the fractional part of Length_Stay_Mean. Values less than the threshold will round down, and values greater than the threshold will round up. This will allow us to use the floor (threshold = 0), ceiling (threshold = 1), round to nearest integer (threshold = 0.5) or any custom rounding (e.g., threshold = 0.2 would round 4.19 down to 4, but round 4.21 up to 5).",micopp,micopp,micopp,micopp,No,No,,2020-05-08 15:51:20,2020-05-13 10:46:08,2020-05-13 10:46:08,,,,0,0
+30,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/30,Incorporate opened service lines,Closed,"'@micopp, could you please add this parameter to be read from INPUT_OPT_PARAMS instead? This way they should be able to set it up at any level. Thanks!",Natalia,Natalia,micopp,micopp,No,No,,2020-05-13 01:56:36,2020-05-13 14:33:42,2020-05-13 14:33:42,,,Functionality Stage 1,0,0
+31,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/31,Minimum demand constraint,Closed,'@micopp could you please add the minimum demand fraction to be read from INPUT_OPT_PARAMS? Thank you!,Natalia,Natalia,micopp,micopp,No,No,,2020-05-13 01:59:36,2020-05-13 14:46:40,2020-05-13 14:46:40,,,Functionality Stage 1,0,0
+32,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/32,COVID-19 rapid tests for emergency surgical patients,Closed,Please read percentage of emergency surgical procedures {by service line} from INPUT_OPT_PARAM and adjust the tests constraints accordingly. Thank you!,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-13 02:01:25,2020-05-19 15:34:38,2020-05-19 15:34:38,,,Functionality Stage 1,0,0
+33,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/33,Use only leftover rapid tests prior to admission,Open,"",Natalia,Natalia,"","",No,No,,2020-05-13 02:01:55,2020-05-13 02:01:55,,,,Functionality Stage 2,0,0
+34,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/34,Add appending of outputs to scenario runs,Closed,Please add appending of the main output tables (OPT_DETAIL and  OPT_DETAIL_AGG) from the scenarios into one output in the standalone code.,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-14 02:05:04,2020-05-15 12:27:26,2020-05-15 12:27:25,,,Functionality Stage 1,0,0
+35,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/35,"Add lead_weeks, forecast_model and los_rouding parms to OPT_PARM table",Closed,Please add these three parameters to be read from OPT_PARAMETER and not as inputs to the macros.,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-14 02:05:57,2020-05-15 12:26:49,2020-05-15 12:26:49,,,Functionality Stage 1,0,0
+36,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/36,Add additional validation for INPUT_OPT_PARAMETERS in data prep,Open,"Subbu and I haven't decided how to divide this work, so I'm not assigning it to anyone yet. But I'm starting a list of things that we should add to validation for INPUT_OPT_PARAMETERS. If you think of anything else, please add them in comments below. 
+
+1. For the parameters that must have the same value for all scenarios, stop with an error if there is more than one distinct value: planning_horizon, los_rounding_threshold, forecast_model. (This is already in the code.)
+
+2. For values that represent a percent (rapid_test_da, min_demand_ratio, emer_surgical_pts_ratio), make sure they are either 0 or 1 < value <= 100. We should not allow 0 < value <= 1 because it probably means the user misinterpreted the value range, for example if they use 0.3 for 30% when they should use 30. I don't think we have any percent parameters where the user would want to use a value between 0 and 1, except maybe emer_surgical_pts_ratio but if the value is that 
+small, they could just use 0 and there probably won't be much difference in the solution. 
+
+3. For parameters that represent a YES/NO value, convert 1 to YES and 0 to NO, and check for any other values that we don't recognize. 
+
+4. For the parameters that ignore hierarchy, make sure there is only one distinct value per scenario: planning_ test_days_ba, rapid_test_ba, date_phase_x, rapid_test_phase_x, not_rapid_tests_phase_x, allow_opening_only_on_phase, secondary_objective_tolerance 
+
+5. Check that they haven’t misspelled any parameter names – look for ones that we don't recognize
+
+6. Figure out what to do with duplicate values within hierarchies for parameters that use the hierarchy: already_open, min_demand_ratio, emer_surgical_pts_ratio
+
+
+Additional Notes:
+
+A. I am treating TEST_DAYS_BA and RAPID_TEST_BA as if they are not specified by a hierarchy. The current rules that we use for testing rapid and non-rapid patients is not something that will fit into the hierarchy structure, so the rules are still hard-coded in the constraints (e.g., take some non-emergency fraction of surgery patients, or take all inpatients plus some emergency fraction of surgery patients). But the values of TEST_DAYS_BA and RAPID_TEST_BA are changeable in INPUT_OPT_PARAMETERS, you just can't change the sets of patients that they apply to (and therefore you should specify only one value per scenario). 
+
+B. These parameters are still being ignored because we still don't know exactly what they mean: TEST_VISITORS, TEST_FREQ_DAYS, OPEN_FULLY",micopp,micopp,Subramanian Pazhani,supazh,No,No,,2020-05-15 20:36:04,2020-05-20 19:15:32,,,,,0,0
+37,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/37,First forecast/opt date should be DATE_PHASE_1 date from parms.,Closed,"'@supazh @micopp, I add modifications to both forecast and optimization codes to take the first date as DATE_PHASE_1. Please do double check my updates to make sure I did the right calcs.
+
+The overall horizon should be DATE_PHASE_1  to DATE_PHASE_1 +PLANNING_HORIZON so let's remove the lead_weeks parameter. Thanks!",Natalia,Natalia,micopp,micopp,No,No,,2020-05-18 01:32:29,2020-05-18 15:54:35,2020-05-18 15:54:35,,,Functionality Stage 1,0,0
+38,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/38,Temp tables names to start with _,Closed,Please have all temp tables to start with _. Thanks!,Natalia,Natalia,"","",No,No,,2020-05-18 01:34:11,2020-05-19 15:34:24,2020-05-19 15:34:24,,,Functionality Stage 1,0,0
+39,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/39,HOLD_RAPID_COVID_TESTS and HOLD_NON_RAPID_COVID_TESTS,Closed,Please add a parameter called HOLD_RAPID_COVID_TESTS and HOLD_NON_RAPID_COVID_TESTS and subtract this amount from daily availability.,Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-18 01:35:31,2020-05-19 18:47:42,2020-05-19 18:47:42,,,Functionality Stage 1,0,0
+40,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/40,Add FILTER_SERV_NOT_USING_RESOURCES parameters,Closed,"Please add a parameter to filter out the following sub-services:
+1. Sub-Services that do not use any resources (not in UTILIZATION)
+2. Sub-Services whose only resources from UTILIZATION are not in CAPACITY
+
+This parameter should allow for an optimization without demand constraints and not be unbounded.",Natalia,Natalia,micopp,micopp,No,No,,2020-05-18 01:39:18,2020-05-18 23:08:48,2020-05-18 23:08:48,,,Functionality Stage 1,0,0
+41,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/41,Add REMOVE_DEMAND_CONSTRAINT parameter,Closed,Please add this parameter that will remove all demand constraints from optimization.,Natalia,Natalia,micopp,micopp,No,No,,2020-05-18 01:40:15,2020-05-18 15:52:34,2020-05-18 15:46:35,,,Functionality Stage 1,0,0
+42,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/42,Parameters Section in FDD,Closed,"'@supazh, please create a specific section in the FDD to explain with details how to populate the OPT_PARAMTERS and how each onene is used in the code.
+
+Thanks!
+Natalia",Natalia,Natalia,micopp,micopp,No,No,,2020-05-18 01:49:16,2020-05-19 16:52:26,2020-05-19 16:52:26,,,Functionality Stage 1,0,0
+43,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/43,Add NO_COVID_CONSTRAINT param,Closed,"Let's please add an option to run without COVID constraints, this will allow going further on optimizing capacity of current resources.",Natalia,Natalia,micopp,micopp,No,No,,2020-05-18 16:35:59,2020-05-18 23:06:53,2020-05-18 23:06:53,,,Functionality Stage 1,0,0
+44,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/44,Add ICU_MAX_UTILIZATION,Closed,Please add a parameter that limits the utilization of ICU Beds within optimization. Thanks!,Natalia,Natalia,micopp,micopp,No,No,,2020-05-18 20:37:14,2020-05-20 23:39:56,2020-05-20 23:39:56,,,Functionality Stage 1,0,0
+45,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/45,Accept 'ALL' for Scenario_name in Parms Table,Closed,Please accept 'ALL' for scenario_name such that only the parameters different by scenario need to be added twice. Thanks!,Natalia,Natalia,micopp,micopp,No,No,,2020-05-19 01:45:57,2020-05-19 12:54:27,2020-05-19 12:54:27,,,Functionality Stage 1,0,0
+46,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/46,PHASE column to opt outputs,Closed,Please add a PHASE_ID column to OPT outputs. This is for aggregation purposes within VA. Thanks!,Natalia,Natalia,micopp,micopp,No,No,,2020-05-19 17:07:06,2020-05-20 23:41:52,2020-05-20 23:41:52,,,Functionality Stage 1,0,0
+47,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/47,Fractional Values for New Patients,Open,"Here are some possible options, with pros and cons: 
+
+1.	Treat NewPatients as continuous during optimization, but then post-process the solution to round fractional values down to the nearest integer. We would need to recompute the KPIs (revenue, margin, resource usage, covid test usage, etc.), but at least this would allow subservices to be open even if the demand is very small for some days. However, if we have a large number of fractional NewPatients values, rounding everything down could result in a significant underutilization of resources, with a corresponding loss of revenue and margin. 
+
+2.	Treat NewPatients as continuous, and do not post-process the solution to round fractional values. (This is basically what we have today without the INTEGER specification on NewPatients.) Advise CC that the NewPatients values should be used as a guidance for how many patients to admit, but obviously not exact. So if they see, for example, 15.36 NewPatients, they might decide to admit “somewhere around 15”. If they see 0.4 NewPatients on Monday, they might decide not to admit any new patients on Monday – but if they see 0.4 NewPatients on Monday, Tuesday, Wednesday, Thursday, and Friday, then they might decide to admit 2 new patients that week – and they can decide the days, depending on resource availability. In other words, our recommendations will primarily be for when each subservice should open, and general guidelines about the approximate volume of patients to admit on each day, but not for specific patient volumes (which they would have to adjust anyway if their actual demand doesn’t match forecasted demand). 
+
+3.	Treat NewPatients as integer, but modify the Min Demand constraints in some way so that we aren’t preventing a service from being open if the demand is too small to be satisfied with a positive integer value. For example, we could add a threshold such that we only apply the Min Demand constraint when the demand forecast is larger than some number. Or maybe we adjust the RHS of the Min Demand constraint to be the floor of MIN_DEMAND_RATIO * forecasted demand. The advantage of this approach is that we can give them an integer solution. The disadvantage is that it makes the interpretation of MIN_DEMAND_RATIO a bit more confusing, so we would need to make sure they understand how we’re going to apply it. And it might result in underutilization of resources (with corresponding decrease in revenue and margin) if we have a lot of small fractional demand that now becomes zero. 
+
+Thanks!
+Michelle",Natalia,Natalia,Natalia,Natalia,No,No,,2020-05-20 02:08:25,2020-05-20 02:08:25,,,,,0,0
+48,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/48,Detailed utilization output,Open,Please generate OUTPUT_OPT_RESOURCE_USAGE_DETAIL table that would contain the resource utilization per sub_service per resource. Thank you!,Natalia,Natalia,micopp,micopp,No,No,,2020-05-21 01:29:52,2020-05-21 15:37:24,,,,Functionality Stage 1,0,0
+49,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/49,Hold Tests Scenarios,Open,"'@micopp and @supazh, could you please help me generate the following scenario results:
+
+Hold NON_RAPID tests: from 0 to all by 200
+Hold Rapid tests: from 0 by 200
+
+I'd like to see all the combinations (cartesian product outputs).
+
+The output table that would be super useful for me would be:
+Num_Rapid_Held (numeric column), Num_Non_Rapid_Held (numeric column), Facility, Service, Sub_Service, IP, MED_Surg, Revenue, Margin, New Patients
+
+So you could probably post-process OUTPUT_OPT_DETAIL.
+
+Thank you so much!
+Natalia",Natalia,Natalia,micopp,micopp,No,No,,2020-05-21 02:43:26,2020-05-21 19:29:48,,,,,0,0
+50,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/50,Add IP/OP and MED/SURG to OPT_OUPTUT_AGG,Open,Please add the indicator columns to the AGG output. Thank you!,Natalia,Natalia,micopp,micopp,No,No,,2020-05-21 16:39:39,2020-05-21 18:18:38,,,,,0,0
+51,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/51,Output Data Model,Open,"'@supazh, please add output data model to the excel file that has input data model. Please add it in a separate tab. Thanks!",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-21 19:10:51,2020-05-21 22:22:17,,,,,0,0
+52,https://gitlab.sas.com/covid-19/or/medical-resource-optimization/-/issues/52,Allow external forecasts,Open,"Please allow external forecasts to be provided. Let's do a parameter indicating is INPUT_DEMAND_FCST is provided or the forecast macro needs to run. If it is provided, we will need to use it to pre-process in data prep to make sure it aligns with the hierarchy. Thank you!",Natalia,Natalia,Subramanian Pazhani,supazh,No,No,,2020-05-22 01:12:33,2020-05-26 22:25:09,,,,Functionality Stage 1,0,0
