@@ -142,7 +142,8 @@
                                                 remove_covid_constraints
                                                 hold_not_rapid_covid_tests
                                                 hold_rapid_covid_tests
-                                                treat_min_demand_as_aggregate)
+                                                treat_min_demand_as_aggregate
+                                                use_decomp)
         &_worklib.._opt_parameters_hierarchy (drop=start sequence parameter value 
                                                    allow_opening_only_on_phase 
                                                    secondary_objective_tolerance
@@ -152,7 +153,8 @@
                                                    remove_covid_constraints
                                                    hold_not_rapid_covid_tests
                                                    hold_rapid_covid_tests
-                                                   treat_min_demand_as_aggregate);
+                                                   treat_min_demand_as_aggregate
+                                                   use_decomp);
       set &_worklib..input_opt_parameters_pp;
       by scenario_name;
       parm_name = upcase(parm_name);
@@ -166,7 +168,8 @@
              remove_covid_constraints
              hold_not_rapid_covid_tests
              hold_rapid_covid_tests
-             treat_min_demand_as_aggregate;
+             treat_min_demand_as_aggregate
+             use_decomp;
       if first.scenario_name then do;
          /* Set default values for "global" parameters */
          secondary_objective_tolerance = 0.99;
@@ -178,6 +181,7 @@
          hold_not_rapid_covid_tests = 0;
          hold_rapid_covid_tests = 0;
          treat_min_demand_as_aggregate = 0;
+         use_decomp = 0;
       end;
          
       if index(parm_name, 'PHASE_') > 0 then do;
@@ -191,7 +195,7 @@
       else do;
          if parm_name in ('ALLOW_OPENING_ONLY_ON_PHASE','SECONDARY_OBJECTIVE_TOLERANCE','TEST_DAYS_BA','RAPID_TEST_DA',
                           'REMOVE_DEMAND_CONSTRAINTS','REMOVE_COVID_CONSTRAINTS','HOLD_NOT_RAPID_COVID_TESTS','HOLD_RAPID_COVID_TESTS',
-                          'TREAT_MIN_DEMAND_AS_AGGREGATE') then do;
+                          'TREAT_MIN_DEMAND_AS_AGGREGATE','USE_DECOMP') then do;
             if parm_name = 'ALLOW_OPENING_ONLY_ON_PHASE' and parm_value='YES' then allow_opening_only_on_phase = 1;
             else if parm_name = 'SECONDARY_OBJECTIVE_TOLERANCE' then secondary_objective_tolerance = input(parm_value, best.) / 100; 
             else if parm_name = 'TEST_DAYS_BA' then test_days_ba = input(parm_value, best.);
@@ -201,6 +205,7 @@
             else if parm_name = 'HOLD_NOT_RAPID_COVID_TESTS' then hold_not_rapid_covid_tests = input(parm_value, best.);
             else if parm_name = 'HOLD_RAPID_COVID_TESTS' then hold_rapid_covid_tests = input(parm_value, best.);
             else if parm_name = 'TREAT_MIN_DEMAND_AS_AGGREGATE' and parm_value='YES' then treat_min_demand_as_aggregate = 1;
+            else if parm_name = 'USE_DECOMP' and parm_value='YES' then use_decomp = 1;
          end;
          else output &_worklib.._opt_parameters_hierarchy;
       end;
@@ -357,6 +362,7 @@
       num holdNotRapidCovidTests init 0;
       num holdRapidCovidTests init 0;
       num treatMinDemandAsAggregate init 0;
+      num useDecomp init 0;
 
       str scenarioNameCopy;
   
@@ -418,7 +424,8 @@
          removeCovidConstraints = remove_covid_constraints
          holdNotRapidCovidTests = hold_not_rapid_covid_tests
          holdRapidCovidTests = hold_rapid_covid_tests
-         treatMinDemandAsAggregate = treat_min_demand_as_aggregate;
+         treatMinDemandAsAggregate = treat_min_demand_as_aggregate
+         useDecomp = use_decomp;
          
       /* Allowed opening dates */
       read data &_worklib.._opt_allowed_opening_dates into
@@ -443,7 +450,7 @@
             if( (f2=f or f='ALL') and (sl2=sl or sl='ALL') and (ss2=ss or ss='ALL')) then
                emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
          end;
-      end;        
+      end;     
       
       /* ICU max utilization constraints */
       read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='ICU_MAX_UTILIZATION'))
@@ -639,7 +646,12 @@
       fix OpenFlg = 1;
       fix ReschedulePatients = 0;
 
-      solve obj Total_Revenue with milp / maxtime=300 loglevel=3 RELOBJGAP=0.005/* decomp=(method=user) */;
+      if useDecomp = 0 then do;
+         solve obj Total_Revenue with milp / maxtime=300 loglevel=3 RELOBJGAP=0.005;
+      end;
+      else do;
+         solve obj Total_Revenue with milp / maxtime=300 loglevel=3 RELOBJGAP=0.005 decomp=(method=user);
+      end;
       
       /* The maximum demand without covid-19 tests is equal to the number of new patients that we saw, 
          subject to other resource capacity constraints */
@@ -675,7 +687,14 @@
       if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
 
          drop Primary_Objective_Constraint;
-         solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 RELOBJGAP=0.005/* decomp=(method=user) */;
+         
+         if useDecomp = 0 then do;
+            solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 RELOBJGAP=0.005;
+         end;
+         else do;
+            solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 RELOBJGAP=0.005 decomp=(method=user);
+         end;
+         
 
          if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
 
@@ -685,7 +704,12 @@
             primary_objective_value = Total_Revenue.sol;
             restore Primary_Objective_Constraint;
 
-            solve obj Total_Margin with milp / primalin maxtime=300 RELOBJGAP=0.005 loglevel=3;
+            if useDecomp = 0 then do;
+               solve obj Total_Margin with milp / primalin maxtime=300 RELOBJGAP=0.005 loglevel=3;
+            end;
+            else do;
+               solve obj Total_Margin with milp / primalin maxtime=300 RELOBJGAP=0.005 loglevel=3 decomp=(method=user);
+            end;
 
             put Total_Revenue.sol=;
             put Total_Margin.sol=;
