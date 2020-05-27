@@ -615,7 +615,7 @@
       fix OpenFlg = 1;
       fix ReschedulePatients = 0;
 
-      solve obj Total_Revenue with milp / maxtime=300 loglevel=3 RELOBJGAP=0.05/* decomp=(method=user) */;
+      solve obj Total_Revenue with milp / maxtime=300 loglevel=3 RELOBJGAP=0.005/* decomp=(method=user) */;
       
       /* The maximum demand without covid-19 tests is equal to the number of new patients that we saw, 
          subject to other resource capacity constraints */
@@ -650,7 +650,7 @@
       if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
 
          drop Primary_Objective_Constraint;
-         solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 RELOBJGAP=0.05/* decomp=(method=user) */;
+         solve obj Total_Revenue with milp / primalin maxtime=600 loglevel=3 RELOBJGAP=0.005/* decomp=(method=user) */;
 
          if _solution_status_ in {'OPTIMAL', 'OPTIMAL_AGAP', 'OPTIMAL_RGAP', 'OPTIMAL_COND', 'CONDITIONAL_OPTIMAL'} then do;
 
@@ -660,7 +660,7 @@
             primary_objective_value = Total_Revenue.sol;
             restore Primary_Objective_Constraint;
 
-            solve obj Total_Margin with milp / primalin maxtime=300 RELOBJGAP=0.05 loglevel=3;
+            solve obj Total_Margin with milp / primalin maxtime=300 RELOBJGAP=0.005 loglevel=3;
 
             put Total_Revenue.sol=;
             put Total_Margin.sol=;
