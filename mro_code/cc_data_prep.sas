@@ -22,12 +22,14 @@
                    ,fractional_param_list =%str(SECONDARY_OBJECTIVE_TOLERANCE RAPID_TEST_DA MIN_DEMAND_RATIO 
                                             EMER_SURGICAL_PTS_RATIO ICU_MAX_UTILIZATION)
                    ,binary_param_list =%str(REMOVE_DEMAND_CONSTRAINTS REMOVE_COVID_CONSTRAINTS ALLOW_OPENING_ONLY_ON_PHASE ALREADY_OPEN 
-                                            TEST_VISITORS FILTER_SERV_NOT_USING_RESOURCES RUN_INPUT_DEMAND_FCST TREAT_MIN_DEMAND_AS_AGGREGATE)
+                                            TEST_VISITORS FILTER_SERV_NOT_USING_RESOURCES RUN_INPUT_DEMAND_FCST TREAT_MIN_DEMAND_AS_AGGREGATE
+                                            USE_DECOMP)
                    ,non_hier_param_list =%str(TEST_DAYS_BA RAPID_TEST_DA DATE_PHASE_ RAPID_TESTS_PHASE_ NOT_RAPID_TESTS_PHASE_ 
                                               ALLOW_OPENING_ONLY_ON_PHASE SECONDARY_OBJECTIVE_TOLERANCE REMOVE_DEMAND_CONSTRAINTS
                                               REMOVE_COVID_CONSTRAINTS TEST_VISITORS TEST_FREQ_DAYS HOLD_RAPID_COVID_TESTS 
                                               HOLD_NOT_RAPID_COVID_TESTS PLANNING_HORIZON LOS_ROUNDING_THRESHOLD FORECAST_MODEL
-                                              FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE RUN_INPUT_DEMAND_FCST TREAT_MIN_DEMAND_AS_AGGREGATE)
+                                              FILTER_SERV_NOT_USING_RESOURCES OPTIMIZATION_START_DATE RUN_INPUT_DEMAND_FCST TREAT_MIN_DEMAND_AS_AGGREGATE
+                                              USE_DECOMP)
                    ,include_str=%str(1=1)
                    ,exclude_str=%str(0=1)
                    ,output_hierarchy_mismatch=output_dp_hierarchy_mismatch
