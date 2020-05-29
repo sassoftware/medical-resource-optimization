@@ -7,7 +7,7 @@ The model enviroment or the problem environment has medical facilities, services
 Our hierarchy in the model is facility, service line, sub-service, inpatient/outpatient flag, and medical/surgical indicator. All our data parameters, except some global model run parameters, are defined within this hierarchy. 
 
 ## Input files
-The model has 7 input tables and are defined within the hierarchy defenition:
+The model has 7 input tables and are defined within the hierarchy definition:
 1. input_capacity: This table contains the capacity available for resources at each facility, services, and sub-services hierarchy. 'ALL' is used to denote resources shared across multiple sub-services/service lines/facilities. 
 2. input_utilization: This table contains the utilization (or usage) of each resource per patient per day, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. 
 3. input_service_attributes: This table contains the service attributes like average length of stay (in days) of a patient, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. 
@@ -75,15 +75,15 @@ The optimization model can be accessed from this link.
 
 ## Output files
 
-- Output files from *cc_data_prep* are as follows: 
+**Output files from *cc_data_prep* are as follows:**
 OUTPUT_DP_DUPLICATE_ROWS - has details of the duplicate entries in the tables along with hierarchy information. 
 OUTPUT_DP_HIERARCHY_MISMATCH - has details of hierarchy defined in one table and not in others. 
 OUTPUT_DP_RESOURCE_MISMATCH - has details on the mismatch between input_capacity and input_utilization tables. Resource specific data (availability and usage) should be defined in both of these tables in order to be used in the model.
 
-- Output file from *cc_forecast_demand* are as follows: 
+**Output file from *cc_forecast_demand* are as follows:**
 OUTPUT_FD_DEMAND_FCST - forecasted demand for the planning horizon either from the external forecast file or forecasted data from the provided historical demand data. 
 
-- Output file from *cc_optimize* are as follows:
+**Output file from *cc_optimize* are as follows:**
 OUTPUT_OPT_DETAIL - shows the optimization model output such as patients accepted, margin, revenue by scenario, day,and hierarchy.
 OUTPUT_OPT_DETAIL_AGG - shows the weekly aggregated optimization model output such as average daily patients accepted, average daily margin, average daily revenue by scenario, week, and hierarchy.
 OUTPUT_OPT_SUMMARY - shows the reopening plan for the sub-services at each facility and service line. 
