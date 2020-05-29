@@ -1,5 +1,5 @@
 *------------------------------------------------------------------------------*
-| Program: cc_med_res_opt_standalone
+| Program: cc_standalone
 |*--------------------------------------------------------------------------------* ;
 
 /* Start cas session */
@@ -13,6 +13,7 @@ caslib _all_ assign;
 %include "&my_code_path./cc_forecast_demand.sas";
 %include "&my_code_path./cc_optimize.sas";
 
+/*Execute cc_execute macro */
   %cc_execute(
      inlib=cc
      ,outlib=casuser

@@ -1,8 +1,6 @@
 *------------------------------------------------------------------------------*
 | Program: cc_forecast_demand
 |
-| Description: 
-|
 *--------------------------------------------------------------------------------* ;
 %macro cc_forecast_demand(
    inlib=cc
@@ -29,7 +27,6 @@
       %put FATAL: Missing &_worklib..&input_demand., from &sysmacroname.;
       %goto EXIT;
    %end; 
-
 
    /* List work tables */
    %let _work_tables=%str(  
@@ -77,7 +74,7 @@
       %let i = %eval(&i + 1);
       %let table = %scan(&_work_tables, &i, ' ');
    %end;
- 
+
 
    /************************************/
    /************ANALYTICS *************/
@@ -334,7 +331,7 @@
       if nodes;
       if Sumdemand=. then Sumdemand=0;
    run;
-   
+
    /* combine two tables to compute demand proportion */ 
    data &_worklib.._tmp_input_demand_dow;
       merge 

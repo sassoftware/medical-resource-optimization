@@ -1,7 +1,6 @@
 *------------------------------------------------------------------------------*
 | Program: cc_med_res_opt
 |
-| Description: 
 |
 *--------------------------------------------------------------------------------* ;
 %macro cc_optimize(
@@ -114,7 +113,7 @@
    /************************************/
    /************ANALYTICS *************/
    /***********************************/
- 
+
    /* Count the number of distinct scenario names that are not blank. If it's 0, we're going to set the 
       scenario name to Scenario_1 so it doesn't look as strange in the output with a blank scenario name. */
    proc sql noprint;
@@ -122,14 +121,14 @@
       from &_worklib..input_opt_parameters_pp
       where scenario_name ne '';
    quit;
-   
+
    %if &any_nonblank_scenarios = 0 %then %do;
       data &_worklib..input_opt_parameters_pp;
          set &_worklib..input_opt_parameters_pp (drop=scenario_name);
          scenario_name = 'Scenario_1';
       run;
    %end;
- 
+
    /* Divide INPUT_OPT_PARAMETERS_PP into three tables: one for the date-specific phases, one for "global" parameters that don't
       depend on any levels of the hierarchy, and one for the parameters that do depend on levels of the hierarchy */
    data &_worklib.._opt_parameters_date (keep=scenario_name sequence parameter value)
@@ -224,7 +223,7 @@
    data &_worklib.._opt_allowed_opening_dates;
       set &_worklib.._opt_parameters_date (keep=scenario_name date);
    run;
-   
+
    /* Fill in daily capacities of covid tests for the entire planning horizon */
    proc sql noprint;
       select min(predict_date), max(predict_date)
@@ -284,7 +283,7 @@
       end;
       drop _name_ first_date prev_: this_:;
    run;
-   
+
    /* Create a table of distinct scenario names, which is used only to read the scenario name into a string
       and print it to the log, so that we know which scenario each section of the log corresponds to */
    data &_worklib.._opt_distinct_scenarios;
@@ -293,7 +292,7 @@
       scenario_name_copy = scenario_name;
       if first.scenario_name then output;
    run;
-   
+
    proc cas; 
       loadactionset 'optimization'; 
       run; 
@@ -307,7 +306,7 @@
       num startTime;
       num endTime;
       startTime = time();      
-   
+
       /* Master sets read from data */
       set <str,str,str,str,str,str> FAC_SLINE_SSERV_IO_MS_RES;   /* From utilization */ 
       set <str,str,str,str,str,num> FAC_SLINE_SSERV_IO_MS_DAYS;  /* From demand */
@@ -347,12 +346,11 @@
       str icuMaxUtilization{ICU_MAX_UTIL_FACILITIES};
 
       num minDay=min {d in DAYS} d;
-      num maxDay=max {d in DAYS} d;
-      
+
       num totalDailyRapidTests{DAYS};
       num totalDailyNotRapidTests{DAYS};
       num phaseID{DAYS};
-      
+
       num allowOpeningOnlyOnPhase init 0;
       num secondaryObjectiveTolerance init 0.99;
       num testDaysBA init 0;
@@ -365,21 +363,21 @@
       num useDecomp init 0;
 
       str scenarioNameCopy;
-  
+
       /***************/
       /* Read data   */
       /***************/
-      
+
       /* Scenario Names */
       read data &_worklib.._opt_distinct_scenarios
          into scenarioNameCopy = scenario_name_copy;
-        
+
       put '    *********************************************************';
       put '     Scenario = ' scenarioNameCopy;
       put ;
       put '      Start Time: ' startTime time.;
       put ;
-      
+
       /* Demand Forecast*/
       read data &outlib..&input_demand_fcst. (where=(predict_date >= &start_date.)) nogroupby
          into FAC_SLINE_SSERV_IO_MS_DAYS = [facility service_line sub_service ip_op_indicator med_surg_indicator predict_date]
@@ -400,7 +398,7 @@
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
             revenue 
             margin;
-      
+
       /* Service attributes */
       read data &_worklib..input_service_attributes_pp nogroupby
          into [facility service_line sub_service ip_op_indicator med_surg_indicator]
@@ -426,15 +424,15 @@
          holdRapidCovidTests = hold_rapid_covid_tests
          treatMinDemandAsAggregate = treat_min_demand_as_aggregate
          useDecomp = use_decomp;
-         
+
       /* Allowed opening dates */
       read data &_worklib.._opt_allowed_opening_dates into
          ALLOWED_OPENING_DATES = [date];
-         
+
       /* Services that are already open */
       read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='ALREADY_OPEN' and parm_value='YES'))
          into ALREADY_OPEN_SERVICES = [facility service_line sub_service];
-         
+
       /* Min demand ratio constraints */
       read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='MIN_DEMAND_RATIO'))
          into MIN_DEMAND_RATIO_CONSTRAINTS = [facility service_line sub_service]
@@ -451,12 +449,12 @@
                emerSurgRatio[f2,sl2,ss2] = max(emerSurgRatio[f2,sl2,ss2],input(emerSurgRatioip[f,sl,ss],best.)/100);
          end;
       end;     
-      
+
       /* ICU max utilization constraints */
       read data &_worklib.._opt_parameters_hierarchy (where=(parm_name='ICU_MAX_UTILIZATION'))
          into ICU_MAX_UTIL_FACILITIES = [facility]
             icuMaxUtilization = parm_value;
-   
+
       /* Create a set of weeks and assign a week to each day. These will be used for min demand constraints */
       num week{d in DAYS} = week(d);
       set <num> WEEKS = setof{d in DAYS} week[d];
@@ -472,10 +470,10 @@
       /**********************/
       /* Decision Variables */
       /**********************/
-   
+
       /* Decide to open or not a sub service */
       var OpenFlg{FAC_SLINE_SSERV, DAYS} BINARY;
-   
+
       /* Related to how many new patients are actually accepted. Note that we're only going to assign NewPatients on 
          days that have positive demand, and we're only going to assign ReschedulePatients for sub-services that have 
          positive cancellations, so first we create sets to restrict the variable hierarchies. (I'm creating the 
@@ -497,7 +495,6 @@
       /* Constraints */
       /***************/
 
-    
       /* New patients cannot exceed demand if the sub service is open */
       con Maximum_Demand{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_DEMAND : removeDemandConstraints = 0}:
          NewPatients[f,sl,ss,iof,msf,d] <= demand[f,sl,ss,iof,msf,d]*OpenFlg[f,sl,ss,d]
@@ -508,7 +505,7 @@
       con Reschedule_Allowed{<f,sl,ss,iof,msf,d> in VAR_HIERARCHY_POSITIVE_CANCEL : removeDemandConstraints = 0}:
          ReschedulePatients[f,sl,ss,iof,msf,d] <= numCancel[f,sl,ss,iof,msf]*OpenFlg[f,sl,ss,d]
                    suffixes=(block=block_id[f]);
-      
+
       /* The total number of patients rescheduled across all the days cannot exceed the number of 
          cancelled patients. */
       con Reschedule_Maximum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS : numCancel[f,sl,ss,iof,msf] > 0 and removeDemandConstraints = 0}:
