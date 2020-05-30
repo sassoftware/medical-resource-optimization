@@ -1,78 +1,77 @@
 *------------------------------------------------------------------------------*
 | Program: cc_data_prep
 |
-| Description: 
+| Description:
 |
-| Example: include_str=%str(facility in ('Hillcrest','ALL')) 
-| 
+| Example: include_str=%str(facility in ('Hillcrest','ALL'))
+|
 |
 *------------------------------------------------------------------------------*;
 
-%macro cc_data_prep(inlib=cc
-                   ,outlib=cc
-                   ,opt_param_lib=cc
-                   ,input_utilization=input_utilization
-                   ,input_capacity=input_capacity
-                   ,input_financials=input_financials
-                   ,input_service_attributes=input_service_attributes
-                   ,input_demand=input_demand
-                   ,input_demand_forecast=input_demand_forecast
-                   ,input_opt_parameters=input_opt_parameters
-                   ,unique_param_list=%str(PLANNING_HORIZON
-                                           LOS_ROUNDING_THRESHOLD
-                                           FORECAST_MODEL
-                                           FILTER_SERV_NOT_USING_RESOURCES
-                                           OPTIMIZATION_START_DATE
-                                           RUN_INPUT_DEMAND_FCST)
-                   ,fractional_param_list=%str(SECONDARY_OBJECTIVE_TOLERANCE
-                                               RAPID_TEST_DA
-                                               MIN_DEMAND_RATIO
-                                               EMER_SURGICAL_PTS_RATIO
-                                               ICU_MAX_UTILIZATION)
-                   ,binary_param_list=%str(REMOVE_DEMAND_CONSTRAINTS
-                                           REMOVE_COVID_CONSTRAINTS
-                                           ALLOW_OPENING_ONLY_ON_PHASE
-                                           ALREADY_OPEN
-                                           TEST_VISITORS
-                                           FILTER_SERV_NOT_USING_RESOURCES
-                                           RUN_INPUT_DEMAND_FCST
-                                           TREAT_MIN_DEMAND_AS_AGGREGATE
-                                           USE_DECOMP)
-                   ,integer_param_list=%str(PLANNING_HORIZON
-                                            TEST_DAYS_BA
-                                            HOLD_RAPID_COVID_TESTS
-                                            HOLD_NOT_RAPID_COVID_TESTS
-                                            TEST_FREQ_DAYS)
-                   ,non_hier_param_list=%str(TEST_DAYS_BA
-                                             RAPID_TEST_DA
-                                             DATE_PHASE_
-                                             RAPID_TESTS_PHASE_
-                                             NOT_RAPID_TESTS_PHASE_
-                                             ALLOW_OPENING_ONLY_ON_PHASE
-                                             SECONDARY_OBJECTIVE_TOLERANCE
-                                             REMOVE_DEMAND_CONSTRAINTS
-                                             REMOVE_COVID_CONSTRAINTS
-                                             TEST_VISITORS
-                                             TEST_FREQ_DAYS
-                                             HOLD_RAPID_COVID_TESTS
-                                             HOLD_NOT_RAPID_COVID_TESTS
-                                             PLANNING_HORIZON
-                                             LOS_ROUNDING_THRESHOLD
-                                             FORECAST_MODEL
-                                             FILTER_SERV_NOT_USING_RESOURCES
-                                             OPTIMIZATION_START_DATE
-                                             RUN_INPUT_DEMAND_FCST
-                                             TREAT_MIN_DEMAND_AS_AGGREGATE
-                                             USE_DECOMP)
-                   ,include_str=%str(1=1)
-                   ,exclude_str=%str(0=1)
-                   ,output_hierarchy_mismatch=output_dp_hierarchy_mismatch
-                   ,output_resource_mismatch=output_dp_resource_mismatch
-                   ,output_invalid_values=output_dp_invalid_values
-                   ,output_duplicate_rows=output_dp_duplicate_rows
-                   ,_worklib=casuser
-                   ,_debug=1
-                   );
+%macro cc_data_prep(
+         inlib=cc
+         ,outlib=cc
+         ,opt_param_lib=cc
+         ,input_utilization=input_utilization
+         ,input_capacity=input_capacity
+         ,input_financials=input_financials
+         ,input_service_attributes=input_service_attributes
+         ,input_demand=input_demand
+         ,input_demand_forecast=input_demand_forecast
+         ,input_opt_parameters=input_opt_parameters
+         ,unique_param_list=%str(PLANNING_HORIZON
+                                 LOS_ROUNDING_THRESHOLD
+                                 FORECAST_MODEL
+                                 FILTER_SERV_NOT_USING_RESOURCES
+                                 OPTIMIZATION_START_DATE
+                                 RUN_INPUT_DEMAND_FCST)
+         ,fractional_param_list=%str(SECONDARY_OBJECTIVE_TOLERANCE
+                                     RAPID_TEST_DA
+                                     MIN_DEMAND_RATIO
+                                     EMER_SURGICAL_PTS_RATIO
+                                     ICU_MAX_UTILIZATION)
+         ,binary_param_list=%str(REMOVE_DEMAND_CONSTRAINTS
+                                 REMOVE_COVID_CONSTRAINTS
+                                 ALLOW_OPENING_ONLY_ON_PHASE
+                                 ALREADY_OPEN
+                                 TEST_VISITORS
+                                 OPEN_FULLY
+                                 FILTER_SERV_NOT_USING_RESOURCES
+                                 RUN_INPUT_DEMAND_FCST
+                                 TREAT_MIN_DEMAND_AS_AGGREGATE
+                                 USE_DECOMP)
+         ,integer_param_list=%str(PLANNING_HORIZON
+                                  TEST_DAYS_BA
+                                  HOLD_RAPID_COVID_TESTS
+                                  HOLD_NOT_RAPID_COVID_TESTS
+                                  TEST_FREQ_DAYS)
+         ,non_hier_param_list=%str(TEST_DAYS_BA
+                                   RAPID_TEST_DA
+                                   ALLOW_OPENING_ONLY_ON_PHASE
+                                   SECONDARY_OBJECTIVE_TOLERANCE
+                                   REMOVE_DEMAND_CONSTRAINTS
+                                   REMOVE_COVID_CONSTRAINTS
+                                   TEST_VISITORS
+                                   TEST_FREQ_DAYS
+                                   HOLD_RAPID_COVID_TESTS
+                                   HOLD_NOT_RAPID_COVID_TESTS
+                                   PLANNING_HORIZON
+                                   LOS_ROUNDING_THRESHOLD
+                                   FORECAST_MODEL
+                                   FILTER_SERV_NOT_USING_RESOURCES
+                                   OPTIMIZATION_START_DATE
+                                   RUN_INPUT_DEMAND_FCST
+                                   TREAT_MIN_DEMAND_AS_AGGREGATE
+                                   USE_DECOMP)
+         ,include_str=%str(1=1)
+         ,exclude_str=%str(0=1)
+         ,output_hierarchy_mismatch=output_dp_hierarchy_mismatch
+         ,output_resource_mismatch=output_dp_resource_mismatch
+         ,output_invalid_values=output_dp_invalid_values
+         ,output_duplicate_rows=output_dp_duplicate_rows
+         ,_worklib=casuser
+         ,_debug=1
+         );
 
 
    /*************************/
@@ -80,7 +79,7 @@
    /*************************/
 
    /* Do not proceed if previously there have been errors */
-   %if &syscc > 4  %then %do;
+   %if &syscc > 4 %then %do;
       %put FATAL: There have been errors BEFORE this macro is executed, exiting from &sysmacroname.;
       %goto EXIT;
    %end;
@@ -147,59 +146,59 @@
 
    /* List work tables */
    %let _work_tables=%str(
-              &_worklib.._invalid_values_utilization
-              &_worklib.._invalid_values_capacity
-              &_worklib.._invalid_values_financials
-              &_worklib.._invalid_values_service_attrs
-              &_worklib.._invalid_values_demand
-              &_worklib.._invalid_values_opt_parameters
-              &_worklib.._duplicate_rows_utilization
-              &_worklib.._duplicate_rows_capacity
-              &_worklib.._duplicate_rows_financials
-              &_worklib.._duplicate_rows_service_attrs
-              &_worklib.._duplicate_rows_demand
-              &_worklib.._duplicate_rows_opt_parameters
-              &_worklib.._dropped_rows_utilization
-              &_worklib.._dropped_rows_capacity
-              &_worklib.._dropped_rows_financials
-              &_worklib.._dropped_rows_service_attributes
-              &_worklib.._dropped_rows_demand
-              &_worklib.._dropped_rows_opt_parameters
-              &_worklib.._hierarchy_utilization
-              &_worklib.._hierarchy_capacity
-              &_worklib.._hierarchy_financials
-              &_worklib.._hierarchy_service_attributes
-              &_worklib.._hierarchy_demand
-              &_worklib.._hierarchies_not_in_util
-              &_worklib.._master_sets_union
-              &_worklib.._distinct_fac_sl_ss
-              &_worklib.._resources_in_utilization
-              &_worklib.._util_resources_fac_sl_ss_r
-              &_worklib.._util_resources_fac_r
-              &_worklib.._util_resources_sl_r
-              &_worklib.._util_resources_ss_r
-              &_worklib.._util_resources_fac_sl_r
-              &_worklib.._util_resources_fac_ss_r
-              &_worklib.._util_resources_sl_ss_r
-              &_worklib.._util_resources_r
-              &_worklib.._tmp_inval_opt_parameters
-              work._inlib_contents
-              work._inlib_contents_opt_param
-              );
+         &_worklib.._invalid_values_utilization
+         &_worklib.._invalid_values_capacity
+         &_worklib.._invalid_values_financials
+         &_worklib.._invalid_values_service_attrs
+         &_worklib.._invalid_values_demand
+         &_worklib.._invalid_values_opt_parameters
+         &_worklib.._duplicate_rows_utilization
+         &_worklib.._duplicate_rows_capacity
+         &_worklib.._duplicate_rows_financials
+         &_worklib.._duplicate_rows_service_attrs
+         &_worklib.._duplicate_rows_demand
+         &_worklib.._duplicate_rows_opt_parameters
+         &_worklib.._dropped_rows_utilization
+         &_worklib.._dropped_rows_capacity
+         &_worklib.._dropped_rows_financials
+         &_worklib.._dropped_rows_service_attributes
+         &_worklib.._dropped_rows_demand
+         &_worklib.._dropped_rows_opt_parameters
+         &_worklib.._hierarchy_utilization
+         &_worklib.._hierarchy_capacity
+         &_worklib.._hierarchy_financials
+         &_worklib.._hierarchy_service_attributes
+         &_worklib.._hierarchy_demand
+         &_worklib.._hierarchies_not_in_util
+         &_worklib.._master_sets_union
+         &_worklib.._distinct_fac_sl_ss
+         &_worklib.._resources_in_utilization
+         &_worklib.._util_resources_fac_sl_ss_r
+         &_worklib.._util_resources_fac_r
+         &_worklib.._util_resources_sl_r
+         &_worklib.._util_resources_ss_r
+         &_worklib.._util_resources_fac_sl_r
+         &_worklib.._util_resources_fac_ss_r
+         &_worklib.._util_resources_sl_ss_r
+         &_worklib.._util_resources_r
+         &_worklib.._tmp_dup_row_opt_parameters
+         work._inlib_contents
+         work._inlib_contents_opt_param
+         );
 
    /* List output tables */
    %let output_tables=%str(
-             &_worklib..input_utilization_pp
-             &_worklib..input_capacity_pp
-             &_worklib..input_financials_pp
-             &_worklib..input_service_attributes_pp
-             &_worklib..input_demand_pp
-             &_worklib..input_opt_parameters_pp
-             &outlib..&output_hierarchy_mismatch.
-             &outlib..&output_resource_mismatch.
-             &outlib..&output_invalid_values.
-             &outlib..&output_duplicate_rows.
-             );
+         &_worklib..input_utilization_pp
+         &_worklib..input_capacity_pp
+         &_worklib..input_financials_pp
+         &_worklib..input_service_attributes_pp
+         &_worklib..input_demand_pp
+         &_worklib..input_opt_parameters_pp
+         &outlib..&output_hierarchy_mismatch.
+         &outlib..&output_resource_mismatch.
+         &outlib..&output_invalid_values.
+         &outlib..&output_duplicate_rows.
+         );
 
    /*Delete output data if already exists */
    %let i = 1;
@@ -252,11 +251,11 @@
 
       %if &num_distinct_values. > 1 %then %do;
          %put ERROR: The parameter &param. has more than one distinct value in &opt_param_lib..&input_opt_parameters..;
-        /* Do a dummy data step that will force syscc > 4. We know that work.inlib_contents doesn't exist because
-           we've just deleted it in a previous step, so we're going to try to use it to force the error. */
-        data dummy_table;
-           set work._inlib_contents;
-        run;
+         /* Do a dummy data step that will force syscc > 4. We know that work.inlib_contents doesn't exist because
+            we've just deleted it in a previous step, so we're going to try to use it to force the error. */
+         data dummy_table;
+            set work._inlib_contents;
+         run;
       %end;
    %end;
    %if &syscc. > 4 %then %goto EXIT;
@@ -581,6 +580,9 @@
       where upcase(scenario_name) ne 'ALL';
    quit;
 
+   %if %bquote(&scenario_names) = %str() %then %let empty_names = 1;
+   %else %let empty_names = 0;
+
    /* Replace scenario_name = 'ALL' with individual scenario names. I'm doing this in a separate step
       so that we can more easily catch duplicates in the next data step. I'm also upcasing parm_name and
       parm_value in this step so we can use these variables in the BY statement of the next step and
@@ -590,7 +592,7 @@
       parm_name = upcase(parm_name);
       parm_value = upcase(parm_value);
 
-      if upcase(scenario_name) = 'ALL' and %bquote(&scenario_names) ne %str() then do;
+      if upcase(scenario_name) = 'ALL' and (&empty_names = 0) then do;
          %do i = 1 %to %SYSFUNC(countw(%bquote(&scenario_names),','));
             scenario_name = "%scan(%bquote(&scenario_names), &i, ',')";
             output &_worklib..input_opt_parameters_pp;
@@ -599,6 +601,11 @@
       else output &_worklib..input_opt_parameters_pp;
    run;
 
+   /* We're going to treat duplicate rows a bit differently for INPUT_OPT_PARAMETERS than we do for the other tables.
+      In the other tables, the duplicate rows result in only a warning. But if there are duplicate rows in
+      INPUT_OPT_PARAMETERS, we're going to stop with an error. So we only want to output duplicate rows if the
+      PARM_VALUE is different; we don't care if the user specifies multiple identical rows if the parm_value is exactly
+      the same. */
    data &_worklib..input_opt_parameters_pp
         &_worklib.._invalid_values_opt_parameters
         &_worklib.._duplicate_rows_opt_parameters;
@@ -607,67 +614,131 @@
       length sub_service $&len_sub_service;
       length ip_op_indicator $&len_ip_op_indicator;
       length med_surg_indicator $&len_med_surg_indicator;
+      retain first_parm_value;
 
       set &_worklib..input_opt_parameters_pp (where=((&include_str) and not (&exclude_str)));
       by scenario_name facility service_line sub_service ip_op_indicator med_surg_indicator parm_name parm_value;
-      if upcase(facility) = 'ALL' then facility = 'ALL';
-      if upcase(service_line) = 'ALL' then service_line = 'ALL';
-      if upcase(sub_service) = 'ALL' then sub_service = 'ALL';
-      if upcase(ip_op_indicator) = 'ALL' then ip_op_indicator = 'ALL';
-      if upcase(med_surg_indicator) = 'ALL' then med_surg_indicator = 'ALL';
+      if upcase(facility) in ('ALL','') then facility = 'ALL';
+      if upcase(service_line) in ('ALL','') then service_line = 'ALL';
+      if upcase(sub_service) in ('ALL','') then sub_service = 'ALL';
+      if upcase(ip_op_indicator) in ('ALL','') then ip_op_indicator = 'ALL';
+      if upcase(med_surg_indicator) in ('ALL','') then med_surg_indicator = 'ALL';
+
+      /* For binary parameters, convert '0' to 'NO' and '1' to 'YES' */
+      if indexw("&binary_param_list", parm_name) > 0 then do;
+         if parm_value = '0' then parm_value = 'NO';
+         else if parm_value = '1' then parm_value = 'YES';
+      end;
 
       if first.parm_name then do;
+         first_parm_value = parm_value;
+
+         /* Create a numeric version of the parm_value to use in numeric comparisons */
          if anyalpha(parm_value) > 0 or index(parm_value,'/') > 0 then parm_value_num = .;
          else parm_value_num = input(parm_value, best.);
 
-         if facility = '' or service_line = '' or sub_service = '' or parm_name = ''
-            then output &_worklib.._invalid_values_opt_parameters;
-         else if indexw("&fractional_param_list", parm_name) > 0
+         /* Validate fractional params */
+         if indexw("&fractional_param_list", parm_name) > 0
             and not((parm_value = '0') or (1 < parm_value_num <= 100)) then output &_worklib.._invalid_values_opt_parameters;
+
+         /* Validate binary params */
          else if indexw("&binary_param_list", parm_name) > 0
             and parm_value not in ('YES','NO','1','0') then output &_worklib.._invalid_values_opt_parameters;
+
+         /* Validate integer params */
+         else if indexw("&integer_param_list", parm_name) > 0
+            and ((parm_value_num ne floor(parm_value_num)) or (parm_value_num < 0)) then output &_worklib.._invalid_values_opt_parameters;
+         else if parm_name = 'PLANNING_HORIZON' and parm_value_num < 2 then output &_worklib.._invalid_values_opt_parameters;
+
+         /* Check that all the params have recognized names. */
+         else if (indexw("&fractional_param_list", parm_name) = 0) and
+                 (indexw("&binary_param_list", parm_name) = 0) and
+                 (indexw("&integer_param_list", parm_name) = 0) and
+                 (indexw("&unique_param_list", parm_name) = 0) and
+                 (substr(parm_name,1,min(11, length(parm_name))) ne 'DATE_PHASE_') and
+                 (substr(parm_name,1,min(18, length(parm_name))) ne 'RAPID_TESTS_PHASE_') and
+                 (substr(parm_name,1,min(22, length(parm_name))) ne 'NOT_RAPID_TESTS_PHASE_')
+            then output &_worklib.._invalid_values_opt_parameters;
+
          else do;
-            /* Value passes all validation checks so far, now change '0' and '1' to 'NO' and 'YES' for binary parameters */
-            if indexw("&binary_param_list", parm_name) > 0 then do;
-               if parm_value = '0' then parm_value = 'NO';
-               else if parm_value = '1' then parm_value = 'YES';
-            end;
-            output &_worklib..input_opt_parameters_pp;
+            /* Validate the parm values that we haven't checked yet */
+            if parm_name = 'OPTIMIZATION_START_DATE' and parm_value not in ('PHASE_1_DATE','TODAY_PLUS_1','HISTORY_PLUS_1')
+               then output &_worklib.._invalid_values_opt_parameters;
+            else if parm_name = 'FORECAST_MODEL' and parm_value not in ('TSMDL','YOY')
+               then output &_worklib.._invalid_values_opt_parameters;
+            else if parm_name = 'LOS_ROUNDING_THRESHOLD' and not (0 <= parm_value_num <= 1)
+               then output &_worklib.._invalid_values_opt_parameters;
+
+            /* If we make it all the way down here, the parameter name and value are valid, and we output to 
+               the input_opt_parameters_pp table. */
+            else output &_worklib..input_opt_parameters_pp;
          end;
       end;
       /* If there are duplicates, we are keeping the one with the smallest value of parm_value (sorted alphabetically as a
-         character string) because we are sorting by ascending parm_value. */
-      else output &_worklib.._duplicate_rows_opt_parameters;
-      drop parm_value_num;
+         character string) because we are sorting by ascending parm_value. But we're only outputting to _duplicate_rows_opt_parameters
+         if the parm_value is different from the first row. */
+      else do;
+         if parm_value ne first_parm_value then output &_worklib.._duplicate_rows_opt_parameters;
+      end;
+      drop parm_value_num first_parm_value;
    run;
 
    /* Validate for duplicate non-hierarchical parameters defined across different levels of the hierarchy */
    data &_worklib..input_opt_parameters_pp
-        &_worklib.._tmp_inval_opt_parameters;
+        &_worklib.._tmp_dup_row_opt_parameters;
       set &_worklib..input_opt_parameters_pp;
       by scenario_name parm_name parm_value;
-      
-      /* Check if the parm_name is in non_hier_param_list */
-      if index("&non_hier_param_list", parm_name) > 0 then do;
-        if first.parm_name then do;
-          /* Note: If we have more than 9 phases, we will need to adjust this. */
-          parameter = substr(parm_name, 1, length(parm_name)-1);
-          if index(parm_name, 'PHASE_') > 0 AND indexw("&non_hier_param_list",upcase(parameter)) > 0
-                                    then output &_worklib..input_opt_parameters_pp;
-          else output &_worklib..input_opt_parameters_pp;
-        end;
-        else output &_worklib.._tmp_inval_opt_parameters;
+      retain first_parm_value;
+
+      /* Check if the parm_name is in non_hier_param_list, or if it's one of the PHASE parameters */
+      if (indexw("&non_hier_param_list", parm_name) > 0) or
+         (substr(parm_name,1,min(11, length(parm_name))) = 'DATE_PHASE_') or
+         (substr(parm_name,1,min(18, length(parm_name))) = 'RAPID_TESTS_PHASE_') or
+         (substr(parm_name,1,min(22, length(parm_name))) = 'NOT_RAPID_TESTS_PHASE_') then do;
+         if first.parm_name then do;
+            first_parm_value = parm_value;
+            output &_worklib..input_opt_parameters_pp;
+         end;
+         else do;
+            if parm_value ne first_parm_value then output &_worklib.._tmp_dup_row_opt_parameters;
+         end;
       end;
 
+      /* The current parameter is a hierarchical parameter, so we simply output it to input_opt_parameters_pp. */
       else output &_worklib..input_opt_parameters_pp;
-      drop parameter;
+      drop first_parm_value;
    run;
 
    /* Append to the invalid values table */
-   data &_worklib.._invalid_values_opt_parameters;
-      set &_worklib.._invalid_values_opt_parameters 
-          &_worklib.._tmp_inval_opt_parameters;
+   data &_worklib.._duplicate_rows_opt_parameters;
+      set &_worklib.._duplicate_rows_opt_parameters
+          &_worklib.._tmp_dup_row_opt_parameters;
    run;
+
+   /* Stop with an error if there are any invalid or duplicate rows in the input_opt_parameters table */
+   proc sql noprint;
+      select count(*) into :num_invalid_opt_params from &_worklib.._invalid_values_opt_parameters;
+      select count(*) into :num_dup_opt_params from &_worklib.._duplicate_rows_opt_parameters;
+   quit;
+
+   %if &num_invalid_opt_params > 0 %then %do;
+      %put ERROR: There are invalid parameter names and/or values in the &opt_param_lib..&input_opt_parameters table.;
+   %end;
+   %if &num_dup_opt_params > 0 %then %do;
+      %put ERROR: There are duplicate and conflicting parameter values specified in the &opt_param_lib..&input_opt_parameters table.;
+   %end;
+
+   %if &num_invalid_opt_params > 0 or &num_dup_opt_params > 0 %then %do;
+      /* Do a dummy data step that will force syscc > 4. First delete work.inlib_contents and then try to
+         read it in order to force the error. */
+      proc datasets nolist lib=work;
+         delete _inlib_contents;
+      quit;
+
+      data dummy_table;
+         set work._inlib_contents;
+      run;
+   %end;
 
    /* Create &output_invalid_values and &output_duplicate_rows */
    data &outlib..&output_invalid_values;
@@ -685,7 +756,11 @@
       else if in_util then table = 'INPUT_UTILIZATION';
       else if in_cap then table = 'INPUT_CAPACITY';
       else if in_opt then table = 'INPUT_OPT_PARAMETERS';
-      keep table facility service_line sub_service ip_op_indicator med_surg_indicator resource parm_name;
+      keep table facility service_line sub_service ip_op_indicator med_surg_indicator resource
+           %if &num_invalid_opt_params > 0 %then %do;
+              parm_name parm_value
+           %end;
+           ;
    run;
 
    data &outlib..&output_duplicate_rows;
@@ -703,7 +778,11 @@
       else if in_util then table = 'INPUT_UTILIZATION';
       else if in_cap then table = 'INPUT_CAPACITY';
       else if in_opt then table = 'INPUT_OPT_PARAMETERS';
-      keep table facility service_line sub_service ip_op_indicator med_surg_indicator resource parm_name;
+      keep table facility service_line sub_service ip_op_indicator med_surg_indicator resource
+           %if &num_dup_opt_params > 0 %then %do;
+              parm_name parm_value;
+           %end;
+           ;
    run;
 
    proc sql noprint;
@@ -861,8 +940,8 @@
    run;
 
    /* Create a table of resources that are in the utilization table but are not in the
-      capacity table. We start by outputting all the distinct facility / service line /
-      sub-service / resource combinations. */
+      capacity table. We start by finding all distinct <facility,service,subservice,resource>
+      combinations. */
    data &_worklib.._resources_in_utilization;
       set &_worklib..input_utilization_pp (keep=facility service_line sub_service resource);
       by facility service_line sub_service resource;

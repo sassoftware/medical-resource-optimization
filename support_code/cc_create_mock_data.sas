@@ -1,9 +1,9 @@
 *------------------------------------------------------------------------------*
 | Program: cc_create_mock_data
 |
-| Description: 
+| Description:
 |
-*------------------------------------------------------------------------------* ;
+*------------------------------------------------------------------------------*;
 %macro cc_create_mock_data;
 
    libname mock (work);
@@ -11,7 +11,7 @@
    /*
    libname mock "/ordsrv3/OR_CENTER/FILES/Cleveland Clinic/tiny_input";
    */
-   
+
    %let facility_list = H1 H2;
    %let service_lines_list = Orthopedics Cardiology;
 
@@ -78,7 +78,7 @@
       resource = 'Medication';
       capacity = 8000;
       output;
-      
+
       /* Cardiac surgeons - shared across all facilities */
       facility = 'ALL';
       service_line = 'Cardiology';
@@ -96,7 +96,7 @@
          resource = 'Operating_Room';
          capacity = round(4 + 4*rand('UNIFORM'), 1);
          output;
-         
+
          /* Orthopedic Surgeons and Recovery Services - for separate service lines */
          %do j = 1 %to %sysfunc(countw(&service_lines_list,' '));
             service_line = "%scan(&service_lines_list, &j)";
@@ -141,7 +141,7 @@
          resource = 'Operating_Room';
          utilization_mean = min(round(utilization_mean * (1 + (0.2 + 0.4*rand('UNIFORM'))), 0.1),1);
          output;
-         
+
          resource = 'Medication';
          utilization_mean = round(2 + 6*rand('UNIFORM'),1);
          output;
@@ -165,7 +165,7 @@
       set base_table;
       format date date.;
       call streaminit(104);
-      /* Start on a Sunday and end on a Saturday so we get the endpoints 
+      /* Start on a Sunday and end on a Saturday so we get the endpoints
          for forecasting in the right order. */
       do date = '05May2019'd to '25May2019'd;
          if med_surg_indicator = 'SURG' then demand = round(4*rand('UNIFORM'),1);
@@ -177,41 +177,21 @@
    data table mock.input_opt_parameters;
       format facility $8. service_line sub_service $32. ip_op_indicator med_surg_indicator $4.;
       format parm_name $32. parm_value $32. parm_desc $256.;
-       
+
       facility = 'ALL';
       service_line = 'ALL';
       sub_service = 'ALL';
-
       ip_op_indicator = 'ALL';
-      med_surg_indicator = 'SURG';
+      med_surg_indicator = 'ALL';
+
       parm_name = 'TEST_DAYS_BA';
       parm_value = '2';
       parm_desc = 'Number of days before admission for COVID-19 test. Use 0 if not populated.';
       output;
 
-      ip_op_indicator = 'I';
-      med_surg_indicator = 'ALL';
       parm_name = 'RAPID_TEST_DA';
       parm_value = '100';
       parm_desc = 'PCT of patients to be applied rapid-tests on the day of admission.';
-      output;
-
-      ip_op_indicator = 'ALL';
-      med_surg_indicator = 'ALL';
-
-      parm_name = 'TEST_FREQ_DAYS';
-      parm_value = '5';
-      parm_desc = 'How often the patent needs to be tested. Use 0 if not populated.';
-      output;
-
-      parm_name = 'TEST_VISITORS';
-      parm_value = 'YES';
-      parm_desc = 'If the visitors need to be tested too (once). Use NO if not populated.';
-      output;
-
-      parm_name = 'OPEN_FULLY';
-      parm_value = '1';
-      parm_desc = 'Required to open all service_lines/sub_services together (1) or not (0). Use 0 if not populated.';
       output;
 
       parm_name = 'DATE_PHASE_1';
@@ -245,7 +225,7 @@
       output;
 
       parm_name = 'PLANNING_HORIZON';
-      parm_value = '12';
+      parm_value = '4';
       parm_desc = 'Number of weeks to forecast demand and plan re-opening. Use 12 if not populated.';
       output;
    run;

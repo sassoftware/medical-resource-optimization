@@ -3,20 +3,20 @@
 |
 *------------------------------------------------------------------------------*;
 %macro cc_forecast_demand(
-   inlib=cc
-   ,outlib=cc
-   ,input_demand=input_demand_pp
-   ,output_fd_demand_fcst=output_fd_demand_fcst
-   ,_worklib=casuser
-   ,_debug=1
-   );
+         inlib=cc
+         ,outlib=cc
+         ,input_demand=input_demand_pp
+         ,output_fd_demand_fcst=output_fd_demand_fcst
+         ,_worklib=casuser
+         ,_debug=1
+         );
 
    /*************************/
    /******HOUSEKEEPING*******/
    /*************************/
 
    /* Do not proceed if previously there have been errors */
-   %if &syscc > 4  %then %do;
+   %if &syscc > 4 %then %do;
       %put FATAL: There have been errors BEFORE this macro is executed, exiting from &sysmacroname.;
       %goto EXIT;
    %end;
@@ -44,7 +44,7 @@
          &_worklib.._tmp2_input_demand_woy
          &_worklib.._tmp_output_fcst_woy_mas
          &_worklib.._tmp1_output_fcst_woy_mas
-        );
+         );
 
    /* List output tables */
    %let output_tables=%str(

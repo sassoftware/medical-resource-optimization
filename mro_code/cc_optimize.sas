@@ -4,25 +4,25 @@
 |
 *------------------------------------------------------------------------------*;
 %macro cc_optimize(
-    inlib=cc
-   ,outlib=cc
-   ,input_demand_fcst=output_fd_demand_fcst
-   ,output_opt_detail=output_opt_detail
-   ,output_opt_detail_agg=output_opt_detail_agg
-   ,output_opt_summary=output_opt_summary
-   ,output_opt_resource_usage=output_opt_resource_usage
-   ,output_opt_resource_usage_detail=output_opt_resource_usage_detail
-   ,output_opt_covid_test_usage=output_opt_covid_test_usage
-   ,_worklib=casuser
-   ,_debug=0
-   );
+         inlib=cc
+         ,outlib=cc
+         ,input_demand_fcst=output_fd_demand_fcst
+         ,output_opt_detail=output_opt_detail
+         ,output_opt_detail_agg=output_opt_detail_agg
+         ,output_opt_summary=output_opt_summary
+         ,output_opt_resource_usage=output_opt_resource_usage
+         ,output_opt_resource_usage_detail=output_opt_resource_usage_detail
+         ,output_opt_covid_test_usage=output_opt_covid_test_usage
+         ,_worklib=casuser
+         ,_debug=0
+         );
 
    /*************************/
    /******HOUSEKEEPING*******/
    /*************************/
 
    /* Do not proceed if previously there have been errors */
-   %if &syscc > 4  %then %do;
+   %if &syscc > 4 %then %do;
       %put FATAL: There have been errors BEFORE this macro is executed, exiting from &sysmacroname.;
       %goto EXIT;
    %end;
@@ -61,29 +61,29 @@
 
    /* List work tables */
    %let _work_tables=%str( 
-        &_worklib.._opt_parameters_date
-        &_worklib.._opt_parameters_date_1
-        &_worklib.._opt_parameters_global
-        &_worklib.._opt_parameters_hierarchy
-        &_worklib.._opt_allowed_opening_dates
-        &_worklib.._opt_distinct_scenarios
-        &_worklib.._opt_detail
-        &_worklib.._opt_summary
-        &_worklib.._opt_resource_usage
-        &_worklib.._opt_resource_usage_detail
-        &_worklib.._opt_covid_test_usage
-        &_worklib.._opt_detail_week
-        &_worklib.._opt_detail_agg
+         &_worklib.._opt_parameters_date
+         &_worklib.._opt_parameters_date_1
+         &_worklib.._opt_parameters_global
+         &_worklib.._opt_parameters_hierarchy
+         &_worklib.._opt_allowed_opening_dates
+         &_worklib.._opt_distinct_scenarios
+         &_worklib.._opt_detail
+         &_worklib.._opt_summary
+         &_worklib.._opt_resource_usage
+         &_worklib.._opt_resource_usage_detail
+         &_worklib.._opt_covid_test_usage
+         &_worklib.._opt_detail_week
+         &_worklib.._opt_detail_agg
          );
 
    /* List output tables */
    %let output_tables=%str(
-        &outlib..&output_opt_detail
-        &outlib..&output_opt_detail_agg
-        &outlib..&output_opt_summary
-        &outlib..&output_opt_resource_usage
-        &outlib..&output_opt_resource_usage_detail
-        &outlib..&output_opt_covid_test_usage
+         &outlib..&output_opt_detail
+         &outlib..&output_opt_detail_agg
+         &outlib..&output_opt_summary
+         &outlib..&output_opt_resource_usage
+         &outlib..&output_opt_resource_usage_detail
+         &outlib..&output_opt_covid_test_usage
          );
 
    /*Delete output data if already exists */

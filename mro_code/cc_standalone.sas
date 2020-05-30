@@ -34,5 +34,6 @@ caslib _all_ assign;
    ,output_opt_covid_test_usage=output_opt_covid_test_usage
    ,run_dp=1
    ,run_fcst=1
-   ,run_opt=1);
+   ,run_opt=1
+   );
 
