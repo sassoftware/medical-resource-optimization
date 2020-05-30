@@ -1,10 +1,11 @@
 *------------------------------------------------------------------------------*
 | Program: cc_execute
-|*--------------------------------------------------------------------------------* ;
+*------------------------------------------------------------------------------*;
 
 %macro cc_execute(
         inlib=cc
         ,outlib=casuser
+        ,opt_param_lib=cc
         ,_worklib=casuser
         ,input_utilization=input_utilization
         ,input_capacity=input_capacity
@@ -30,6 +31,7 @@
       %cc_data_prep(
           inlib=&inlib.
           ,outlib=&outlib.
+          ,opt_param_lib=&opt_param_lib.
           ,input_utilization=&input_utilization.
           ,input_capacity=&input_capacity.
           ,input_financials=&input_financials.
@@ -40,11 +42,11 @@
           ,exclude_str=%str(facility in ('Florida','CCCHR') or service_line='Evaluation and Management')
           ,_worklib=&_worklib.
           ,_debug=&_debug.);
-   
+
    %end;
 
    %if %sysevalf(&run_fcst.=1) %then %do;
-   
+
       %cc_forecast_demand(
           inlib=&inlib.
           ,outlib=&outlib.
@@ -72,4 +74,4 @@
 
    %end;
 
-%mend;
+%mend cc_execute;
