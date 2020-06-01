@@ -12,10 +12,10 @@ The application considers medical facilities, services lines (such as Orthopedic
 4. Open the *cc_standalone.sas* file from the *mro_code* folder 
    * modify the *my_code_path* variable to path of the folder where you checked-out the code
    * modify the input macro variables in the %cc_execute macro call as following:  
-        MANDATORY:
+        *MANDATORY:*
         - inlib = the name of the library where the input tables will be available. Default value is *cc*. 
-        - outlib = the name of the library where the output tables will be stored. Default value is *casuser*. 
-        OPTIONAL:
+        - outlib = the name of the library where the output tables will be stored. Default value is *casuser*.  
+        *OPTIONAL:*
         - _worklib = the name of the library where the working tables will be stored. Working tables will be automatically deleted at the end of the program execution. Default value is *casuser*.
         - opt_param_lib = the name of the library where the INPUT_OPT_PARAMETERS table will be available. Default value is *cc*. 
         - input_utilization= the name of the table where input_utilization data resides (in inlib). Default value is *input_utilization*.
@@ -126,13 +126,13 @@ The .tex file used to generate the optimization model can be accessed from mro_d
 
 - **cc_execute** : is a macro which executes the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros in sequence.  
 
-- **cc_standalone.sas** : is the file which calls the *cc_execute* macro and passes relevant parameters to run the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros. 
+- **cc_standalone** : is the file which calls the *cc_execute* macro and passes relevant parameters to run the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros. 
 
 ## Support files 
 
 This section will describe the Support files in the *mro_support_code* folder. 
 
-- **cc_create_parms_simple.sas** : is a code to create the input_opt_parameters data. Note that this code does not include all the parameters defined in Table 1. Users can include additional parameters. Note that the parameters has to be added at the *level* in which they are defined.  
+- **cc_create_parms_simple** : is a code to create the input_opt_parameters data. Note that this code does not include all the parameters defined in Table 1. Users can include additional parameters. Note that the parameters has to be added at the *level* in which they are defined.  
 
 - **cc_import_data** : is a code to read the input data files and import them into the inlib folder. In this implementation, the *proc casutil* section of the code reads .csv input files and places them in the inlib folder. However, *proc casutil* section can be modified to read data from SAS data sets or other file formats. 
 The macro variable *data_path* defines the path of the folder where the input files are stored and *inlib* defines the name of the library where input files should be imported. Users should set the *data_path* and *inlib* variables before executing this code. 
