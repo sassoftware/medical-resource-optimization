@@ -771,11 +771,17 @@
          OptMargin=(round(OptMargin[f,sl,ss,iof,msf,d],0.01))
          Demand=(round(demand[f,sl,ss,iof,msf,d],0.01))
          NewPatientsBeforeCovid=(round(newPatientsBeforeCovid[f,sl,ss,iof,msf,d],0.01));
+         
+      num firstDayWithPatients{<f,sl,ss> in FAC_SLINE_SSERV} 
+         = min{<(f),(sl),(ss),iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : TotalPatients[f,sl,ss,iof,msf,d].sol > 0} d;  
+         
+      num OpenFlgSol{<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}
+         = if d < firstDayWithPatients[f,sl,ss] then 0 else (round(OpenFlg[f,sl,ss,d].sol,0.01));
 
       create data &_worklib.._opt_summary
          from [facility service_line sub_service day]={<f,sl,ss> in FAC_SLINE_SSERV, d in DAYS}
          Phase_ID=phaseID[d]
-         OpenFlg=(round(OpenFlg[f,sl,ss,d],0.01));
+         OpenFlg=OpenFlgSol;
 
       num OptResourceUsage{<f,sl,ss,r> in FAC_SLINE_SSERV_RES, d in DAYS} =
          if f ne 'ALL' then Resources_Capacity[f,sl,ss,r,d].body
