@@ -1,4 +1,4 @@
-%let data_path=/ordsrv3/OR_CENTER/FILES/Cleveland Clinic/Customer_Input/05112020;
+%let data_path=<path to input data>; /* Add your data path on this line */
 %let inlib = cc;
 
 cas mysess;
@@ -17,10 +17,6 @@ proc casutil;
    droptable casdata="Input_Service_Attributes" incaslib="&inlib" quiet; run;
    promote casdata="Input_Service_Attributes" outcaslib="&inlib" incaslib="casuser" drop;
 
-   load file="&data_path./Input_Demand.csv" casout="Input_Demand" replace;
-   droptable casdata="Input_Demand" incaslib="&inlib" quiet; run;
-   promote casdata="Input_Demand" outcaslib="&inlib" incaslib="casuser" drop;
-
    load file="&data_path./Input_Financials.csv" casout="Input_Financials" replace;
    droptable casdata="Input_Financials" incaslib="&inlib" quiet; run;
    promote casdata="Input_Financials" outcaslib="&inlib" incaslib="casuser" drop;
@@ -28,21 +24,17 @@ proc casutil;
    load file="&data_path./Input_Capacity.csv" casout="Input_Capacity" replace;
    droptable casdata="Input_Capacity" incaslib="&inlib" quiet; run;
    promote casdata="Input_Capacity" outcaslib="&inlib" incaslib="casuser" drop;
+
+   load file="&data_path./Input_Demand.csv" casout="Input_Demand" replace;
 quit;
 
-/* Fix date - change to work table later and remove the delete */
-%let _worklib = casuser;
-%let input_demand = input_demand;
-
-data &_worklib..&input_demand.;
-   set &inlib..&input_demand. (rename = (date=datechar));
+data casuser.Input_Demand;
+   set casuser.Input_Demand (rename = (date=datechar));
    date=input(datechar,MMDDYY10.);
    drop datechar;
 run;
 
-proc delete data= &inlib..&input_demand.;
-run;
-
-data &inlib..&input_demand. (promote=yes);
-   set &_worklib..&input_demand.;
-run;
+proc casutil;
+   droptable casdata="Input_Demand" incaslib="&inlib" quiet; run;
+   promote casdata="Input_Demand" outcaslib="&inlib" incaslib="casuser" drop;
+quit;

@@ -1,8 +1,34 @@
-*------------------------------------------------------------------------------*
-| Program: cc_med_res_opt
+*--------------------------------------------------------------------------------------------------------------*
+| Program: cc_optimize
 |
+| Description: This macro is the optimization code. It reads the pre-processed input tables from the 
+|              %cc_data_prep and %cc_forecast_demand macros. It then generates the optimization model, solves 
+|              the model, and creates various output tables.
 |
-*------------------------------------------------------------------------------*;
+| INPUTS:
+|   - inlib:              Name of the CAS library where the input tables are located
+|   - input_demand_fcst:  Name of the table that contains the pre-processed input demand forecast table 
+|                         (in outlib) that was created in %cc_forecast_demand. 
+|
+| OUTPUTS:
+|   - outlib:                            Name of the CAS library where the output tables are created
+|   - output_opt_detail:                 Name of the table that stores solution detail records (in outlib)
+|   - output_opt_detail_agg:             Name of the table that stores the weekly aggregated solution 
+|                                        data (in outlib)
+|   - output_opt_summary:                Name of the table that stores recommended reopening plan for 
+|                                        service lines (in outlib)
+|   - output_opt_resource_usage:         Name of the table that stores aggregate utilization of each 
+|                                        constrained resource (in outlib)
+|   - output_opt_resource_usage_detail:  Name of the table that stores utilization of resources at facility/
+|                                        service line/sub-service level (in outlib)
+|   - output_opt_covid_test_usage:       Name of the table that stores daily COVID-19 test usage (in outlib)
+|
+| OTHER PARAMETERS:
+|   - _worklib:  Name of the CAS library where the working tables are created
+|   - _debug:    Flag to indicate whether the temporary tables in _worklib are to be retained for debugging 
+|
+*--------------------------------------------------------------------------------------------------------------*;
+
 %macro cc_optimize(
          inlib=cc
          ,outlib=cc
@@ -342,8 +368,9 @@
       set <str,str,str,str,str> FAC_SLINE_SSERV_IO_MS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f,sl,ss,iof,msf>;
       set <num> DAYS = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <d>;
       set <str> FACILITIES = setof {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS} <f>;
-      set <str> ICU_RESOURCES = setof{<f,sl,ss,r> in FAC_SLINE_SSERV_RES :
-                                      index(upcase(r),'ICU BEDS') > 0 and index(upcase(r),'NICU') = 0 and index(upcase(r),'NEONATAL') = 0} <r>;
+      set <str> ICU_RESOURCES = setof{<f,sl,ss,r> in FAC_SLINE_SSERV_RES : index(upcase(r),'ICU BEDS') > 0 
+                                                                              and index(upcase(r),'NICU') = 0 
+                                                                              and index(upcase(r),'NEONATAL') = 0} <r>;
 
       /*************************************************/
       /* Define inputs                                 */

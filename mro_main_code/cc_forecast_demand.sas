@@ -1,7 +1,31 @@
-*------------------------------------------------------------------------------*
+*--------------------------------------------------------------------------------------------------------------*
 | Program: cc_forecast_demand
 |
-*------------------------------------------------------------------------------*;
+| Description: This macro takes as input either a historical demand table or a forecasted demand table, 
+|              depending on the value of the RUN_INPUT_DEMAND_FCST optimization parameter. If 
+|              RUN_INPUT_DEMAND_FCST=YES, this macro uses the INPUT_DEMAND table to create forecasted demand 
+|              for the defined planning horizon. If RUN_INPUT_DEMAND_FCST=NO, this macro simply subsets 
+|              the input forecast demand table to the defined planning horizon.
+|
+| INPUTS:
+|   - inlib:         Name of the CAS library where the input tables are located
+|   - input_demand:  Name of the table that contains the pre-processed input demand table (in _worklib) that 
+|                    was created from %cc_data_prep. This table contains either historical demand or 
+|                    forecasted demand, depending on the value of the RUN_INPUT_DEMAND_FCST optimization 
+|                    parameter. 
+|
+| OUTPUTS:
+|   - outlib:                 Name of the CAS library where the output tables are created
+|   - output_fd_demand_fcst:  Name of the table that stores the forecasted demand for the planning horizon 
+|                             either from the external forecast table or forecasted data from the provided
+|                             historical demand data (in outlib)
+|
+| OTHER PARAMETERS:
+|   - _worklib:  Name of the CAS library where the working tables are created
+|   - _debug:    Flag to indicate whether the temporary tables in _worklib are to be retained for debugging 
+|
+*--------------------------------------------------------------------------------------------------------------*;
+
 %macro cc_forecast_demand(
          inlib=cc
          ,outlib=cc

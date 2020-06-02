@@ -1,5 +1,8 @@
 *------------------------------------------------------------------------------*
 | Program: cc_standalone
+|
+| Description: This program calls the main %cc_execute macro. See cc_execute 
+|              for descriptions of the parameters. 
 |*-----------------------------------------------------------------------------*;
 
 /* Start cas session */
@@ -7,7 +10,7 @@ cas mysess;
 caslib _all_ assign;
 
 /* Point to the code */
-%let my_code_path=/r/sanyo.unx.sas.com/vol/vol920/u92/navikt/casuser/covid/code/MRO/git/mro_code;
+%let my_code_path=<path to mro_main_code directory>; /* Add your code path here */
 %include "&my_code_path./cc_execute.sas";
 %include "&my_code_path./cc_data_prep.sas";
 %include "&my_code_path./cc_forecast_demand.sas";

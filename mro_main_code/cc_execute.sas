@@ -1,6 +1,44 @@
-*------------------------------------------------------------------------------*
+*--------------------------------------------------------------------------------------------------------------*
 | Program: cc_execute
-*------------------------------------------------------------------------------*;
+|
+| Description: This macro calls the %cc_data_prep, %cc_forecast_demand, and 
+|              %cc_optimize macros in sequence.
+| 
+| INPUTS:
+|   - inlib:                     Name of the CAS library where the input tables are located
+|   - opt_param_lib:             Name of the CAS library where the INPUT_OPT_PARAMETERS table 
+|                                is located
+|   - input_utilization:         Name of the table that contains resource utilization data (in inlib)
+|   - input_capacity:            Name of the table that contains resource capacity data (in inlib)
+|   - input_financials:          Name of the table that contains revenue and margin data (in inlib)
+|   - input_service_attributes:  Name of the table that contains length-of-stay and 
+|                                cancellation data (in inlib)
+|   - input_demand:              Name of the table that contains historical demand data (in inlib)
+|   - input_demand_forecast:     Name of the table that contains forecasted demand data (in inlib)
+|   - input_opt_parameters:      Name of the table that contains the optimization 
+|                                parameters (in opt_param_lib)
+|
+| OUTPUTS:
+|   - outlib:                            Name of the CAS library where the output tables are created
+|   - output_opt_detail:                 Name of the table that stores solution detail records (in outlib)
+|   - output_opt_detail_agg:             Name of the table that stores the weekly aggregated solution 
+|                                        data (in outlib)
+|   - output_opt_summary:                Name of the table that stores recommended reopening plan for 
+|                                        service lines (in outlib)
+|   - output_opt_resource_usage:         Name of the table that stores aggregate utilization of each 
+|                                        constrained resource (in outlib)
+|   - output_opt_resource_usage_detail:  Name of the table that stores utilization of resources at facility/
+|                                        service line/sub-service level (in outlib)
+|   - output_opt_covid_test_usage:       Name of the table that stores daily COVID-19 test usage (in outlib)
+|
+| OTHER PARAMETERS:
+|   - _worklib:  Name of the CAS library where the working tables are created
+|   - run_dp:    Flag to indicate whether cc_data_prep is to be run
+|   - run_fcst:  Flag to indicate whether cc_forecast_demand is to be run
+|   - run_opt:   Flag to indicate whether cc_optimize is to be run
+|   - _debug:    Flag to indicate whether the temporary tables in _worklib are to be retained for debugging
+|
+*--------------------------------------------------------------------------------------------------------------*;
 
 %macro cc_execute(
          inlib=cc
@@ -40,7 +78,6 @@
          ,input_demand=&input_demand.
          ,input_demand_forecast=&input_demand_forecast
          ,input_opt_parameters=&input_opt_parameters.
-         ,exclude_str=%str(facility in ('Florida','CCCHR') or service_line='Evaluation and Management')
          ,_worklib=&_worklib.
          ,_debug=&_debug.
          );

@@ -1,12 +1,50 @@
-*------------------------------------------------------------------------------*
+*--------------------------------------------------------------------------------------------------------------*
 | Program: cc_data_prep
 |
-| Description:
+| Description: This macro pre-processes the data files to clean invalid entries and duplicate entries.  
 |
-| Example: include_str=%str(facility in ('Hillcrest','ALL'))
+| INPUTS:
+|   - inlib:                     Name of the CAS library where the input tables are located
+|   - opt_param_lib:             Name of the CAS library where the INPUT_OPT_PARAMETERS table 
+|                                is located
+|   - input_utilization:         Name of the table that contains resource utilization data (in inlib)
+|   - input_capacity:            Name of the table that contains resource capacity data (in inlib)
+|   - input_financials:          Name of the table that contains revenue and margin data (in inlib)
+|   - input_service_attributes:  Name of the table that contains length-of-stay and 
+|                                cancellation data (in inlib)
+|   - input_demand:              Name of the table that contains historical demand data (in inlib)
+|   - input_demand_forecast:     Name of the table that contains forecasted demand data (in inlib)
+|   - input_opt_parameters:      Name of the table that contains the optimization 
+|                                parameters (in opt_param_lib)
 |
+| OUTPUTS:
+|   - outlib:                     Name of the CAS library where the output tables are created
+|   - output_hierarchy_mismatch:  Name of the table that stores hierarchies that are defined in some input 
+|                                 tables but not others (in outlib)
+|   - output_resource_mismatch:   Name of the table that stores resources that are defined in INPUT_CAPACITY
+|                                 but not INPUT_UTILIZATION, or vice versa (in outlib)
+|   - output_invalid_values:      Name of the table that stores information about invalid data values
+|                                 in the input tables (in outlib)
+|   - output_duplicate_rows:      Name of the table that stores information about duplicate rows in the
+|                                 input tables (in outlib)
 |
-*------------------------------------------------------------------------------*;
+| OTHER PARAMETERS:
+|   - _worklib:               Name of the CAS library where the working tables are created
+|   - unique_param_list:      List of optimization parameters that must be the same for all scenarios
+|   - fractional_param_list:  List of optimization parameters that are defined as a percent value
+|   - binary_param_list:      List of optimization parameters that take YES/NO values
+|   - integer_param_list:     List of optimization parameters that must be defined as integer values
+|   - non_hier_param_list:    List of optimization parameters that do not depend on levels of the hierarchy
+|   - include_str:            Parameter that can be used to filter all the input data tables to include only 
+|                             specified rows. 
+|                                Example: include_str = %str(facility in ('fac1','fac','ALL'))
+|   - exclude_str:            Parameter that can be used to filter all the input data tables to exclude 
+|                             specified rows. 
+|                                Example: exclude_str = %str(service_line = 'ABC')
+|   - _debug:                 Flag to indicate whether the temporary tables in _worklib are to be retained 
+|                             for debugging
+|
+*--------------------------------------------------------------------------------------------------------------*;
 
 %macro cc_data_prep(
          inlib=cc
