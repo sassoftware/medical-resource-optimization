@@ -10,7 +10,7 @@ The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* 
 ## Steps to execute the code
 
 1. Create a global CASlib called COVID
-2. Place input data (defined below) to the COVID CASlib. Use the *cc_import_data* code in the *mro_support_code* folder to import the input data files. Refer to the **Support files** section for additional instructions. Note that the *mro_sample_data* folder has sample input data files for testing.
+2. Place input data (defined below) to the COVID CASlib. Use the *cc_import_data* code in the *mro_support_code* folder to import the input data files into COVID CASlib. Refer to the **Support files** section for additional instructions. Note that the *mro_sample_data* folder has sample input data files for testing.
 3. Checkout master branch of this code into a location accessible from SAS Studio. 
 4. Open the *cc_standalone.sas* file from the *mro_code* folder 
    * modify the *my_code_path* variable to path of the folder where you checked-out the code
