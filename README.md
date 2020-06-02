@@ -150,7 +150,12 @@ This section will describe the Documentation files in the *mro_documentation* fo
 
 - **mro_or_data_model.xlsx** : describes the data model for both input data tables and output data tables. 
 
+##  Related projects: COVID-19 Epidemiological Scenario Analysis
+
+An interesting open colloboration project between SAS and Cleveland Clinic can be found in: *https://github.com/sassoftware/covid-19-sas/tree/master/CCF*. This project demonstrates the usage of infectious disease models (SIR & SEIR) to analyze different scenarios and predict useful metrics like number of hospitalizations/day. 
+
 ## References
 
 **Core Team**: Michelle Opp, Subramanian Pazhani, Natalia Summerville  
 **Support**:
+
