@@ -4,10 +4,13 @@
 The main goal of this application is to generate an optimum hospital restarting plan, balance hospital economics, efficient use of resources and quality of clinical care.
 The application considers medical facilities, services lines (such as Orthopedics) and sub-services (such as Sports Injuries and Joint). Patients are further classified as inpatient/outpatient and medical/surgical. The sub-services are currently closed due to the COVID-19 pandemic. Admitting all the backlog patients is not feasible due to shared resource constraints, like COVID-19 test kits, ventilators, shared beds, operating rooms, etc. Given the forecasted demand and resource availability, the objective is to recommend an optimal reopening plan deciding which subservices to open and when. The model uses two objectives, maximize revenue and maximize margin. Other objectives like maximizing number of patients serviced, weighted by service criticality will be considered as future extensions.  
 
+## Software requirements
+The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* installations. 
+
 ## Steps to execute the code
 
 1. Create a global CASlib called COVID
-2. Place input data (defined below) to the COVID CASlib. 
+2. Place input data (defined below) to the COVID CASlib. Use the *cc_import_data* code in the *mro_support_code* folder to import the input data files. Refer to the **Support files** section for additional instructions. Note that the *mro_sample_data* folder has sample input data files for testing.
 3. Checkout master branch of this code into a location accessible from SAS Studio. 
 4. Open the *cc_standalone.sas* file from the *mro_code* folder 
    * modify the *my_code_path* variable to path of the folder where you checked-out the code
@@ -135,7 +138,7 @@ This section will describe the Support files in the *mro_support_code* folder.
 - **cc_create_parms_simple** : is a code to create the input_opt_parameters data. Note that this code does not include all the parameters defined in Table 1. Users can include additional parameters. Note that the parameters has to be added at the *level* in which they are defined.  
 
 - **cc_import_data** : is a code to read the input data files and import them into the inlib folder. In this implementation, the *proc casutil* section of the code reads .csv input files and places them in the inlib folder. However, *proc casutil* section can be modified to read data from SAS data sets or other file formats. 
-The macro variable *data_path* defines the path of the folder where the input files are stored and *inlib* defines the name of the library where input files should be imported. Users should set the *data_path* and *inlib* variables before executing this code. 
+The macro variable *data_path* defines the path of the folder where the input files are stored and *inlib* defines the name of the library where input files should be imported. Users should set the *data_path* and *inlib* variables before executing this code. *mro_sample_data* folder has sample input data files for testing.
 
 ## Documentation files
 
