@@ -1,67 +1,38 @@
-facility,service_line,sub_service,ip_op_indicator,med_surg_indicator,num_cancelled,length_stay_mean
-facility1,Cardiac Services,Cardiac Cath,I,SURG,0,3
-facility1,Cardiac Services,Cardiac EP,I,SURG,0,6
-facility1,Cardiac Services,Cardiac Surgery,I,SURG,0,9
-facility1,Cardiac Services,Medical Cardiology,I,MED,0,4
-facility1,Cardiology,Cardiac Cath,O,MED,0,1
-facility1,Cardiology,Cardiac Cath,O,SURG,0,1
-facility1,Cardiology,Electrophysiology,O,MED,0,1
-facility1,Cardiology,Medical Cardiology,O,MED,0,1
-facility1,Gynecology,Artificial Insemination/In Vitro Fertilization,O,MED,0,1
-facility1,Gynecology,Biopsy - Gynecology,O,MED,0,1
-facility1,Gynecology,Biopsy - Gynecology,O,SURG,0,1
-facility1,Gynecology,General Gynecology Procedures,O,MED,0,1
-facility1,Gynecology,General Gynecology Procedures,O,SURG,0,1
-facility1,Gynecology,General Surgical Gynecology,I,SURG,0,2
-facility1,Gynecology,Gyn Surgical Oncology,I,SURG,0,3
-facility1,Gynecology,Gynecological Exams,O,SURG,0,1
-facility1,Gynecology,Hysterectomy,O,MED,0,1
-facility1,Gynecology,Hysterectomy,O,SURG,0,1
-facility1,Gynecology,Medical Gynecology,I,MED,0,3
-facility1,Gynecology,Uterine Fibroid Procedures,O,SURG,0,1
-facility1,Gynecology,Women's Reproductive Health Procedures,O,MED,0,1
-facility1,Gynecology,Women's Reproductive Health Procedures,O,SURG,0,1
-facility1,Oncology,Chemotherapy,O,MED,0,1
-facility1,Oncology,Chemotherapy,O,SURG,0,1
-facility1,Oncology,Radiation Therapy,O,MED,0,1
-facility1,Oncology,Radiation Therapy,O,SURG,0,1
-facility1,Pulmonology,Bronchoscopy,O,MED,0,1
-facility1,Pulmonology,Bronchoscopy,O,SURG,0,1
-facility1,Pulmonology,Pulmonary Function/Diagnostic Testing,O,MED,0,1
-facility1,Pulmonology,Respiratory Rehabilitation/Assistance,O,MED,0,1
-facility2,Cardiac Services,Cardiac Cath,I,SURG,1,4
-facility2,Cardiac Services,Cardiac EP,I,SURG,1,9
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,1,12
-facility2,Cardiac Services,Medical Cardiology,I,MED,0,6
-facility2,Cardiology,Cardiac Cath,O,MED,0,1
-facility2,Cardiology,Cardiac Cath,O,SURG,1,1
-facility2,Cardiology,Electrophysiology,O,MED,0,1
-facility2,Cardiology,Electrophysiology,O,SURG,1,1
-facility2,Cardiology,Medical Cardiology,O,MED,0,1
-facility2,Cardiology,Medical Cardiology,O,SURG,2,1
-facility2,Gynecology,Artificial Insemination/In Vitro Fertilization,O,MED,0,1
-facility2,Gynecology,Biopsy - Gynecology,O,MED,0,1
-facility2,Gynecology,Biopsy - Gynecology,O,SURG,1,1
-facility2,Gynecology,General Gynecology Procedures,O,MED,0,1
-facility2,Gynecology,General Gynecology Procedures,O,SURG,1,1
-facility2,Gynecology,General Surgical Gynecology,I,SURG,3,4
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,0,5
-facility2,Gynecology,Gynecological Exams,O,MED,0,1
-facility2,Gynecology,Gynecological Exams,O,SURG,11,1
-facility2,Gynecology,Hysterectomy,O,MED,0,1
-facility2,Gynecology,Hysterectomy,O,SURG,1,1
-facility2,Gynecology,Medical Gynecology,I,MED,0,4
-facility2,Gynecology,Uterine Fibroid Procedures,O,MED,0,1
-facility2,Gynecology,Uterine Fibroid Procedures,O,SURG,2,1
-facility2,Gynecology,Women's Reproductive Health Procedures,O,MED,0,1
-facility2,Gynecology,Women's Reproductive Health Procedures,O,SURG,1,1
-facility2,Oncology,Adoptive Cell Transfer,O,MED,0,1
-facility2,Oncology,Chemotherapy,O,MED,0,1
-facility2,Oncology,Chemotherapy,O,SURG,6,1
-facility2,Oncology,Radiation Therapy,O,MED,0,1
-facility2,Oncology,Radiation Therapy,O,SURG,4,1
-facility2,Pulmonology,Bronchoscopy,O,MED,0,1
-facility2,Pulmonology,Bronchoscopy,O,SURG,2,1
-facility2,Pulmonology,Pulmonary Function/Diagnostic Testing,O,MED,0,1
-facility2,Pulmonology,Respiratory Rehabilitation/Assistance,O,MED,0,1
-facility2,Pulmonology,Respiratory Rehabilitation/Assistance,O,SURG,0,1
+facility,service_line,sub_service,ip_op_indicator,med_surg_indicator,num_cancelled,length_stay_mean,length_stay_var,num_caregivers_mean,num_caregivers_var,min_pct_reschedule,max_pct_reschedule
+facility1,Cardiac Services,Cardiac Cath,I,SURG,0,3,11.12,0,0,0,0
+facility1,Cardiac Services,Cardiac EP,I,SURG,0,6,23.15,0,0,0,0
+facility1,Cardiac Services,Cardiac Surgery,I,SURG,0,9,22.73,0,0,0,0
+facility1,Cardiac Services,Medical Cardiology,I,MED,0,4,14.12,0,0,0,0
+facility1,Cardiology,Cardiac Cath,O,SURG,0,1,0,0,0,0,0
+facility1,Gynecology,Biopsy - Gynecology,O,SURG,0,1,0,0,0,0,0
+facility1,Gynecology,General Gynecology Procedures,O,SURG,0,1,0,0,0,0,0
+facility1,Gynecology,General Surgical Gynecology,I,SURG,0,2,10.2,0,0,0,0
+facility1,Gynecology,Gyn Surgical Oncology,I,SURG,0,3,6.68,0,0,0,0
+facility1,Gynecology,Gynecological Exams,O,SURG,0,1,0,0,0,0,0
+facility1,Gynecology,Hysterectomy,O,SURG,0,1,0,0,0,0,0
+facility1,Gynecology,Medical Gynecology,I,MED,0,3,3.6,0,0,0,0
+facility1,Gynecology,Uterine Fibroid Procedures,O,SURG,0,1,0,0,0,0,0
+facility1,Gynecology,Women's Reproductive Health Procedures,O,SURG,0,1,0,0,0,0,0
+facility1,Oncology,Chemotherapy,O,SURG,0,1,0,0,0,0,0
+facility1,Oncology,Radiation Therapy,O,SURG,0,1,0,0,0,0,0
+facility1,Pulmonology,Bronchoscopy,O,SURG,0,1,0,0,0,0,0
+facility2,Cardiac Services,Cardiac Cath,I,SURG,0,4,26.47,0,0,0,0
+facility2,Cardiac Services,Cardiac EP,I,SURG,0,9,66.26,0,0,0,0
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,0,12,212.83,0,0,0,0
+facility2,Cardiac Services,Medical Cardiology,I,MED,0,6,36.11,0,0,0,0
+facility2,Cardiology,Cardiac Cath,O,SURG,0,1,0,0,0,0,0
+facility2,Cardiology,Electrophysiology,O,SURG,0,1,0,0,0,0,0
+facility2,Cardiology,Medical Cardiology,O,SURG,0,1,0,0,0,0,0
+facility2,Gynecology,Biopsy - Gynecology,O,SURG,0,1,0,0,0,0,0
+facility2,Gynecology,General Gynecology Procedures,O,SURG,0,1,0,0,0,0,0
+facility2,Gynecology,General Surgical Gynecology,I,SURG,0,4,16.36,0,0,0,0
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,0,5,13.74,0,0,0,0
+facility2,Gynecology,Gynecological Exams,O,SURG,0,1,0,0,0,0,0
+facility2,Gynecology,Hysterectomy,O,SURG,0,1,0,0,0,0,0
+facility2,Gynecology,Medical Gynecology,I,MED,0,4,14.16,0,0,0,0
+facility2,Gynecology,Uterine Fibroid Procedures,O,SURG,0,1,0,0,0,0,0
+facility2,Gynecology,Women's Reproductive Health Procedures,O,SURG,0,1,0,0,0,0,0
+facility2,Oncology,Chemotherapy,O,SURG,0,1,0,0,0,0,0
+facility2,Oncology,Radiation Therapy,O,SURG,0,1,0,0,0,0,0
+facility2,Pulmonology,Bronchoscopy,O,SURG,0,1,0,0,0,0,0
+facility2,Pulmonology,Respiratory Rehabilitation/Assistance,O,SURG,0,1,0,0,0,0,0

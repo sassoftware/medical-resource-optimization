@@ -1,67 +1,38 @@
 facility,service_line,sub_service,ip_op_indicator,med_surg_indicator,revenue,margin
-facility1,Cardiac Services,Cardiac Cath,I,SURG,56429.1,20942.04
-facility1,Cardiac Services,Cardiac EP,I,SURG,42560.88,24596.86
-facility1,Cardiac Services,Cardiac Surgery,I,SURG,75385.38,33011.7
-facility1,Cardiac Services,Medical Cardiology,I,MED,18179.54,4823.84
-facility1,Cardiology,Cardiac Cath,O,MED,14481.77,6572.77
-facility1,Cardiology,Cardiac Cath,O,SURG,13163.73,3677.57
-facility1,Cardiology,Electrophysiology,O,MED,6697.65,5405.91
-facility1,Cardiology,Medical Cardiology,O,MED,1025.19,607.23
-facility1,Gynecology,Artificial Insemination/In Vitro Fertilization,O,MED,500,100
-facility1,Gynecology,Biopsy - Gynecology,O,MED,645.45,100
-facility1,Gynecology,Biopsy - Gynecology,O,SURG,5739.9,6031.36
-facility1,Gynecology,General Gynecology Procedures,O,MED,751.08,750.72
-facility1,Gynecology,General Gynecology Procedures,O,SURG,7249.78,2563.47
-facility1,Gynecology,General Surgical Gynecology,I,SURG,15488.22,22420.13
-facility1,Gynecology,Gyn Surgical Oncology,I,SURG,48709.71,19108.01
-facility1,Gynecology,Gynecological Exams,O,SURG,9017.3,2240.12
-facility1,Gynecology,Hysterectomy,O,MED,500,100
-facility1,Gynecology,Hysterectomy,O,SURG,47310.21,15323.3
-facility1,Gynecology,Medical Gynecology,I,MED,10274.17,6021.66
-facility1,Gynecology,Uterine Fibroid Procedures,O,SURG,10398.66,5195.35
-facility1,Gynecology,Women's Reproductive Health Procedures,O,MED,8395.53,6361.82
-facility1,Gynecology,Women's Reproductive Health Procedures,O,SURG,9101.74,3772.71
-facility1,Oncology,Chemotherapy,O,MED,14407.84,3198.77
-facility1,Oncology,Chemotherapy,O,SURG,5426.81,992.38
-facility1,Oncology,Radiation Therapy,O,MED,3481.85,1648.19
-facility1,Oncology,Radiation Therapy,O,SURG,15631.75,7931.66
-facility1,Pulmonology,Bronchoscopy,O,MED,4477.94,3107.78
-facility1,Pulmonology,Bronchoscopy,O,SURG,4857.93,4773.69
-facility1,Pulmonology,Pulmonary Function/Diagnostic Testing,O,MED,957.29,442.07
-facility1,Pulmonology,Respiratory Rehabilitation/Assistance,O,MED,1190.71,609.04
-facility2,Cardiac Services,Cardiac Cath,I,SURG,63150.14,22162.39
-facility2,Cardiac Services,Cardiac EP,I,SURG,86438.06,31517.31
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,126345.7,65923.71
-facility2,Cardiac Services,Medical Cardiology,I,MED,19639.9,15277.23
-facility2,Cardiology,Cardiac Cath,O,MED,10821.93,3930.55
-facility2,Cardiology,Cardiac Cath,O,SURG,56616.4,1000
-facility2,Cardiology,Electrophysiology,O,MED,3034.08,973.65
-facility2,Cardiology,Electrophysiology,O,SURG,60526.24,15175.76
-facility2,Cardiology,Medical Cardiology,O,MED,847.39,555.59
-facility2,Cardiology,Medical Cardiology,O,SURG,28524.49,13230.37
-facility2,Gynecology,Artificial Insemination/In Vitro Fertilization,O,MED,1375.77,345.31
-facility2,Gynecology,Biopsy - Gynecology,O,MED,969.08,595.06
-facility2,Gynecology,Biopsy - Gynecology,O,SURG,8618.63,6360.83
-facility2,Gynecology,General Gynecology Procedures,O,MED,6934.92,1836.96
-facility2,Gynecology,General Gynecology Procedures,O,SURG,7162.73,5410.01
-facility2,Gynecology,General Surgical Gynecology,I,SURG,59801.88,23334.36
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,33435.88,20841.41
-facility2,Gynecology,Gynecological Exams,O,MED,500,389.9
-facility2,Gynecology,Gynecological Exams,O,SURG,7484.57,5408.42
-facility2,Gynecology,Hysterectomy,O,MED,8568.55,5647.26
-facility2,Gynecology,Hysterectomy,O,SURG,36528,12752.4
-facility2,Gynecology,Medical Gynecology,I,MED,13306.67,3999.65
-facility2,Gynecology,Uterine Fibroid Procedures,O,MED,10614.32,7106.5
-facility2,Gynecology,Uterine Fibroid Procedures,O,SURG,35998.14,16510.14
-facility2,Gynecology,Women's Reproductive Health Procedures,O,MED,8840.55,918.14
-facility2,Gynecology,Women's Reproductive Health Procedures,O,SURG,54461.81,18597.92
-facility2,Oncology,Adoptive Cell Transfer,O,MED,10908.65,5136.08
-facility2,Oncology,Chemotherapy,O,MED,18251.19,8450.81
-facility2,Oncology,Chemotherapy,O,SURG,41168.12,9220.02
-facility2,Oncology,Radiation Therapy,O,MED,8096.93,2476.87
-facility2,Oncology,Radiation Therapy,O,SURG,30065.91,19259.42
-facility2,Pulmonology,Bronchoscopy,O,MED,14977.81,2456.6
-facility2,Pulmonology,Bronchoscopy,O,SURG,11619.11,6320.4
-facility2,Pulmonology,Pulmonary Function/Diagnostic Testing,O,MED,870.48,340.97
-facility2,Pulmonology,Respiratory Rehabilitation/Assistance,O,MED,1400.63,607.38
-facility2,Pulmonology,Respiratory Rehabilitation/Assistance,O,SURG,19548.03,21980.33
+facility1,Cardiac Services,Cardiac Cath,I,SURG,21668.55,10742.97
+facility1,Cardiac Services,Cardiac EP,I,SURG,29227.21,18631.52
+facility1,Cardiac Services,Cardiac Surgery,I,SURG,50151.22,37993.31
+facility1,Cardiac Services,Medical Cardiology,I,MED,10184.98,4567.48
+facility1,Cardiology,Cardiac Cath,O,SURG,6993.79,1307.6
+facility1,Gynecology,Biopsy - Gynecology,O,SURG,3112.61,1805.37
+facility1,Gynecology,General Gynecology Procedures,O,SURG,5024.1,2411.26
+facility1,Gynecology,General Surgical Gynecology,I,SURG,16434.71,7875.12
+facility1,Gynecology,Gyn Surgical Oncology,I,SURG,24758.17,10916.91
+facility1,Gynecology,Gynecological Exams,O,SURG,2062.61,1372.57
+facility1,Gynecology,Hysterectomy,O,SURG,11072.56,5435.14
+facility1,Gynecology,Medical Gynecology,I,MED,4441.47,2249.66
+facility1,Gynecology,Uterine Fibroid Procedures,O,SURG,6084.08,2941.82
+facility1,Gynecology,Women's Reproductive Health Procedures,O,SURG,5725.2,3786.33
+facility1,Oncology,Chemotherapy,O,SURG,1483.94,416.93
+facility1,Oncology,Radiation Therapy,O,SURG,8131.36,3201.07
+facility1,Pulmonology,Bronchoscopy,O,SURG,3644.79,874.55
+facility2,Cardiac Services,Cardiac Cath,I,SURG,32173.57,9791.1
+facility2,Cardiac Services,Cardiac EP,I,SURG,55859.77,25878.12
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,123335.32,64148.76
+facility2,Cardiac Services,Medical Cardiology,I,MED,16067.01,3629.9
+facility2,Cardiology,Cardiac Cath,O,SURG,12220.55,-34785.26
+facility2,Cardiology,Electrophysiology,O,SURG,22081.89,8048.38
+facility2,Cardiology,Medical Cardiology,O,SURG,20165.4,12132.47
+facility2,Gynecology,Biopsy - Gynecology,O,SURG,5739.26,2338.32
+facility2,Gynecology,General Gynecology Procedures,O,SURG,8120.01,3529.38
+facility2,Gynecology,General Surgical Gynecology,I,SURG,18376.49,10111.27
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,26827.67,12451.33
+facility2,Gynecology,Gynecological Exams,O,SURG,3008.33,1137.81
+facility2,Gynecology,Hysterectomy,O,SURG,19077.31,8354.03
+facility2,Gynecology,Medical Gynecology,I,MED,10744.9,1976.44
+facility2,Gynecology,Uterine Fibroid Procedures,O,SURG,11384.46,4569.09
+facility2,Gynecology,Women's Reproductive Health Procedures,O,SURG,10398.74,5297
+facility2,Oncology,Chemotherapy,O,SURG,15414.2,7411.62
+facility2,Oncology,Radiation Therapy,O,SURG,14365.88,8188.31
+facility2,Pulmonology,Bronchoscopy,O,SURG,6236.68,3182.76
+facility2,Pulmonology,Respiratory Rehabilitation/Assistance,O,SURG,21963.5,15607.93

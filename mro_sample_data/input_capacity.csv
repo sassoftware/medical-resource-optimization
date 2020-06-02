@@ -1,40 +1,36 @@
-facility,service_line,sub_service,resource,capacity
-ALL,ALL,ALL,Ventilators,633
-facility1,ALL,ALL,Behavioral Health Beds,147
-facility1,ALL,ALL,ICU Beds,88
-facility1,ALL,ALL,Nursery Beds,136
-facility1,ALL,ALL,Obstetrics Beds,44
-facility1,ALL,ALL,Operating Rooms,114
-facility1,ALL,ALL,Routine Beds,360
-facility2,ALL,ALL,Bariatric Beds,119
-facility2,ALL,ALL,Cardiac Short Stay Beds,85
-facility2,ALL,ALL,Cardiac Transplant Beds,99
-facility2,ALL,ALL,Cardiac VIP Beds,111
-facility2,ALL,ALL,Cardiology Stepdown Beds,134
-facility2,ALL,ALL,Cardiovascular Surgery ICU Beds,251
-facility2,ALL,ALL,Cardiovascular Surgery Stepdown Beds,144
-facility2,ALL,ALL,Colorectal Surgery Beds,32
-facility2,ALL,ALL,Coronary ICU Beds,44
-facility2,ALL,ALL,ED Observation Beds,74
-facility2,ALL,ALL,Heart Failure ICU Beds,124
-facility2,ALL,ALL,Hemonc/Cancer Beds,144
-facility2,ALL,ALL,Medical ICU Beds,174
-facility2,ALL,ALL,Medicine Beds,205
-facility2,ALL,ALL,Neonatal ICU Beds,123
-facility2,ALL,ALL,Neuro ICU Beds,52
-facility2,ALL,ALL,Neuro MedSurg Beds,37
-facility2,ALL,ALL,OB Beds,36
-facility2,ALL,ALL,OBGYN Beds,6
-facility2,ALL,ALL,Operating Rooms,479
-facility2,ALL,ALL,Ortho Beds,50
-facility2,ALL,ALL,PACU Beds,69
-facility2,ALL,ALL,Pediatric Intensive Care Unit Beds,45
-facility2,ALL,ALL,Pediatric Intermediate Care Beds,82
-facility2,ALL,ALL,Short Stay Beds,95
-facility2,ALL,ALL,Surgery ICU Beds,147
-facility2,ALL,ALL,Surgical Telemetry Beds,137
-facility2,ALL,ALL,Thoracic Surgery Stepdown Beds,127
-facility2,ALL,ALL,Transplant Beds,96
-facility2,ALL,ALL,Urology Beds,66
-facility2,ALL,ALL,Vascular Surgery ICU Beds,111
-facility2,ALL,ALL,Vascular Surgery Stepdown Beds,95
+facility,service_line,sub_service,resource,Capacity
+ALL,ALL,ALL,Ventilators,25
+facility1,ALL,ALL,ICU Beds,15
+facility1,ALL,ALL,Obstetrics Beds,5
+facility1,ALL,ALL,Operating Rooms,12
+facility1,ALL,ALL,Routine Beds,50
+facility2,ALL,ALL,Bariatric Beds,2
+facility2,ALL,ALL,Cardiac Short Stay Beds,8
+facility2,ALL,ALL,Cardiac Transplant Beds,8
+facility2,ALL,ALL,Cardiac VIP Beds,8
+facility2,ALL,ALL,Cardiology Stepdown Beds,14
+facility2,ALL,ALL,Cardiovascular Surgery ICU Beds,19
+facility2,ALL,ALL,Cardiovascular Surgery Stepdown Beds,20
+facility2,ALL,ALL,Colorectal Surgery Beds,8
+facility2,ALL,ALL,Coronary ICU Beds,6
+facility2,ALL,ALL,ED Observation Beds,3
+facility2,ALL,ALL,Heart Failure ICU Beds,2
+facility2,ALL,ALL,Hemonc/Cancer Beds,8
+facility2,ALL,ALL,Medical ICU Beds,8
+facility2,ALL,ALL,Medicine Beds,12
+facility2,ALL,ALL,Neonatal ICU Beds,4
+facility2,ALL,ALL,Neuro ICU Beds,6
+facility2,ALL,ALL,Neuro MedSurg Beds,22
+facility2,ALL,ALL,OBGYN Beds,3
+facility2,ALL,ALL,Operating Rooms,48
+facility2,ALL,ALL,Ortho Beds,7
+facility2,ALL,ALL,Pediatric Intensive Care Unit Beds,6
+facility2,ALL,ALL,Pediatric Intermediate Care Beds,3
+facility2,ALL,ALL,Short Stay Beds,5
+facility2,ALL,ALL,Surgery ICU Beds,5
+facility2,ALL,ALL,Surgical Telemetry Beds,7
+facility2,ALL,ALL,Thoracic Surgery Stepdown Beds,5
+facility2,ALL,ALL,Transplant Beds,6
+facility2,ALL,ALL,Urology Beds,8
+facility2,ALL,ALL,Vascular Surgery ICU Beds,3
+facility2,ALL,ALL,Vascular Surgery Stepdown Beds,6

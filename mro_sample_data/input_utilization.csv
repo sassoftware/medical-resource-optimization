@@ -1,205 +1,197 @@
-facility,service_line,sub_service,ip_op_indicator,med_surg_indicator,resource,utilization_mean
-facility1,Cardiac Services,Cardiac Cath,I,SURG,ICU Beds,0.958
-facility1,Cardiac Services,Cardiac Cath,I,SURG,Operating Rooms,0.439
-facility1,Cardiac Services,Cardiac Cath,I,SURG,Routine Beds,0.4
-facility1,Cardiac Services,Cardiac Cath,I,SURG,Ventilators,0.263
-facility1,Cardiac Services,Cardiac EP,I,SURG,ICU Beds,0.549
-facility1,Cardiac Services,Cardiac EP,I,SURG,Routine Beds,1
-facility1,Cardiac Services,Cardiac EP,I,SURG,Ventilators,0.356
-facility1,Cardiac Services,Cardiac Surgery,I,SURG,ICU Beds,0.733
-facility1,Cardiac Services,Cardiac Surgery,I,SURG,Operating Rooms,1
-facility1,Cardiac Services,Cardiac Surgery,I,SURG,Routine Beds,0.76
-facility1,Cardiac Services,Cardiac Surgery,I,SURG,Ventilators,0.773
-facility1,Cardiac Services,Medical Cardiology,I,MED,ICU Beds,0.193
-facility1,Cardiac Services,Medical Cardiology,I,MED,Operating Rooms,0.552
-facility1,Cardiac Services,Medical Cardiology,I,MED,Routine Beds,1
-facility1,Cardiac Services,Medical Cardiology,I,MED,Ventilators,0.113
-facility1,Gynecology,Biopsy - Gynecology,O,SURG,Operating Rooms,0.442
-facility1,Gynecology,General Gynecology Procedures,O,SURG,Operating Rooms,0.747
-facility1,Gynecology,General Surgical Gynecology,I,SURG,ICU Beds,0.622
-facility1,Gynecology,General Surgical Gynecology,I,SURG,Obstetrics Beds,0.103
-facility1,Gynecology,General Surgical Gynecology,I,SURG,Operating Rooms,0.447
-facility1,Gynecology,General Surgical Gynecology,I,SURG,Routine Beds,0.523
-facility1,Gynecology,General Surgical Gynecology,I,SURG,Ventilators,0.458
-facility1,Gynecology,Gyn Surgical Oncology,I,SURG,ICU Beds,0.04
-facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Obstetrics Beds,0.334
-facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Operating Rooms,1
-facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Routine Beds,0.757
-facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Ventilators,0.507
-facility1,Gynecology,Gynecological Exams,O,SURG,Operating Rooms,0.338
-facility1,Gynecology,Hysterectomy,O,SURG,Operating Rooms,0.497
-facility1,Gynecology,Medical Gynecology,I,MED,Obstetrics Beds,0.073
-facility1,Gynecology,Medical Gynecology,I,MED,Routine Beds,0.191
-facility1,Gynecology,Uterine Fibroid Procedures,O,SURG,Operating Rooms,0.228
-facility1,Gynecology,Women's Reproductive Health Procedures,O,SURG,Operating Rooms,0.785
-facility1,Oncology,Radiation Therapy,O,SURG,Operating Rooms,0.641
-facility1,Pulmonology,Bronchoscopy,O,SURG,Operating Rooms,0.217
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiac Short Stay Beds,0.52
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiac Transplant Beds,0.422
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiac VIP Beds,0.166
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiology Stepdown Beds,0.814
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiovascular Surgery ICU Beds,0.164
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiovascular Surgery Stepdown Beds,0.556
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Colorectal Surgery Beds,0.348
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Coronary ICU Beds,0.591
-facility2,Cardiac Services,Cardiac Cath,I,SURG,ED Observation Beds,0.344
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Heart Failure ICU Beds,0.444
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Medical ICU Beds,0.39
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Medicine Beds,0.368
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Neuro ICU Beds,0.722
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Neuro MedSurg Beds,0.101
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Operating Rooms,0.366
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Ortho Beds,0.204
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Pediatric Beds,0.363
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Pediatric Intensive Care Unit Beds,0.553
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Surgery ICU Beds,0.175
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Thoracic Surgery Stepdown Beds,0.505
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Transplant Beds,0.175
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Urology Beds,0.45
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Vascular Surgery ICU Beds,0.021
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Vascular Surgery Stepdown Beds,0.477
-facility2,Cardiac Services,Cardiac Cath,I,SURG,Ventilators,0.547
-facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiac Short Stay Beds,0.226
-facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiac Transplant Beds,0.156
-facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiac VIP Beds,0.673
-facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiology Stepdown Beds,0.524
-facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiovascular Surgery ICU Beds,0.123
-facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiovascular Surgery Stepdown Beds,0.557
-facility2,Cardiac Services,Cardiac EP,I,SURG,Coronary ICU Beds,0.514
-facility2,Cardiac Services,Cardiac EP,I,SURG,ED Observation Beds,0.478
-facility2,Cardiac Services,Cardiac EP,I,SURG,Heart Failure ICU Beds,0.518
-facility2,Cardiac Services,Cardiac EP,I,SURG,Hemonc/Cancer Beds,0.425
-facility2,Cardiac Services,Cardiac EP,I,SURG,Medical ICU Beds,0.587
-facility2,Cardiac Services,Cardiac EP,I,SURG,Medicine Beds,0.341
-facility2,Cardiac Services,Cardiac EP,I,SURG,Neuro ICU Beds,0.211
-facility2,Cardiac Services,Cardiac EP,I,SURG,Neuro MedSurg Beds,0.407
-facility2,Cardiac Services,Cardiac EP,I,SURG,Operating Rooms,1
-facility2,Cardiac Services,Cardiac EP,I,SURG,Pediatric Beds,0.237
-facility2,Cardiac Services,Cardiac EP,I,SURG,Pediatric Intensive Care Unit Beds,0.089
-facility2,Cardiac Services,Cardiac EP,I,SURG,Pediatric Neuro Beds,0.515
-facility2,Cardiac Services,Cardiac EP,I,SURG,Surgery ICU Beds,0.315
-facility2,Cardiac Services,Cardiac EP,I,SURG,Surgical Telemetry Beds,0.184
-facility2,Cardiac Services,Cardiac EP,I,SURG,Thoracic Surgery Stepdown Beds,0.608
-facility2,Cardiac Services,Cardiac EP,I,SURG,Transplant Beds,0.002
-facility2,Cardiac Services,Cardiac EP,I,SURG,Urology Beds,0.418
-facility2,Cardiac Services,Cardiac EP,I,SURG,Vascular Surgery ICU Beds,0.04
-facility2,Cardiac Services,Cardiac EP,I,SURG,Vascular Surgery Stepdown Beds,0.02
-facility2,Cardiac Services,Cardiac EP,I,SURG,Ventilators,0.168
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiac Short Stay Beds,0.217
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiac Transplant Beds,0.011
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiac VIP Beds,0.641
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiology Stepdown Beds,0.524
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiovascular Surgery ICU Beds,0.745
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiovascular Surgery Stepdown Beds,1
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Colorectal Surgery Beds,0.517
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Coronary ICU Beds,0.053
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,ED Observation Beds,0.485
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Heart Failure ICU Beds,0.474
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Hemonc/Cancer Beds,0.345
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Medical ICU Beds,0.578
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Medicine Beds,0.088
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Neonatal ICU Beds,0.483
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Neuro ICU Beds,0.271
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Neuro MedSurg Beds,0.092
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Operating Rooms,1
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Pediatric Beds,0.371
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Pediatric Intensive Care Unit Beds,0.37
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Pediatric Intermediate Care Beds,0.282
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Surgery ICU Beds,0.298
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Thoracic Surgery Stepdown Beds,0.361
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Vascular Surgery ICU Beds,0.241
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Vascular Surgery Stepdown Beds,0.682
-facility2,Cardiac Services,Cardiac Surgery,I,SURG,Ventilators,0.173
-facility2,Cardiac Services,Medical Cardiology,I,MED,Bariatric Beds,0.076
-facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiac Short Stay Beds,0.075
-facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiac Transplant Beds,0.37
-facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiac VIP Beds,0.165
-facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiology Stepdown Beds,0.792
-facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiovascular Surgery ICU Beds,0.411
-facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiovascular Surgery Stepdown Beds,0.384
-facility2,Cardiac Services,Medical Cardiology,I,MED,Colorectal Surgery Beds,0.449
-facility2,Cardiac Services,Medical Cardiology,I,MED,Coronary ICU Beds,0.738
-facility2,Cardiac Services,Medical Cardiology,I,MED,ED Observation Beds,0.15
-facility2,Cardiac Services,Medical Cardiology,I,MED,Heart Failure ICU Beds,0.109
-facility2,Cardiac Services,Medical Cardiology,I,MED,Hemonc/Cancer Beds,0.479
-facility2,Cardiac Services,Medical Cardiology,I,MED,Medical ICU Beds,0.27
-facility2,Cardiac Services,Medical Cardiology,I,MED,Medicine Beds,0.851
-facility2,Cardiac Services,Medical Cardiology,I,MED,Neonatal ICU Beds,0.289
-facility2,Cardiac Services,Medical Cardiology,I,MED,Neuro ICU Beds,0.552
-facility2,Cardiac Services,Medical Cardiology,I,MED,Neuro MedSurg Beds,0.378
-facility2,Cardiac Services,Medical Cardiology,I,MED,OBGYN Beds,0.542
-facility2,Cardiac Services,Medical Cardiology,I,MED,Operating Rooms,0.494
-facility2,Cardiac Services,Medical Cardiology,I,MED,Ortho Beds,0.128
-facility2,Cardiac Services,Medical Cardiology,I,MED,Pediatric Beds,0.237
-facility2,Cardiac Services,Medical Cardiology,I,MED,Pediatric Intensive Care Unit Beds,0.295
-facility2,Cardiac Services,Medical Cardiology,I,MED,Pediatric Intermediate Care Beds,0.37
-facility2,Cardiac Services,Medical Cardiology,I,MED,Pediatric Neuro Beds,0.286
-facility2,Cardiac Services,Medical Cardiology,I,MED,Short Stay Beds,0.392
-facility2,Cardiac Services,Medical Cardiology,I,MED,Surgery ICU Beds,0.53
-facility2,Cardiac Services,Medical Cardiology,I,MED,Surgical Telemetry Beds,0.594
-facility2,Cardiac Services,Medical Cardiology,I,MED,Thoracic Surgery Stepdown Beds,0.098
-facility2,Cardiac Services,Medical Cardiology,I,MED,Transplant Beds,0.672
-facility2,Cardiac Services,Medical Cardiology,I,MED,Urology Beds,0.581
-facility2,Cardiac Services,Medical Cardiology,I,MED,Vascular Surgery ICU Beds,0.548
-facility2,Cardiac Services,Medical Cardiology,I,MED,Vascular Surgery Stepdown Beds,0.535
-facility2,Cardiac Services,Medical Cardiology,I,MED,Ventilators,0.734
-facility2,Cardiology,Electrophysiology,O,SURG,Operating Rooms,1
-facility2,Cardiology,Medical Cardiology,O,SURG,Operating Rooms,0.502
-facility2,Gynecology,Biopsy - Gynecology,O,SURG,Operating Rooms,0.136
-facility2,Gynecology,General Gynecology Procedures,O,SURG,Operating Rooms,0.698
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Bariatric Beds,0.15
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Cardiac VIP Beds,0.19
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Cardiovascular Surgery ICU Beds,0.484
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Cardiovascular Surgery Stepdown Beds,0.787
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Colorectal Surgery Beds,0.192
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Hemonc/Cancer Beds,0.33
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Medical ICU Beds,0.584
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Medicine Beds,0.322
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Neonatal ICU Beds,0.377
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Neuro ICU Beds,0.711
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Neuro MedSurg Beds,0.578
-facility2,Gynecology,General Surgical Gynecology,I,SURG,OBGYN Beds,0.371
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Operating Rooms,0.775
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Ortho Beds,0.39
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Pediatric Beds,0.031
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Pediatric Intensive Care Unit Beds,0.204
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Pediatric Intermediate Care Beds,0.414
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Short Stay Beds,0.227
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Surgery ICU Beds,0.325
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Surgical Telemetry Beds,0.574
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Transplant Beds,0.064
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Urology Beds,0.491
-facility2,Gynecology,General Surgical Gynecology,I,SURG,Ventilators,0.663
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Cardiac Transplant Beds,0.199
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Colorectal Surgery Beds,0.516
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Medical ICU Beds,0.063
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Medicine Beds,0.42
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,OBGYN Beds,0.95
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Operating Rooms,1
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Short Stay Beds,0.08
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Surgery ICU Beds,0.315
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Surgical Telemetry Beds,0.227
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Transplant Beds,0.028
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Urology Beds,0.194
-facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Ventilators,0.621
-facility2,Gynecology,Gynecological Exams,O,SURG,Operating Rooms,0.509
-facility2,Gynecology,Hysterectomy,O,SURG,Operating Rooms,0.992
-facility2,Gynecology,Medical Gynecology,I,MED,Bariatric Beds,0.779
-facility2,Gynecology,Medical Gynecology,I,MED,Colorectal Surgery Beds,0.535
-facility2,Gynecology,Medical Gynecology,I,MED,Hemonc/Cancer Beds,0.171
-facility2,Gynecology,Medical Gynecology,I,MED,Medical ICU Beds,0.386
-facility2,Gynecology,Medical Gynecology,I,MED,Medicine Beds,0.574
-facility2,Gynecology,Medical Gynecology,I,MED,Neonatal ICU Beds,0.692
-facility2,Gynecology,Medical Gynecology,I,MED,OBGYN Beds,0.265
-facility2,Gynecology,Medical Gynecology,I,MED,Operating Rooms,0.681
-facility2,Gynecology,Medical Gynecology,I,MED,Ortho Beds,0.211
-facility2,Gynecology,Medical Gynecology,I,MED,Pediatric Beds,0.106
-facility2,Gynecology,Medical Gynecology,I,MED,Pediatric Intensive Care Unit Beds,0.4
-facility2,Gynecology,Medical Gynecology,I,MED,Pediatric Intermediate Care Beds,0.518
-facility2,Gynecology,Medical Gynecology,I,MED,Surgical Telemetry Beds,0.204
-facility2,Gynecology,Medical Gynecology,I,MED,Transplant Beds,0.124
-facility2,Gynecology,Medical Gynecology,I,MED,Urology Beds,0.592
-facility2,Gynecology,Uterine Fibroid Procedures,O,SURG,Operating Rooms,0.738
-facility2,Gynecology,Women's Reproductive Health Procedures,O,SURG,Operating Rooms,0.29
-facility2,Oncology,Chemotherapy,O,SURG,Operating Rooms,0.688
-facility2,Pulmonology,Bronchoscopy,O,SURG,Operating Rooms,0.75
+facility,service_line,sub_service,ip_op_indicator,med_surg_indicator,resource,utilization_max,utilization_mean,utilization_min
+facility1,Cardiac Services,Cardiac Cath,I,SURG,ICU Beds,,0.492,
+facility1,Cardiac Services,Cardiac Cath,I,SURG,Operating Rooms,,0.598,
+facility1,Cardiac Services,Cardiac Cath,I,SURG,Routine Beds,,0.291,
+facility1,Cardiac Services,Cardiac Cath,I,SURG,Ventilators,,0.05,
+facility1,Cardiac Services,Cardiac EP,I,SURG,ICU Beds,,0.439,
+facility1,Cardiac Services,Cardiac EP,I,SURG,Routine Beds,,0.526,
+facility1,Cardiac Services,Cardiac EP,I,SURG,Ventilators,,0.035,
+facility1,Cardiac Services,Cardiac Surgery,I,SURG,ICU Beds,,0.487,
+facility1,Cardiac Services,Cardiac Surgery,I,SURG,Operating Rooms,,0.844,
+facility1,Cardiac Services,Cardiac Surgery,I,SURG,Routine Beds,,0.44,
+facility1,Cardiac Services,Cardiac Surgery,I,SURG,Ventilators,,0.156,
+facility1,Cardiac Services,Medical Cardiology,I,MED,ICU Beds,,0.162,
+facility1,Cardiac Services,Medical Cardiology,I,MED,Operating Rooms,,0.203,
+facility1,Cardiac Services,Medical Cardiology,I,MED,Routine Beds,,0.713,
+facility1,Cardiac Services,Medical Cardiology,I,MED,Ventilators,,0.021,
+facility1,Gynecology,Biopsy - Gynecology,O,SURG,Operating Rooms,,0.116,
+facility1,Gynecology,General Gynecology Procedures,O,SURG,Operating Rooms,,0.179,
+facility1,Gynecology,General Surgical Gynecology,I,SURG,ICU Beds,,0.01,
+facility1,Gynecology,General Surgical Gynecology,I,SURG,Obstetrics Beds,,0.002,
+facility1,Gynecology,General Surgical Gynecology,I,SURG,Operating Rooms,,0.483,
+facility1,Gynecology,General Surgical Gynecology,I,SURG,Routine Beds,,0.388,
+facility1,Gynecology,General Surgical Gynecology,I,SURG,Ventilators,,0.004,
+facility1,Gynecology,Gyn Surgical Oncology,I,SURG,ICU Beds,,0.023,
+facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Obstetrics Beds,,0.003,
+facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Operating Rooms,,0.729,
+facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Routine Beds,,0.088,
+facility1,Gynecology,Gyn Surgical Oncology,I,SURG,Ventilators,,0.005,
+facility1,Gynecology,Gynecological Exams,O,SURG,Operating Rooms,,0.149,
+facility1,Gynecology,Hysterectomy,O,SURG,Operating Rooms,,0.51,
+facility1,Gynecology,Medical Gynecology,I,MED,Obstetrics Beds,,0.005,
+facility1,Gynecology,Medical Gynecology,I,MED,Routine Beds,,0.188,
+facility1,Gynecology,Uterine Fibroid Procedures,O,SURG,Operating Rooms,,0.244,
+facility1,Gynecology,Women's Reproductive Health Procedures,O,SURG,Operating Rooms,,0.236,
+facility1,Oncology,Radiation Therapy,O,SURG,Operating Rooms,,0.357,
+facility1,Pulmonology,Bronchoscopy,O,SURG,Operating Rooms,,0.187,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiac Short Stay Beds,,0.135,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiac Transplant Beds,,0.012,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiac VIP Beds,,0.012,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiology Stepdown Beds,,0.466,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiovascular Surgery ICU Beds,,0.017,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Cardiovascular Surgery Stepdown Beds,,0.111,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Colorectal Surgery Beds,,0,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Coronary ICU Beds,,0.088,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,ED Observation Beds,,0,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Heart Failure ICU Beds,,0.001,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Medical ICU Beds,,0.003,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Medicine Beds,,0.011,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Neuro ICU Beds,,0.002,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Neuro MedSurg Beds,,0.001,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Operating Rooms,,0.501,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Ortho Beds,,0,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Pediatric Intensive Care Unit Beds,,0.001,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Surgery ICU Beds,,0.001,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Thoracic Surgery Stepdown Beds,,0.019,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Transplant Beds,,0.002,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Urology Beds,,0.001,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Vascular Surgery ICU Beds,,0.001,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Vascular Surgery Stepdown Beds,,0.018,
+facility2,Cardiac Services,Cardiac Cath,I,SURG,Ventilators,,0.024,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiac Short Stay Beds,,0.001,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiac Transplant Beds,,0.011,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiac VIP Beds,,0.037,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiology Stepdown Beds,,0.29,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiovascular Surgery ICU Beds,,0.026,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Cardiovascular Surgery Stepdown Beds,,0.288,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Coronary ICU Beds,,0.103,
+facility2,Cardiac Services,Cardiac EP,I,SURG,ED Observation Beds,,0.001,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Heart Failure ICU Beds,,0.017,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Hemonc/Cancer Beds,,0,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Medical ICU Beds,,0.019,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Medicine Beds,,0.034,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Neuro ICU Beds,,0.001,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Neuro MedSurg Beds,,0,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Operating Rooms,,0.601,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Pediatric Intensive Care Unit Beds,,0.003,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Surgery ICU Beds,,0.002,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Surgical Telemetry Beds,,0.001,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Thoracic Surgery Stepdown Beds,,0.045,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Transplant Beds,,0.002,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Urology Beds,,0.005,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Vascular Surgery ICU Beds,,0.003,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Vascular Surgery Stepdown Beds,,0.05,
+facility2,Cardiac Services,Cardiac EP,I,SURG,Ventilators,,0.03,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiac Short Stay Beds,,0.003,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiac Transplant Beds,,0.013,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiac VIP Beds,,0.008,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiology Stepdown Beds,,0.082,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiovascular Surgery ICU Beds,,0.249,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Cardiovascular Surgery Stepdown Beds,,0.456,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Colorectal Surgery Beds,,0.001,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Coronary ICU Beds,,0.029,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,ED Observation Beds,,0,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Heart Failure ICU Beds,,0.036,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Hemonc/Cancer Beds,,0,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Medical ICU Beds,,0.001,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Medicine Beds,,0.002,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Neonatal ICU Beds,,0,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Neuro ICU Beds,,0,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Neuro MedSurg Beds,,0,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Operating Rooms,,0.977,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Pediatric Intensive Care Unit Beds,,0.016,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Pediatric Intermediate Care Beds,,0,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Surgery ICU Beds,,0,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Thoracic Surgery Stepdown Beds,,0.013,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Vascular Surgery ICU Beds,,0.025,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Vascular Surgery Stepdown Beds,,0.018,
+facility2,Cardiac Services,Cardiac Surgery,I,SURG,Ventilators,,0.147,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Bariatric Beds,,0.002,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiac Short Stay Beds,,0,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiac Transplant Beds,,0.018,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiac VIP Beds,,0.024,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiology Stepdown Beds,,0.361,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiovascular Surgery ICU Beds,,0.007,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Cardiovascular Surgery Stepdown Beds,,0.201,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Colorectal Surgery Beds,,0.005,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Coronary ICU Beds,,0.057,
+facility2,Cardiac Services,Medical Cardiology,I,MED,ED Observation Beds,,0.001,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Heart Failure ICU Beds,,0.029,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Hemonc/Cancer Beds,,0.018,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Medical ICU Beds,,0.04,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Medicine Beds,,0.128,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Neonatal ICU Beds,,0,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Neuro ICU Beds,,0.001,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Neuro MedSurg Beds,,0.003,
+facility2,Cardiac Services,Medical Cardiology,I,MED,OBGYN Beds,,0.002,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Operating Rooms,,0.277,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Ortho Beds,,0.003,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Pediatric Intensive Care Unit Beds,,0.004,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Pediatric Intermediate Care Beds,,0.001,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Short Stay Beds,,0,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Surgery ICU Beds,,0.003,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Surgical Telemetry Beds,,0.003,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Thoracic Surgery Stepdown Beds,,0.042,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Transplant Beds,,0.007,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Urology Beds,,0.008,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Vascular Surgery ICU Beds,,0.001,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Vascular Surgery Stepdown Beds,,0.036,
+facility2,Cardiac Services,Medical Cardiology,I,MED,Ventilators,,0.021,
+facility2,Cardiology,Electrophysiology,O,SURG,Operating Rooms,,0.481,
+facility2,Cardiology,Medical Cardiology,O,SURG,Operating Rooms,,0.155,
+facility2,Gynecology,Biopsy - Gynecology,O,SURG,Operating Rooms,,0.135,
+facility2,Gynecology,General Gynecology Procedures,O,SURG,Operating Rooms,,0.299,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Bariatric Beds,,0.003,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Cardiac VIP Beds,,0.005,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Cardiovascular Surgery ICU Beds,,0.002,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Cardiovascular Surgery Stepdown Beds,,0.013,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Colorectal Surgery Beds,,0.068,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Hemonc/Cancer Beds,,0.001,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Medical ICU Beds,,0.017,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Medicine Beds,,0.049,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Neonatal ICU Beds,,0.005,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Neuro ICU Beds,,0.001,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Neuro MedSurg Beds,,0.002,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,OBGYN Beds,,0.562,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Operating Rooms,,0.555,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Ortho Beds,,0.014,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Pediatric Intensive Care Unit Beds,,0.002,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Pediatric Intermediate Care Beds,,0.014,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Short Stay Beds,,0.006,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Surgery ICU Beds,,0.044,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Surgical Telemetry Beds,,0.024,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Transplant Beds,,0.003,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Urology Beds,,0.045,
+facility2,Gynecology,General Surgical Gynecology,I,SURG,Ventilators,,0.024,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Cardiac Transplant Beds,,0.005,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Colorectal Surgery Beds,,0.011,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Medical ICU Beds,,0.022,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Medicine Beds,,0.006,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,OBGYN Beds,,0.795,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Operating Rooms,,0.83,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Short Stay Beds,,0.001,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Surgery ICU Beds,,0.048,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Surgical Telemetry Beds,,0.033,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Transplant Beds,,0,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Urology Beds,,0.021,
+facility2,Gynecology,Gyn Surgical Oncology,I,SURG,Ventilators,,0.033,
+facility2,Gynecology,Gynecological Exams,O,SURG,Operating Rooms,,0.172,
+facility2,Gynecology,Hysterectomy,O,SURG,Operating Rooms,,0.548,
+facility2,Gynecology,Medical Gynecology,I,MED,Bariatric Beds,,0.003,
+facility2,Gynecology,Medical Gynecology,I,MED,Colorectal Surgery Beds,,0.04,
+facility2,Gynecology,Medical Gynecology,I,MED,Hemonc/Cancer Beds,,0.022,
+facility2,Gynecology,Medical Gynecology,I,MED,Medical ICU Beds,,0.018,
+facility2,Gynecology,Medical Gynecology,I,MED,Medicine Beds,,0.059,
+facility2,Gynecology,Medical Gynecology,I,MED,Neonatal ICU Beds,,0.031,
+facility2,Gynecology,Medical Gynecology,I,MED,OBGYN Beds,,0.102,
+facility2,Gynecology,Medical Gynecology,I,MED,Operating Rooms,,0.284,
+facility2,Gynecology,Medical Gynecology,I,MED,Ortho Beds,,0.019,
+facility2,Gynecology,Medical Gynecology,I,MED,Pediatric Intensive Care Unit Beds,,0.003,
+facility2,Gynecology,Medical Gynecology,I,MED,Pediatric Intermediate Care Beds,,0.007,
+facility2,Gynecology,Medical Gynecology,I,MED,Surgical Telemetry Beds,,0.002,
+facility2,Gynecology,Medical Gynecology,I,MED,Transplant Beds,,0.003,
+facility2,Gynecology,Medical Gynecology,I,MED,Urology Beds,,0.008,
+facility2,Gynecology,Uterine Fibroid Procedures,O,SURG,Operating Rooms,,0.413,
+facility2,Gynecology,Women's Reproductive Health Procedures,O,SURG,Operating Rooms,,0.292,
+facility2,Oncology,Chemotherapy,O,SURG,Operating Rooms,,0.275,
+facility2,Pulmonology,Bronchoscopy,O,SURG,Operating Rooms,,0.197,
