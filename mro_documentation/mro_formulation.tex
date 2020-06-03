@@ -171,8 +171,10 @@ week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \for
 \end{align*}
 \begin{equation} 
 \begin{multlined}
-\sum_{\substack{f,sl,ss,io,ms \ \text{and} \\ d1 = [d+ daysBeforeSurgAdm] \ \\ \text{and} \ d1 \in d  \\
-\text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d1} + ReschedulePatients_{f,sl,ss,io,ms,d1}) \\ (1- emerSurRatio_{f,sl,ss})) \leq dlyNonRapidTest_{d}  \quad \forall d\
+\sum_{\substack{f,sl,ss,io,ms \ \\
+\text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d} + ReschedulePatients_{f,sl,ss,io,ms,d}) \ (1- emerSurRatio_{f,sl,ss}))  \leq \\
+\text{if} \ (d-daysBeforeSurgAdm) \in d \ (dlyNonRapidTest_{d-daysBeforeSurgAdm}), \ \text{else} \ (dlyNonRapidTest_{minday})
+ \quad \forall d\
 \end{multlined}
 \end{equation}
 
