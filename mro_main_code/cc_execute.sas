@@ -32,11 +32,17 @@
 |   - output_opt_covid_test_usage:       Name of the table that stores daily COVID-19 test usage (in outlib)
 |
 | OTHER PARAMETERS:
-|   - _worklib:  Name of the CAS library where the working tables are created
-|   - run_dp:    Flag to indicate whether cc_data_prep is to be run
-|   - run_fcst:  Flag to indicate whether cc_forecast_demand is to be run
-|   - run_opt:   Flag to indicate whether cc_optimize is to be run
-|   - _debug:    Flag to indicate whether the temporary tables in _worklib are to be retained for debugging
+|   - _worklib:     Name of the CAS library where the working tables are created
+|   - include_str:  Parameter that can be used to filter all the input data tables to include only 
+|                   specified rows. 
+|                   Example: include_str = %str(facility in ('fac1','fac','ALL'))
+|   - exclude_str:  Parameter that can be used to filter all the input data tables to exclude 
+|                   specified rows. 
+|                   Example: exclude_str = %str(service_line = 'ABC')
+|   - run_dp:       Flag to indicate whether cc_data_prep is to be run
+|   - run_fcst:     Flag to indicate whether cc_forecast_demand is to be run
+|   - run_opt:      Flag to indicate whether cc_optimize is to be run
+|   - _debug:       Flag to indicate whether the temporary tables in _worklib are to be retained for debugging
 |
 *--------------------------------------------------------------------------------------------------------------*;
 
@@ -58,6 +64,8 @@
          ,output_opt_resource_usage=output_opt_resource_usage
          ,output_opt_resource_usage_detail=output_opt_resource_usage_detail
          ,output_opt_covid_test_usage=output_opt_covid_test_usage
+         ,include_str=%str(1=1)
+         ,exclude_str=%str(0=1)
          ,run_dp=1
          ,run_fcst=1
          ,run_opt=1
@@ -78,6 +86,8 @@
          ,input_demand=&input_demand.
          ,input_demand_forecast=&input_demand_forecast
          ,input_opt_parameters=&input_opt_parameters.
+         ,include_str=&include_str.
+         ,exclude_str=&exclude_str.
          ,_worklib=&_worklib.
          ,_debug=&_debug.
          );

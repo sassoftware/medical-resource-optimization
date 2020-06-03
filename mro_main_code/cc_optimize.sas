@@ -527,7 +527,8 @@
          Note that we're only going to assign NewPatients on days that have positive demand, and we're only going to
          assign ReschedulePatients for sub-services that have positive cancellations, so first we create sets to restrict
          the variable hierarchies. */
-      set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_DEMAND = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : demand[f,sl,ss,iof,msf,d] > 0};
+      set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_DEMAND = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : demand[f,sl,ss,iof,msf,d] > 0
+                                                                                                                         or removeDemandConstraints = 1};
       set <str,str,str,str,str,num> VAR_HIERARCHY_POSITIVE_CANCEL = {<f,sl,ss,iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : numCancel[f,sl,ss,iof,msf] > 0};
       var NewPatients{VAR_HIERARCHY_POSITIVE_DEMAND} >= 0;
       var ReschedulePatients{VAR_HIERARCHY_POSITIVE_CANCEL} >= 0;
@@ -650,12 +651,18 @@
             Or if performance becomes an issue, or if we don't need to see the COVID test usage in the output, we can remove this section and add
             the condition "and removeCovidConstraints = 0" to both of the constraints (and suppress creation of the covid test usage output table). */
          for {d in DAYS} do;
-            if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].ub
-               = sum{<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND} demand[f,sl,ss,iof,msf,d]
-                 + sum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS} numCancel[f,sl,ss,iof,msf];
-            if testDaysBA > 0 and d + testDaysBA in DAYS then COVID19_Before_Admission_Testing[d].ub
-               = sum{<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : d1 = d + testDaysBA} demand[f,sl,ss,iof,msf,d1]
-                 + sum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS} numCancel[f,sl,ss,iof,msf];
+            if removeDemandConstraints = 0 then do;
+               if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].ub
+                  = sum{<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND} demand[f,sl,ss,iof,msf,d]
+                    + sum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS} numCancel[f,sl,ss,iof,msf];
+               if testDaysBA > 0 and d + testDaysBA in DAYS then COVID19_Before_Admission_Testing[d].ub
+                  = sum{<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : d1 = d + testDaysBA} demand[f,sl,ss,iof,msf,d1]
+                    + sum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS} numCancel[f,sl,ss,iof,msf];
+            end;
+            else do;
+               COVID19_Day_Of_Admission_Testing[d].ub = constant('BIG');
+               if d + testDaysBA in DAYS then COVID19_Before_Admission_Testing[d].ub = constant('BIG');
+            end;
          end;
       end;
 
