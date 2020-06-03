@@ -637,32 +637,33 @@
        <= (max(0,(totalDailyRapidTests[d] - holdRapidCovidTests))  / rapidTestDA);
 
       /* COVID-19 not-rapid tests: Total number of surgical patients tested testDaysBA days before arrival should be less than the
-         daily not-rapid tests available */
-      con COVID19_Before_Admission_Testing{d in DAYS : testDaysBA > 0 and d + testDaysBA in DAYS}:
-         sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG' and d1 = d + testDaysBA} (NewPatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
-       + sum {<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG' and d1 = d + testDaysBA} (ReschedulePatients[f,sl,ss,iof,msf,d1] * (1-emerSurgRatio[f,sl,ss]))
-       <= max(0,(totalDailyNotRapidTests[d]- holdNotRapidCovidTests));
+         daily not-rapid tests available. We are assuming that the number of not-rapid tests on days before the optimization 
+         start date is equal to the number of not-rapid tests on the optimization start date. */
+      con COVID19_Before_Admission_Testing{d in DAYS : testDaysBA > 0}:
+         sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND : msf='SURG'} (NewPatients[f,sl,ss,iof,msf,d] * (1-emerSurgRatio[f,sl,ss]))
+       + sum {<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_CANCEL : msf='SURG'} (ReschedulePatients[f,sl,ss,iof,msf,d] * (1-emerSurgRatio[f,sl,ss]))
+       <= if d - testDaysBA in DAYS then max(0,(totalDailyNotRapidTests[d-testDaysBA]- holdNotRapidCovidTests))
+          else max(0,(totalDailyNotRapidTests[minDay]- holdNotRapidCovidTests));
 
+      num demandUB{DAYS};
       if removeCovidConstraints = 1 then do;
          /* Reset UB of COVID constraints to a big-M constant. I am doing it this way instead of disabling the constraints because we still might want to
             see the COVID test usage in the output, and for that we use the constraint .body suffixes. With the current testing protocol, the big-M constant
             is the total demand per day plus cancellations since each patient is getting tested at most once. But if we change the testing protocol where
             patients are getting tested multiple times, or caregivers or visitors are also being tested, we will need to refine the big-M constant.
             Or if performance becomes an issue, or if we don't need to see the COVID test usage in the output, we can remove this section and add
-            the condition "and removeCovidConstraints = 0" to both of the constraints (and suppress creation of the covid test usage output table). */
+            the condition "and removeCovidConstraints = 0" to both of the constraints (and suppress creation of the covid test usage output table).
+            Note that when removeDemandConstraints = 1, I am setting the big-M constant to constant('BIG'). In general, it is good practice to use a tighter 
+            big-M constant, so perhaps we could set it to the total population of the city or state where the hospital facilities are located. But we don't 
+            expect this to be a very frequently used feature to remove demand constraints, so for the sake of generality I am using constant('BIG') and the 
+            user can modify it if desired. */
          for {d in DAYS} do;
-            if removeDemandConstraints = 0 then do;
-               if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].ub
-                  = sum{<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND} demand[f,sl,ss,iof,msf,d]
-                    + sum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS} numCancel[f,sl,ss,iof,msf];
-               if testDaysBA > 0 and d + testDaysBA in DAYS then COVID19_Before_Admission_Testing[d].ub
-                  = sum{<f,sl,ss,iof,msf,d1> in VAR_HIERARCHY_POSITIVE_DEMAND : d1 = d + testDaysBA} demand[f,sl,ss,iof,msf,d1]
-                    + sum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS} numCancel[f,sl,ss,iof,msf];
-            end;
-            else do;
-               COVID19_Day_Of_Admission_Testing[d].ub = constant('BIG');
-               if d + testDaysBA in DAYS then COVID19_Before_Admission_Testing[d].ub = constant('BIG');
-            end;
+            if removeDemandConstraints = 0 then demandUB[d] = sum{<f,sl,ss,iof,msf,(d)> in VAR_HIERARCHY_POSITIVE_DEMAND} demand[f,sl,ss,iof,msf,d]
+                                                            + sum{<f,sl,ss,iof,msf> in FAC_SLINE_SSERV_IO_MS} numCancel[f,sl,ss,iof,msf];
+            else demandUB[d] = constant('BIG');
+            
+            if rapidTestDA > 0 then COVID19_Day_Of_Admission_Testing[d].ub = demandUB[d];
+            if testDaysBA > 0 then COVID19_Before_Admission_Testing[d].ub = demandUB[d];
          end;
       end;
 
