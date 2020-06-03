@@ -37,6 +37,8 @@ The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* 
         - run_dp = is set to 1 if *cc_data_prep.sas* macro is to be executed, 0 otherwise. Default value is *1*.
         - run_fcst = is set to 1 if *cc_forecast_demand.sas* macro code is to be executed, 0 otherwise. Default value is *1*.
         - run_opt = is set to 1 if *cc_optimize.sas* macro code is to be executed, 0 otherwise. Default value is *1*.
+        - exclude_str = is parameter that can be used to filter all the input data tables to exclude only. Example: exclude_str = %str(service_line = 'ABC'). Default value is *' '*.
+        - include_str = is parameter that can be used to filter all the input data tables to include only. Example: include_str = %str(facility in ('fac1','fac','ALL')). Default value is *' '*. 
         - debug = is set to 1 if you want to retain the temporary working tables for debugging. Default value is *1*.  
 5. Run the *cc_standalone.sas* code. The *cc_standalone.sas* file calls and runs the *cc_execute.sas* macro. The *cc_execute.sas* macro runs *cc_data_prep.sas*, *cc_forecast_demand*, and *cc_optimize* macros in sequence.  
 6. Output data can be accessed from outlib CASlib.
