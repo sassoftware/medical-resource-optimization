@@ -1,4 +1,7 @@
 *--------------------------------------------------------------------------------------------------------------*
+| Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+| SPDX-License-Identifier: Apache-2.0
+|
 | Program: cc_data_prep
 |
 | Description: This macro pre-processes the data files to clean invalid entries and duplicate entries.  

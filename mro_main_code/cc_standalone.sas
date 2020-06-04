@@ -1,4 +1,7 @@
 *------------------------------------------------------------------------------*
+| Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+| SPDX-License-Identifier: Apache-2.0
+|
 | Program: cc_standalone
 |
 | Description: This program calls the main %cc_execute macro. See cc_execute 

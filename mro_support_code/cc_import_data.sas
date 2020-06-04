@@ -1,3 +1,12 @@
+*------------------------------------------------------------------------------*
+| Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+| SPDX-License-Identifier: Apache-2.0
+|
+| Program: cc_import_data
+|
+| Description: This program is to read the input data files and import them into the inlib folder. 
+|*-----------------------------------------------------------------------------*;
+
 %let data_path=<path to input data>; /* Add your data path on this line */
 %let inlib = cc;
 

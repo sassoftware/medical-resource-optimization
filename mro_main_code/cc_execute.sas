@@ -1,4 +1,7 @@
 *--------------------------------------------------------------------------------------------------------------*
+| Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+| SPDX-License-Identifier: Apache-2.0
+|
 | Program: cc_execute
 |
 | Description: This macro calls the %cc_data_prep, %cc_forecast_demand, and 

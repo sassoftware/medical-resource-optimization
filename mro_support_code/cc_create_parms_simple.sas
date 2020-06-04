@@ -1,3 +1,12 @@
+*------------------------------------------------------------------------------*
+| Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+| SPDX-License-Identifier: Apache-2.0
+|
+| Program: cc_create_parms_simple
+|
+| Description: This program is to create the input_opt_parameters data. 
+|*-----------------------------------------------------------------------------*;
+
 /* Start cas session */
 cas mysess;
 caslib _all_ assign;

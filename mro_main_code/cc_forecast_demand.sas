@@ -1,4 +1,7 @@
 *--------------------------------------------------------------------------------------------------------------*
+| Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+| SPDX-License-Identifier: Apache-2.0
+|
 | Program: cc_forecast_demand
 |
 | Description: This macro takes as input either a historical demand table or a forecasted demand table, 
