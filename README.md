@@ -1,59 +1,75 @@
-# Medical Resource Optimization
+# Medical Resource Optimization Program
+An open collaboration between the Cleveland Clinic and SAS Institute and a continuation from our prior work on [COVID-19 Epidemiological Scenario Analysis] (https://github.com/sassoftware/covid-19-sas). That project demonstrates the usage of infectious disease models (SIR & SEIR) to analyze different scenarios and predict utilization of critical resources.
 
-## Introduction to the problem
-The main goal of this application is to generate an optimum hospital restarting plan, balance hospital economics, efficient use of resources and quality of clinical care.
-The application considers medical facilities, services lines (such as Orthopedics) and sub-services (such as Sports Injuries and Joint). Patients are further classified as inpatient/outpatient and medical/surgical. The sub-services are currently closed due to the COVID-19 pandemic. Admitting all the backlog patients is not feasible due to shared resource constraints, like COVID-19 test kits, ventilators, shared beds, operating rooms, etc. Given the forecasted demand and resource availability, the objective is to recommend an optimal reopening plan deciding which subservices to open and when. The model uses two objectives, maximize revenue and maximize margin. Other objectives like maximizing number of patients serviced, weighted by service criticality will be considered as future extensions.  
+## What this program does
+This project aims to generate an optimum hospital reactivation plan in response to clinical service disruptions during the COVID-19 pandemic.  The plan is capable of running multiple scenarios with different parameter settings that seek to balance hospital economics, efficient use of resources, and patient access to quality clinical care.
+
+The program accommodates multiple medical facilities; services lines and sub-services (e.g. Orthopedics/Joint Replacement); inpatient and outpatient status; and medical/surgical patient types. The sample data set facilitates running the program and can be replaced with the user's actual data.
+
+## How to use the program
+The initial conditions assume sub-services are currently closed due to the COVID-19 pandemic and admitting all the patient backlog at once is not feasible due to shared resource constraints (e.g. COVID-19 tests, ventilators, shared beds, operating rooms, etc).
+
+Using existing capacity, historical utilization, and forecasted demand, a recommended optimal reopening plan is developed to indicate which sub-services to open and when. The base model seeks to maximize revenue and margin in creating the plan.
+
+Other objectives like maximizing total patient volumes, impacts of secondary COVID-19 surge scenarios, and configuration of clinical centers of excellence are additional use cases for future extensions of the program.  
+
+## Multi-Scenario capability
+
+The optimization model is capable of running multiple scenarios with different parameter settings. One example of such scenario is change in COVID-19 test kit numbers. Users can define two scenarios with current and modified set of COVID19 test kit numbers.
+
+Note that not all parameters can be changed across scenarios. Please refer to Table 1. The parameters tagged as *(Global)* cannot be changed across scenarios. Other parameters which are tagged as *(Scenario)* can be changed across scenarios. Note that the model will stop if the data contains different values for *(Global)* parameters across scenarios.
 
 ## Software requirements
-The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* installations. 
+The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* installations.
 
 ## Steps to execute the code
 
 1. Create a global CASlib called COVID
 2. Place input data (defined below) to the COVID CASlib. Use the *cc_import_data* code in the *mro_support_code* folder to import the input data files into COVID CASlib. Refer to the **Support files** section for additional instructions. Note that the *mro_sample_data* folder has sample input data files for testing.
-3. Checkout master branch of this code into a location accessible from SAS Studio. 
-4. Open the *cc_standalone.sas* file from the *mro_code* folder 
+3. Checkout master branch of this code into a location accessible from SAS Studio.
+4. Open the *cc_standalone.sas* file from the *mro_code* folder
    * modify the *my_code_path* variable to path of the folder where you checked-out the code
    * modify the input macro variables in the %cc_execute macro call as following:  
         *MANDATORY:*
-        - inlib = the name of the library where the input tables will be available. Default value is *cc*. 
-        - outlib = the name of the library where the output tables will be stored. Default value is *casuser*.  
+        - inlib = library of input tables. Default = *cc*.
+        - outlib = library of output tables. Default = *casuser*.  
         *OPTIONAL:*
-        - _worklib = the name of the library where the working tables will be stored. Working tables will be automatically deleted at the end of the program execution. Default value is *casuser*.
-        - opt_param_lib = the name of the library where the INPUT_OPT_PARAMETERS table will be available. Default value is *cc*. 
-        - input_utilization= the name of the table where input_utilization data resides (in inlib). Default value is *input_utilization*.
-        - input_capacity= the name of the table where input_capacity data resides (in inlib). Default value is *input_capacity*.
-        - input_financials=the name of the table where input_financials data resides (in inlib). Default value is *input_financials*.
-        - input_service_attributes=the name of the table where input_service_attributes data resides (in inlib). Default value is *input_service_attributes*.
-        - input_demand=the name of the table where input_demand data resides (in inlib). Default value is *input_demand*.
-        - input_demand_forecast=the name of table where input_demand_forecast data resides (in inlib). Default value is *input_demand_forecast*.
-        - input_opt_parameters=the name of the table where input_opt_parameters data resides (in opt_param_lib). Default value is *input_opt_parameters*.
-        - output_opt_detail= the name of the table where output_opt_detail data needs to be stored (in outlib). Default value is *output_opt_detail*.
-        - output_opt_detail_agg=the name of the table where output_opt_detail_agg data needs to be stored (in outlib). Default value is *output_opt_detail_agg*.
-        - output_opt_summary=the name of the table where output_opt_summary data needs to be stored (in outlib). Default value is *output_opt_summary*.
-        - output_opt_resource_usage=the name of the table where output_opt_resource_usage data needs to be stored (in outlib). Default value is *output_opt_resource_usage*.
-        - output_opt_resource_usage_detail=the name of the table where output_opt_resource_usage_detail data needs to be stored (in outlib). Default value is *output_opt_resource_usage_detail*.
-        - output_opt_covid_test_usage=the name of the table where output_opt_covid_test_usage data needs to be stored (in outlib). Default value is *output_opt_covid_test_usage*.
-        - run_dp = is set to 1 if *cc_data_prep.sas* macro is to be executed, 0 otherwise. Default value is *1*.
-        - run_fcst = is set to 1 if *cc_forecast_demand.sas* macro code is to be executed, 0 otherwise. Default value is *1*.
-        - run_opt = is set to 1 if *cc_optimize.sas* macro code is to be executed, 0 otherwise. Default value is *1*.
-        - exclude_str = is parameter that can be used to filter all the input data tables to exclude only. Example: exclude_str = %str(service_line = 'ABC'). Default value is *' '*.
-        - include_str = is parameter that can be used to filter all the input data tables to include only. Example: include_str = %str(facility in ('fac1','fac','ALL')). Default value is *' '*. 
-        - debug = is set to 1 if you want to retain the temporary working tables for debugging. Default value is *1*.  
+        - _worklib = library of working tables. Working tables will be automatically deleted at the end of the program execution. Default = *casuser*.
+        - opt_param_lib = library of INPUT_OPT_PARAMETERS table will be available. Default = *cc*.
+        - input_utilization = table of input_utilization data (in inlib). Default = *input_utilization*.
+        - input_capacity = table of input_capacity data (in inlib). Default = *input_capacity*.
+        - input_financials = table of input_financials data (in inlib). Default = *input_financials*.
+        - input_service_attributes = table of input_service_attributes data (in inlib). Default = *input_service_attributes*.
+        - input_demand = table of input_demand data (in inlib). Default = *input_demand*.
+        - input_demand_forecast = table of input_demand_forecast data (in inlib). Default = *input_demand_forecast*.
+        - input_opt_parameters = table of input_opt_parameters data (in opt_param_lib). Default = *input_opt_parameters*.
+        - output_opt_detail = table of output_opt_detail data (in outlib). Default = *output_opt_detail*.
+        - output_opt_detail_agg = table of output_opt_detail_agg data (in outlib). Default = *output_opt_detail_agg*.
+        - output_opt_summary = table of output_opt_summary data (in outlib). Default = *output_opt_summary*.
+        - output_opt_resource_usage = table of output_opt_resource_usage data (in outlib). Default = *output_opt_resource_usage*.
+        - output_opt_resource_usage_detail = table of output_opt_resource_usage_detail data (in outlib). Default = *output_opt_resource_usage_detail*.
+        - output_opt_covid_test_usage = table of output_opt_covid_test_usage data (in outlib). Default = *output_opt_covid_test_usage*.
+        - run_dp = 1 if *cc_data_prep.sas* macro is to be executed, 0 otherwise. Default = *1*.
+        - run_fcst = 1 if *cc_forecast_demand.sas* macro code is to be executed, 0 otherwise. Default = *1*.
+        - run_opt = 1 if *cc_optimize.sas* macro code is to be executed, 0 otherwise. Default = *1*.
+        - debug = is set to 1 if you want to retain the temporary working tables for debugging. Default = *1*.
+        - exclude_str = parameter to filter all the input data tables to exclude only. Example: exclude_str = %str(service_line = 'ABC'). Default = *' '*.
+        - include_str = parameter to filter all the input data tables to include only. Example: include_str = %str(facility in ('fac1','fac','ALL')). Default = *' '*.
+        - debug = 1 to retain the temporary working tables for debugging. Default = *1*.   
 5. Run the *cc_standalone.sas* code. The *cc_standalone.sas* file calls and runs the *cc_execute.sas* macro. The *cc_execute.sas* macro runs *cc_data_prep.sas*, *cc_forecast_demand*, and *cc_optimize* macros in sequence.  
 6. Output data can be accessed from outlib CASlib.
 
-**Note: Default values are assigned to the macro variables if they are not specified in *cc_standalone.sas***. 
+**Note: Default values are assigned to the macro variables if they are not specified in *cc_standalone.sas***.
 
 ## Input data
 The model has 7 input tables and they are defined within the hierarchy definition:
-1. input_capacity: This table contains the capacity available for resources at each facility, services, and sub-services hierarchy. 'ALL' is used to denote resources shared across multiple sub-services/service lines/facilities. 
-2. input_utilization: This table contains the utilization (or usage) of each resource per patient per day, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. 
-3. input_service_attributes: This table contains the service attributes like average length of stay (in days) of a patient, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. 
-4. input_financials: This table contains the revenue and margin data, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. 
-5. input_demand: This table contains the historical demand data, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. This data is used to forecast demand to be used by the optimization model. The input_demand table is not required if the input_demand_forecast table is used.
-6. input_demand_forecast: This table contains the forecasted demand data, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. The input_demand_forecast table is not required if the input_demand table is used.
-7. input_opt_parameters: This table contains a set of parameters for the users to control when submitting optimization jobs. For example, one of the parameters is PLANNING_HORIZON which defines the planning horizon (in weeks) for the forecasting and optimization model. A complete list of parameters is shown below in Table 1: 
+1. input_capacity: resource capacity available for at each facility, services, and sub-services hierarchy. 'ALL' is used to denote resources shared across multiple sub-services/service lines/facilities.
+2. input_utilization: utilization (or usage) of each resource per patient per day, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy.
+3. input_service_attributes: service attributes like average length of stay (in days) of a patient, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy.
+4. input_financials: revenue and margin data, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy.
+5. input_demand: historical demand data, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. This data is used to forecast demand to be used by the optimization model. The input_demand table is not required if the input_demand_forecast table is used.
+6. input_demand_forecast: forecasted demand data, by inpatient/outpatient and medical/surgical indicators, at each facility, services, and sub-services hierarchy. The input_demand_forecast table is not required if the input_demand table is used.
+7. input_opt_parameters: user-defined parameters to control when submitting optimization jobs. For example, one of the parameters is PLANNING_HORIZON which defines the planning horizon (in weeks) for the forecasting and optimization model. A complete list of parameters is shown below in Table 1:
 
 **Table 1: Description of the optimization parameters**
 
@@ -91,36 +107,30 @@ The *Input data model* can be accessed from mro_documentation\mro_or_data_model.
 ## Output data
 
 **Output files from *cc_data_prep* are as follows:**
-- OUTPUT_DP_DUPLICATE_ROWS - has details of the duplicate entries in the tables along with hierarchy information. 
-- OUTPUT_DP_HIERARCHY_MISMATCH - has details of hierarchy defined in one table and not in others. 
+- OUTPUT_DP_DUPLICATE_ROWS - has details of the duplicate entries in the tables along with hierarchy information.
+- OUTPUT_DP_HIERARCHY_MISMATCH - has details of hierarchy defined in one table and not in others.
 - OUTPUT_DP_INVALID_VALUES - has details of the invalid data values in the tables along with hierarchy information.
 - OUTPUT_DP_RESOURCE_MISMATCH - has details on the mismatch between input_capacity and input_utilization tables. Resource specific data (availability and usage) should be defined in both of these tables in order to be used in the model.
 
 **Output file from *cc_forecast_demand* are as follows:**
-- OUTPUT_FD_DEMAND_FCST - forecasted demand for the planning horizon either from the external forecast file or forecasted data from the provided historical demand data. 
+- OUTPUT_FD_DEMAND_FCST - forecasted demand for the planning horizon either from the external forecast file or forecasted data from the provided historical demand data.
 
 **Output file from *cc_optimize* are as follows:**
 - OUTPUT_OPT_DETAIL - shows the optimization model output such as patients accepted, margin, revenue by scenario, day, and hierarchy.
 - OUTPUT_OPT_DETAIL_AGG - shows the weekly aggregated optimization model output such as average daily patients accepted, average daily margin, average daily revenue by scenario, week, and hierarchy.
-- OUTPUT_OPT_SUMMARY - shows the reopening plan for the sub-services at each facility and service line. 
+- OUTPUT_OPT_SUMMARY - shows the reopening plan for the sub-services at each facility and service line.
 - OUTPUT_OPT_RESOURCE_USAGE - shows the utilization of the resource at the granularity of the resource capacity definition.
-- OUTPUT_OPT_RESOURCE_USAGE_DETAIL - shows the utilization of the resource as the fraction of resource used at a sub-service in facility/service line. 
-- OUTPUT_OPT_COVID_TEST_USAGE - shows the used vs. available COVID-19 test kits by scenario, day, and hierarchy. 
+- OUTPUT_OPT_RESOURCE_USAGE_DETAIL - shows the utilization of the resource as the fraction of resource used at a sub-service in facility/service line.
+- OUTPUT_OPT_COVID_TEST_USAGE - shows the used vs. available COVID-19 test kits by scenario, day, and hierarchy.
 
 The *Output data model* can be accessed from mro_documentation\mro_or_data_model.xlsx.
-
-# Scenario runs
-
-The optimization model is capable of running multiple scenarios with different parameter settings. One example of such scenario is change in COVID-19 test kit numbers. Users can define two scenarios with current and modified set of COVID19 test kit numbers. 
-
-Note that not all parameters can be changed across scenarios. Please refer to Table 1. The parameters tagged as *(Global)* cannot be changed across scenarios. Other parameters which are tagged as *(Scenario)* can be changed across scenarios. Note that the model will stop if the data contains different values for *(Global)* parameters across scenarios. 
 
 ## Code files
 
 This section will describe the code files in the *mro_main_code* folder.
 
-- **cc_data_prep** : is a macro to pre-processes the data files, to clean invalid entries and duplicate entries. Invalid entries are the data entries which are not consistent under the defined hierarchy. The macro takes all the input files (input_capacity, input_demand, input_demand_forecast, input_financials, input_service_attributes, input_utilization, input_opt_parameters) and creates clean input files, as the output, to be used by subsequent models (forecasting and optimization model). 
-Note that there are two input demand files - historical demand data and forecasted demand data. One of these files is pre-processed and used as the demand file based on a parameter in the input_opt_parameters table. 
+- **cc_data_prep** : is a macro to pre-processes the data files, to clean invalid entries and duplicate entries. Invalid entries are the data entries which are not consistent under the defined hierarchy. The macro takes all the input files (input_capacity, input_demand, input_demand_forecast, input_financials, input_service_attributes, input_utilization, input_opt_parameters) and creates clean input files, as the output, to be used by subsequent models (forecasting and optimization model).
+Note that there are two input demand files - historical demand data and forecasted demand data. One of these files is pre-processed and used as the demand file based on a parameter in the input_opt_parameters table.
 
 - **cc_forecast_demand** : is a macro which,
 (1) takes in historical demand values (input_demand) by inpatient/outpatient and medical/surgical categories, at each facility, services, and sub-services hierarchy and creates a forecasted demand for the defined planning horizon. The macro gives two options to generate forecast - time series model (or) year-over-year method. The selection of the forecast method can be done using a parameter in input_opt_parameters.
@@ -131,33 +141,28 @@ The .tex file used to generate the optimization model can be accessed from mro_d
 
 - **cc_execute** : is a macro which executes the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros in sequence.  
 
-- **cc_standalone** : is the file which calls the *cc_execute* macro and passes relevant parameters to run the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros. 
+- **cc_standalone** : is the file which calls the *cc_execute* macro and passes relevant parameters to run the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros.
 
-## Support files 
+## Support files
 
-This section will describe the Support files in the *mro_support_code* folder. 
+Support files are located in the *mro_support_code* folder.
 
 - **cc_create_parms_simple** : is a code to create the input_opt_parameters data. Note that this code does not include all the parameters defined in Table 1. Users can include additional parameters. Note that the parameters has to be added at the *level* in which they are defined.  
 
-- **cc_import_data** : is a code to read the input data files and import them into the inlib folder. In this implementation, the *proc casutil* section of the code reads .csv input files and places them in the inlib folder. However, *proc casutil* section can be modified to read data from SAS data sets or other file formats. 
+- **cc_import_data** : is a code to read the input data files and import them into the inlib folder. In this implementation, the *proc casutil* section of the code reads .csv input files and places them in the inlib folder. However, *proc casutil* section can be modified to read data from SAS data sets or other file formats.
 The macro variable *data_path* defines the path of the folder where the input files are stored and *inlib* defines the name of the library where input files should be imported. Users should set the *data_path* and *inlib* variables before executing this code. *mro_sample_data* folder has sample input data files for testing.
 
 ## Documentation files
 
-This section will describe the Documentation files in the *mro_documentation* folder. 
+Documentation files are located in the *mro_documentation* folder.
 
 - **mro_formulation.tex** : is a .tex file to generate the bi-criteria mathematical formulation which is used to solve the problem.
 
-- **mro_fdd.docx** : is the functional design document which explains in detail about the problem and the solution methodology. 
+- **mro_fdd.docx** : is the functional design document which explains in detail about the problem and the solution methodology.
 
-- **mro_or_data_model.xlsx** : describes the data model for both input data tables and output data tables. 
+- **mro_or_data_model.xlsx** : describes the data model for both input data tables and output data tables.
 
-##  Related projects: COVID-19 Epidemiological Scenario Analysis
-
-An interesting open colloboration project between SAS and Cleveland Clinic can be found in: *https://github.com/sassoftware/covid-19-sas/tree/master/CCF*. This project demonstrates the usage of infectious disease models (SIR & SEIR) to analyze different scenarios and predict useful metrics like number of hospitalizations/day. 
-
-## References
+## Preferred Reference for Citation
+Cleveland Clinic and SAS COVID-19 Development Team. Developer Documentation [Internet]. 2020. Available from: <repo link>
 
 **Core Team**: Michelle Opp, Subramanian Pazhani, Natalia Summerville  
-**Support**:
-

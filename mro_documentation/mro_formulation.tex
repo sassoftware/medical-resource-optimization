@@ -173,7 +173,7 @@ week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \for
 \begin{multlined}
 \sum_{\substack{f,sl,ss,io,ms \ \\
 \text{and} \\ ms = 'SURG'}} (NewPatients_{f,sl,ss,io,ms,d} + ReschedulePatients_{f,sl,ss,io,ms,d}) \ (1- emerSurRatio_{f,sl,ss}))  \leq \\
-\text{if} \ (d-daysBeforeSurgAdm) \in d \ (dlyNonRapidTest_{d-daysBeforeSurgAdm}), \ \text{else} \ (dlyNonRapidTest_{minday})
+\text{if} \ (d-daysBeforeSurgAdm) \in Days \ (dlyNonRapidTest_{d-daysBeforeSurgAdm}), \ \text{else} \ (dlyNonRapidTest_{minday})
  \quad \forall d\
 \end{multlined}
 \end{equation}
@@ -183,7 +183,7 @@ week_{d} = w }} newPntBfCovid_{f,sl,ss,io,ms,d} \ OpenFlg_{f,sl,ss,d} \quad \for
 &\text{remainder of the horizon.} 
 \end{align*}
 \begin{equation} 
-OpenFlg_{f,sl,ss,d+1} \geq OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,d \ \text{and} \ d1 \in d\
+OpenFlg_{f,sl,ss,d+1} \geq OpenFlg_{f,sl,ss,d} \quad \forall f,sl,ss,d \ \text{and} \ (d+1) \in \ Days\
 \end{equation}
 
 \begin{align*}
@@ -199,7 +199,7 @@ OpenFlg_{f,sl,ss,d} = 1 \quad \forall f,sl,ss,d \ \text{and} \ d = minday\ \text
 &\text{the first day of the planning horizon.} 
 \end{align*}
 \begin{equation} 
-OpenFlg_{f,sl,ss,d} = OpenFlg_{f,sl,ss,d-1} \quad \forall f,sl,ss,d \ \text{and} \ (d-1) \in d \ \text{and} \ d \notin q
+OpenFlg_{f,sl,ss,d} = OpenFlg_{f,sl,ss,d-1} \quad \forall f,sl,ss,d \ \text{and} \ (d-1) \in \ Days \ \text{and} \ d \notin q
 \end{equation}
 
 \end{document}
