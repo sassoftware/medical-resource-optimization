@@ -128,7 +128,7 @@ The *Output data model* can be accessed from mro_documentation\mro_or_data_model
 
 ## Output visualizations
 
-The output from the optimization model is be visualized using VA reports to derive various useful insights. Examples of visualizations are shown below:
+The output from the optimization model is visualized using VA reports to derive various useful insights. Examples of visualizations are shown below:
 
 | Average daily ICU Beds usage by Service line | Sub-service opening by facility |
 :-------------------------:|:-------------------------:
