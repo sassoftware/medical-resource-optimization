@@ -163,4 +163,4 @@ Documentation files are located in the *mro_documentation* folder.
 - **mro_or_data_model.xlsx** : describes the data model for both input data tables and output data tables.
 
 ## Preferred Reference for Citation
-Cleveland Clinic and SAS COVID-19 Development Team. Developer Documentation [Internet]. 2020. Available from: https://github.com/sassoftware/medical-resource-optimization.
+Cleveland Clinic and SAS Optimization Center of Excellence COVID-19 Development Team. Developer Documentation [Internet]. 2020. Available from: https://github.com/sassoftware/medical-resource-optimization.
