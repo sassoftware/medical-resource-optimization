@@ -22,6 +22,7 @@ Note that not all parameters can be changed across scenarios. Please refer to Ta
 ## Software requirements
 The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* installations.
 
+
 ## Steps to execute the code
 
 1. Create a global CASlib called COVID
@@ -124,6 +125,13 @@ The *Input data model* can be accessed from mro_documentation\mro_or_data_model.
 - OUTPUT_OPT_COVID_TEST_USAGE - shows the used vs. available COVID-19 test kits by scenario, day, and hierarchy.
 
 The *Output data model* can be accessed from mro_documentation\mro_or_data_model.xlsx.
+
+## Outputs visualizations
+
+The output from the optimization model can be visualized to derive various useful insights. Some of the visualizations are shown below:
+
+:-------------------------:|:-------------------------:
+![](./mro_images/MRO_Dashboard_1.jpg)  |  ![](./mro_images/MRO_Dashboard_1.jpg)
 
 ## Code files
 
