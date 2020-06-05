@@ -164,5 +164,3 @@ Documentation files are located in the *mro_documentation* folder.
 
 ## Preferred Reference for Citation
 Cleveland Clinic and SAS COVID-19 Development Team. Developer Documentation [Internet]. 2020. Available from: <repo link>
-
-**Core Team**: Michelle Opp, Subramanian Pazhani, Natalia Summerville  
