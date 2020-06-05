@@ -126,12 +126,14 @@ The *Input data model* can be accessed from mro_documentation\mro_or_data_model.
 
 The *Output data model* can be accessed from mro_documentation\mro_or_data_model.xlsx.
 
-## Outputs visualizations
+## Output visualizations
 
 The output from the optimization model can be visualized to derive various useful insights. Some of the visualizations are shown below:
 
+| Average daily ICU Beds usage by Service line | Sub-service opening by facility |
 :-------------------------:|:-------------------------:
-![](./mro_images/MRO_Dashboard_1.jpg)  |  ![](./mro_images/MRO_Dashboard_1.jpg)
+![](/mro_images/MRO_Dashboard_1.JPG) | ![](/mro_images/MRO_Dashboard_2.JPG) 
+
 
 ## Code files
 
