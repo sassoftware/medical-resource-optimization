@@ -9,7 +9,7 @@ The program accommodates multiple medical facilities; services lines and sub-ser
 ## How to use the program
 The initial conditions assume sub-services are currently closed due to the COVID-19 pandemic and admitting all the patient backlog at once is not feasible due to shared resource constraints (e.g. COVID-19 tests, ventilators, shared beds, operating rooms, etc).
 
-Using existing capacity, historical utilization, and forecasted demand, a recommended optimal reopening plan is developed to indicate which sub-services to open and when. The base model seeks to maximize revenue and margin in creating the plan.
+Using existing capacity, historical utilization, and forecasted demand, a recommended optimal reopening plan is developed to indicate which sub-services to open and when. 
 
 Other objectives like maximizing total patient volumes, impacts of secondary COVID-19 surge scenarios, and configuration of clinical centers of excellence are additional use cases for future extensions of the program.  
 
@@ -173,4 +173,4 @@ Documentation files are located in the *mro_documentation* folder.
 - **mro_or_data_model.xlsx** : describes the data model for both input data tables and output data tables.
 
 ## Preferred Reference for Citation
-Cleveland Clinic and SAS Optimization Center of Excellence COVID-19 Development Team. Developer Documentation [Internet]. 2020. Available from: https://github.com/sassoftware/medical-resource-optimization.
+Cleveland Clinic and SAS Optimization Center of Excellence. Developer Documentation [Internet]. 2020. Available from: https://github.com/sassoftware/medical-resource-optimization.
