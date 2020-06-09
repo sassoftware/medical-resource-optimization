@@ -23,8 +23,8 @@
 |
 | OUTPUTS:
 |   - outlib:                            Name of the CAS library where the output tables are created
-|   - output_opt_detail:                 Name of the table that stores solution detail records (in outlib)
-|   - output_opt_detail_agg:             Name of the table that stores the weekly aggregated solution 
+|   - output_opt_detail_daily:           Name of the table that stores solution detail records (in outlib)
+|   - output_opt_detail_weekly:          Name of the table that stores the weekly aggregated solution 
 |                                        data (in outlib)
 |   - output_opt_summary:                Name of the table that stores recommended reopening plan for 
 |                                        service lines (in outlib)
@@ -61,8 +61,8 @@
          ,input_demand=input_demand
          ,input_demand_forecast=input_demand_forecast
          ,input_opt_parameters=input_opt_parameters
-         ,output_opt_detail=output_opt_detail
-         ,output_opt_detail_agg=output_opt_detail_agg
+         ,output_opt_detail_daily=output_opt_detail_daily
+         ,output_opt_detail_weekly=output_opt_detail_weekly
          ,output_opt_summary=output_opt_summary
          ,output_opt_resource_usage=output_opt_resource_usage
          ,output_opt_resource_usage_detail=output_opt_resource_usage_detail
@@ -116,8 +116,8 @@
          inlib=&inlib.
          ,outlib=&outlib.
          ,input_demand_fcst=output_fd_demand_fcst
-         ,output_opt_detail=&output_opt_detail.
-         ,output_opt_detail_agg=&output_opt_detail_agg.
+         ,output_opt_detail_daily=&output_opt_detail_daily.
+         ,output_opt_detail_weekly=&output_opt_detail_weekly.
          ,output_opt_summary=&output_opt_summary.
          ,output_opt_resource_usage=&output_opt_resource_usage.
          ,output_opt_resource_usage_detail=&output_opt_resource_usage_detail.

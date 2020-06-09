@@ -44,8 +44,8 @@ The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* 
         - input_demand = table of input_demand data (in inlib). Default = *input_demand*.
         - input_demand_forecast = table of input_demand_forecast data (in inlib). Default = *input_demand_forecast*.
         - input_opt_parameters = table of input_opt_parameters data (in opt_param_lib). Default = *input_opt_parameters*.
-        - output_opt_detail = table of output_opt_detail data (in outlib). Default = *output_opt_detail*.
-        - output_opt_detail_agg = table of output_opt_detail_agg data (in outlib). Default = *output_opt_detail_agg*.
+        - output_opt_detail_daily = table of output_opt_detail_daily data (in outlib). Default = *output_opt_detail_daily*.
+        - output_opt_detail_weekly = table of output_opt_detail_weekly data (in outlib). Default = *output_opt_detail_weekly*.
         - output_opt_summary = table of output_opt_summary data (in outlib). Default = *output_opt_summary*.
         - output_opt_resource_usage = table of output_opt_resource_usage data (in outlib). Default = *output_opt_resource_usage*.
         - output_opt_resource_usage_detail = table of output_opt_resource_usage_detail data (in outlib). Default = *output_opt_resource_usage_detail*.
@@ -117,8 +117,8 @@ The *Input data model* can be accessed from mro_documentation\mro_or_data_model.
 - OUTPUT_FD_DEMAND_FCST - forecasted demand for the planning horizon either from the external forecast file or forecasted data from the provided historical demand data.
 
 **Output file from *cc_optimize* are as follows:**
-- OUTPUT_OPT_DETAIL - shows the optimization model output such as patients accepted, margin, revenue by scenario, day, and hierarchy.
-- OUTPUT_OPT_DETAIL_AGG - shows the weekly aggregated optimization model output such as average daily patients accepted, average daily margin, average daily revenue by scenario, week, and hierarchy.
+- OUTPUT_OPT_DETAIL_DAILY - shows the optimization model output such as patients accepted, margin, revenue by scenario, day, and hierarchy.
+- OUTPUT_OPT_DETAIL_WEEKLY - shows the weekly aggregated optimization model output such as average daily patients accepted, average daily margin, average daily revenue by scenario, week, and hierarchy.
 - OUTPUT_OPT_SUMMARY - shows the reopening plan for the sub-services at each facility and service line.
 - OUTPUT_OPT_RESOURCE_USAGE - shows the utilization of the resource at the granularity of the resource capacity definition.
 - OUTPUT_OPT_RESOURCE_USAGE_DETAIL - shows the utilization of the resource as the fraction of resource used at a sub-service in facility/service line.
