@@ -15,8 +15,8 @@
 |
 | OUTPUTS:
 |   - outlib:                            Name of the CAS library where the output tables are created
-|   - output_opt_detail:                 Name of the table that stores solution detail records (in outlib)
-|   - output_opt_detail_agg:             Name of the table that stores the weekly aggregated solution 
+|   - output_opt_detail_daily:           Name of the table that stores solution detail records (in outlib)
+|   - output_opt_detail_weekly:          Name of the table that stores the weekly aggregated solution 
 |                                        data (in outlib)
 |   - output_opt_summary:                Name of the table that stores recommended reopening plan for 
 |                                        service lines (in outlib)
@@ -36,8 +36,8 @@
          inlib=cc
          ,outlib=cc
          ,input_demand_fcst=output_fd_demand_fcst
-         ,output_opt_detail=output_opt_detail
-         ,output_opt_detail_agg=output_opt_detail_agg
+         ,output_opt_detail_daily=output_opt_detail_daily
+         ,output_opt_detail_weekly=output_opt_detail_weekly
          ,output_opt_summary=output_opt_summary
          ,output_opt_resource_usage=output_opt_resource_usage
          ,output_opt_resource_usage_detail=output_opt_resource_usage_detail
@@ -107,8 +107,8 @@
 
    /* List output tables */
    %let output_tables=%str(
-         &outlib..&output_opt_detail
-         &outlib..&output_opt_detail_agg
+         &outlib..&output_opt_detail_daily
+         &outlib..&output_opt_detail_weekly
          &outlib..&output_opt_summary
          &outlib..&output_opt_resource_usage
          &outlib..&output_opt_resource_usage_detail
@@ -808,7 +808,9 @@
          OptRevenue=(round(OptRevenue[f,sl,ss,iof,msf,d],0.01))
          OptMargin=(round(OptMargin[f,sl,ss,iof,msf,d],0.01))
          Demand=(round(demand[f,sl,ss,iof,msf,d],0.01))
-         NewPatientsBeforeCovid=(round(newPatientsBeforeCovid[f,sl,ss,iof,msf,d],0.01));
+         NewPatientsBeforeCovid=(round(newPatientsBeforeCovid[f,sl,ss,iof,msf,d],0.01))
+			DemandRevenue=(round(demand[f,sl,ss,iof,msf,d]*revenue[f,sl,ss,iof,msf],0.01))
+			DemandMargin=(round(demand[f,sl,ss,iof,msf,d]*margin[f,sl,ss,iof,msf],0.01));
          
       num firstDayWithPatients{<f,sl,ss> in FAC_SLINE_SSERV} 
          = min{<(f),(sl),(ss),iof,msf,d> in FAC_SLINE_SSERV_IO_MS_DAYS : TotalPatients[f,sl,ss,iof,msf,d].sol > 0} d;  
@@ -883,12 +885,12 @@
       run;
    quit;
 
-   data &outlib..&output_opt_detail (promote=yes);
+   data &outlib..&output_opt_detail_daily (promote=yes);
       format day date9.;
       set &_worklib.._opt_detail;
    run;
 
-   data &outlib..&output_opt_detail_agg (promote=yes);
+   data &outlib..&output_opt_detail_weekly (promote=yes);
       set &_worklib.._opt_detail_agg;
       DailyNewPatients=NewPatients/7;
       DailyReschedulePatients=ReschedulePatients/7;

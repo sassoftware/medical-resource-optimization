@@ -409,10 +409,38 @@
    %else %do;
       %let forecast_tEnd = &start_date. + (&planning_horizon.*7) - 1;
 
-      data &outlib..&output_fd_demand_fcst (promote=yes where=(predict_date <= &forecast_tEnd));
+      /*creating a master file with 'facility','service_line','sub_service','IP_OP_Indicator','Med_Surg_Indicator'*/
+      data &_worklib.._tmp_input_demand_dow_mas;
          set &_worklib..&input_demand.;
+         by facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator;
+         if first.Med_Surg_Indicator then output;
+         keep facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator;
+      run;
+
+     /* cross join to create demand row for each date between &forecast_tEnd and &start_date. Set demand =0*/
+      data &_worklib.._tmp1_input_demand_dow_mas ;
+         set &_worklib.._tmp_input_demand_dow_mas;
+         do i=&start_date. to &forecast_tEnd;
+            date = i;
+            output;
+         end;
+         keep facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator date;
+      run;
+
+      /* Merge the master file with the external demand forecast file*/
+      data &_worklib.._tmp_input_demand_dow;
+         merge &_worklib.._tmp1_input_demand_dow_mas (in=nodes)
+               &_worklib..&input_demand.;
+         by facility service_line sub_service IP_OP_Indicator Med_Surg_Indicator date;
+         if nodes;
+         if demand=. then demand=0;
+      run;
+
+      data &outlib..&output_fd_demand_fcst (promote=yes where=(predict_date <= &forecast_tEnd));
+         set &_worklib.._tmp_input_demand_dow;
          rename demand = daily_predict date = predict_date;
       run;
+
    %end;
 
    /*************************/

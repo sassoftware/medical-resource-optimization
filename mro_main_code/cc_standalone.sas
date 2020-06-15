@@ -32,8 +32,8 @@ caslib _all_ assign;
    ,input_demand=input_demand
    ,input_demand_forecast=input_demand_forecast
    ,input_opt_parameters=input_opt_parameters
-   ,output_opt_detail=output_opt_detail
-   ,output_opt_detail_agg=output_opt_detail_agg
+   ,output_opt_detail_daily=output_opt_detail_daily
+   ,output_opt_detail_weekly=output_opt_detail_weekly
    ,output_opt_summary=output_opt_summary
    ,output_opt_resource_usage=output_opt_resource_usage
    ,output_opt_resource_usage_detail=output_opt_resource_usage_detail

@@ -1,6 +1,9 @@
 # Medical Resource Optimization Program
 An open collaboration between the Cleveland Clinic and SAS Institute and a continuation from our prior work on [COVID-19 Epidemiological Scenario Analysis] (https://github.com/sassoftware/covid-19-sas). That project demonstrates the usage of infectious disease models (SIR & SEIR) to analyze different scenarios and predict utilization of critical resources.
 
+## Disclosure
+This analytical engine is in active development and testing. 
+
 ## What this program does
 This project aims to generate an optimum hospital reactivation plan in response to clinical service disruptions during the COVID-19 pandemic.  The plan is capable of running multiple scenarios with different parameter settings that seek to balance hospital economics, efficient use of resources, and patient access to quality clinical care.
 
@@ -9,7 +12,7 @@ The program accommodates multiple medical facilities; services lines and sub-ser
 ## How to use the program
 The initial conditions assume sub-services are currently closed due to the COVID-19 pandemic and admitting all the patient backlog at once is not feasible due to shared resource constraints (e.g. COVID-19 tests, ventilators, shared beds, operating rooms, etc).
 
-Using existing capacity, historical utilization, and forecasted demand, a recommended optimal reopening plan is developed to indicate which sub-services to open and when. 
+Using existing capacity, historical utilization, and forecasted demand, a reopening plan is developed to recommended an optimial order and timing for opening sub-services. 
 
 Other objectives like maximizing total patient volumes, impacts of secondary COVID-19 surge scenarios, and configuration of clinical centers of excellence are additional use cases for future extensions of the program.  
 
@@ -21,6 +24,7 @@ Note that not all parameters can be changed across scenarios. Please refer to Ta
 
 ## Software requirements
 The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* installations.
+
 
 ## Steps to execute the code
 
@@ -43,8 +47,8 @@ The project requires *SAS Viya*, *SAS Optimization*, and *SAS Visual Analytics* 
         - input_demand = table of input_demand data (in inlib). Default = *input_demand*.
         - input_demand_forecast = table of input_demand_forecast data (in inlib). Default = *input_demand_forecast*.
         - input_opt_parameters = table of input_opt_parameters data (in opt_param_lib). Default = *input_opt_parameters*.
-        - output_opt_detail = table of output_opt_detail data (in outlib). Default = *output_opt_detail*.
-        - output_opt_detail_agg = table of output_opt_detail_agg data (in outlib). Default = *output_opt_detail_agg*.
+        - output_opt_detail_daily = table of output_opt_detail_daily data (in outlib). Default = *output_opt_detail_daily*.
+        - output_opt_detail_weekly = table of output_opt_detail_weekly data (in outlib). Default = *output_opt_detail_weekly*.
         - output_opt_summary = table of output_opt_summary data (in outlib). Default = *output_opt_summary*.
         - output_opt_resource_usage = table of output_opt_resource_usage data (in outlib). Default = *output_opt_resource_usage*.
         - output_opt_resource_usage_detail = table of output_opt_resource_usage_detail data (in outlib). Default = *output_opt_resource_usage_detail*.
@@ -116,14 +120,23 @@ The *Input data model* can be accessed from mro_documentation\mro_or_data_model.
 - OUTPUT_FD_DEMAND_FCST - forecasted demand for the planning horizon either from the external forecast file or forecasted data from the provided historical demand data.
 
 **Output file from *cc_optimize* are as follows:**
-- OUTPUT_OPT_DETAIL - shows the optimization model output such as patients accepted, margin, revenue by scenario, day, and hierarchy.
-- OUTPUT_OPT_DETAIL_AGG - shows the weekly aggregated optimization model output such as average daily patients accepted, average daily margin, average daily revenue by scenario, week, and hierarchy.
+- OUTPUT_OPT_DETAIL_DAILY - shows the optimization model output such as patients accepted, margin, revenue by scenario, day, and hierarchy.
+- OUTPUT_OPT_DETAIL_WEEKLY - shows the weekly aggregated optimization model output such as average daily patients accepted, average daily margin, average daily revenue by scenario, week, and hierarchy.
 - OUTPUT_OPT_SUMMARY - shows the reopening plan for the sub-services at each facility and service line.
 - OUTPUT_OPT_RESOURCE_USAGE - shows the utilization of the resource at the granularity of the resource capacity definition.
 - OUTPUT_OPT_RESOURCE_USAGE_DETAIL - shows the utilization of the resource as the fraction of resource used at a sub-service in facility/service line.
 - OUTPUT_OPT_COVID_TEST_USAGE - shows the used vs. available COVID-19 test kits by scenario, day, and hierarchy.
 
 The *Output data model* can be accessed from mro_documentation\mro_or_data_model.xlsx.
+
+## Output visualizations
+
+The output from the optimization model is visualized using VA reports to derive various useful insights. Examples of visualizations are shown below:
+
+| Average daily ICU Beds usage by Service line | Sub-service opening by facility |
+:-------------------------:|:-------------------------:
+![](/mro_images/MRO_Dashboard_1.JPG) | ![](/mro_images/MRO_Dashboard_2.JPG) 
+
 
 ## Code files
 
@@ -137,7 +150,6 @@ Note that there are two input demand files - historical demand data and forecast
 (2) takes in input_demand_forecast and sets it as forecasted demand.
 
 - **cc_optimize** : is the optimization code. This macro reads the pre-processed input files from the cc_data_prep macro and forecasted demand file from the cc_forecast-demand macro. It then generates the optimization model, solves the model, and creates various output tables like reopening plan, resource usage etc.  
-The .tex file used to generate the optimization model can be accessed from mro_documentation\mro_formulation.tex.
 
 - **cc_execute** : is a macro which executes the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros in sequence.  
 
@@ -156,13 +168,9 @@ The macro variable *data_path* defines the path of the folder where the input fi
 
 Documentation files are located in the *mro_documentation* folder.
 
-- **mro_formulation.tex** : is a .tex file to generate the bi-criteria mathematical formulation which is used to solve the problem.
-
 - **mro_fdd.docx** : is the functional design document which explains in detail about the problem and the solution methodology.
 
 - **mro_or_data_model.xlsx** : describes the data model for both input data tables and output data tables.
 
 ## Preferred Reference for Citation
-Cleveland Clinic and SAS Optimization Center of Excellence Team. Developer Documentation [Internet]. 2020. Available from: <repo link>
-
-
+Cleveland Clinic and SAS Optimization Center of Excellence. Developer Documentation [Internet]. 2020. Available from: https://github.com/sassoftware/medical-resource-optimization.
