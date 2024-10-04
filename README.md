@@ -17,7 +17,6 @@ Using existing capacity, historical utilization, and forecasted demand, a reopen
 Other objectives like maximizing total patient volumes, impacts of secondary COVID-19 surge scenarios, and configuration of clinical centers of excellence are additional use cases for future extensions of the program.  
 
 ## Multi-Scenario capability
-
 The optimization model is capable of running multiple scenarios with different parameter settings. One example of such scenario is change in COVID-19 test kit numbers. Users can define two scenarios with current and modified set of COVID19 test kit numbers.
 
 Note that not all parameters can be changed across scenarios. Please refer to Table 1. The parameters tagged as *(Global)* cannot be changed across scenarios. Other parameters which are tagged as *(Scenario)* can be changed across scenarios. Note that the model will stop if the data contains different values for *(Global)* parameters across scenarios.
@@ -139,7 +138,6 @@ The output from the optimization model is visualized using VA reports to derive 
 
 
 ## Code files
-
 This section will describe the code files in the *mro_main_code* folder.
 
 - **cc_data_prep** : is a macro to pre-processes the data files, to clean invalid entries and duplicate entries. Invalid entries are the data entries which are not consistent under the defined hierarchy. The macro takes all the input files (input_capacity, input_demand, input_demand_forecast, input_financials, input_service_attributes, input_utilization, input_opt_parameters) and creates clean input files, as the output, to be used by subsequent models (forecasting and optimization model).
@@ -156,7 +154,6 @@ Note that there are two input demand files - historical demand data and forecast
 - **cc_standalone** : is the file which calls the *cc_execute* macro and passes relevant parameters to run the *cc_data_prep*, *cc_forecast_demand*, and *cc_optimize* macros.
 
 ## Support files
-
 Support files are located in the *mro_support_code* folder.
 
 - **cc_create_parms_simple** : is a code to create the input_opt_parameters data. Note that this code does not include all the parameters defined in Table 1. Users can include additional parameters. Note that the parameters has to be added at the *level* in which they are defined.  
@@ -165,7 +162,6 @@ Support files are located in the *mro_support_code* folder.
 The macro variable *data_path* defines the path of the folder where the input files are stored and *inlib* defines the name of the library where input files should be imported. Users should set the *data_path* and *inlib* variables before executing this code. *mro_sample_data* folder has sample input data files for testing.
 
 ## Documentation files
-
 Documentation files are located in the *mro_documentation* folder.
 
 - **mro_fdd.docx** : is the functional design document which explains in detail about the problem and the solution methodology.
